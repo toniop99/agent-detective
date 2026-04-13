@@ -86,12 +86,17 @@ FROM node:24-slim AS dev
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install
+RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
 
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+COPY package.json pnpm-lock.yaml ./
 RUN chown -R appuser:appgroup /app
+
+RUN npm install -g pnpm
+
 USER appuser
+RUN pnpm install
 
 ENV NODE_ENV=development
 ENV PORT=3001
