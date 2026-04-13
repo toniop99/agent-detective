@@ -55,6 +55,9 @@ RUN touch /app/plugins/.gitkeep && chown appuser:appgroup /app/plugins/.gitkeep
 
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV COREPACK_HOME=/app/.corepack
+
+RUN mkdir -p /app/.corepack && chown -R appuser:appgroup /app/.corepack
 
 USER appuser
 
