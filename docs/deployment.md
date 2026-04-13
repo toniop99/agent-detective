@@ -6,7 +6,7 @@ Single-server deployment guide for agent-detective.
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| Node.js | 20+ | LTS recommended |
+| Node.js | 24+ | LTS recommended |
 | pnpm | 8+ | As specified in `packageManager` field |
 | git | Any recent | For cloning the repository |
 | OS | Ubuntu 22.04+ / Debian 12+ / macOS 13+ | Any Unix with systemd |
