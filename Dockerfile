@@ -6,8 +6,17 @@ FROM node:24-bookworm AS builder
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install && pnpm run build
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY packages/ ./packages/
+COPY src/ ./src/
+COPY config/ ./config/
+RUN corepack enable && pnpm install
+
+# Build packages (exclude root to avoid recursive turbo invocation)
+RUN pnpm exec turbo run build --filter=./packages/**
+
+# Build main app using tsup
+RUN pnpm exec tsup src/index.ts --outDir dist --format esm --target es2022 --external express --external ./src/**/*.js
 
 # ================================================================
 # Stage 2: Production
@@ -24,6 +33,8 @@ WORKDIR /app
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --production
 
 RUN install_agent() { \
     case "$1" in \
@@ -48,7 +59,7 @@ RUN install_agent() { \
         install_agent "$agent"; \
     done
 
-RUN groupadd -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
+RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup -s /bin/bash appuser
 
 RUN mkdir -p /app/plugins && chown -R appuser:appgroup /app
 RUN touch /app/plugins/.gitkeep && chown appuser:appgroup /app/plugins/.gitkeep
