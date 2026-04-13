@@ -1,5 +1,5 @@
 {
-  "name": "code-detective",
+  "name": "agent-detective",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@8.15.9",
@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "turbo run build",
-    "build:types": "pnpm --filter @code-detective/types build",
+    "build:types": "pnpm --filter @agent-detective/types build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "tsx --test 'test/**/*.test.ts'",

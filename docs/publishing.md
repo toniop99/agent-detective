@@ -1,14 +1,14 @@
 # Publishing Guide
 
-This guide covers how to publish packages to npm for the code-detective monorepo.
+This guide covers how to publish packages to npm for the agent-detective monorepo.
 
 ## Package Overview
 
 | Package | Version | Description | Publish Command |
 |---------|---------|-------------|----------------|
-| `@code-detective/types` | `1.0.0` | Shared TypeScript types | `pnpm publish` |
-| `@code-detective/jira-adapter` | `0.1.0` | Jira webhook adapter | `pnpm publish` |
-| `code-detective` | `0.1.0` | Main application | `npm publish` |
+| `@agent-detective/types` | `1.0.0` | Shared TypeScript types | `pnpm publish` |
+| `@agent-detective/jira-adapter` | `0.1.0` | Jira webhook adapter | `pnpm publish` |
+| `agent-detective` | `0.1.0` | Main application | `npm publish` |
 
 ## Prerequisites
 
@@ -65,8 +65,8 @@ When you run `pnpm changeset`, it creates a file in `.changeset/` with this form
 
 ```markdown
 ---
-"@code-detective/types": patch
-"@code-detective/jira-adapter": minor
+"@agent-detective/types": patch
+"@agent-detective/jira-adapter": minor
 ---
 
 Description of changes
@@ -102,7 +102,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Version Compatibility
 
-| @code-detective/types | code-detective |
+| @agent-detective/types | agent-detective |
 |----------------------|----------------|
 | 1.x | 0.x |
 | 2.x | 1.x (when released) |
@@ -112,15 +112,15 @@ We follow [Semantic Versioning](https://semver.org/):
 ### Installing Types Package
 
 ```bash
-npm install @code-detective/types
+npm install @agent-detective/types
 # or
-pnpm add @code-detective/types
+pnpm add @agent-detective/types
 ```
 
 ### Using Types in Your Plugin
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-adapter',
@@ -149,7 +149,7 @@ Within the monorepo, packages use `workspace:*` for dependencies:
 // packages/jira-adapter/package.json
 {
   "dependencies": {
-    "@code-detective/types": "workspace:*"
+    "@agent-detective/types": "workspace:*"
   }
 }
 ```
@@ -170,7 +170,7 @@ pnpm login
 
 ```bash
 # First time publishing a new scope
-npm org add @code-detective your-username
+npm org add @agent-detective your-username
 ```
 
 ### "Cannot find module" after publish
@@ -225,10 +225,10 @@ If you need to unpublish a version:
 
 ```bash
 # Unpublish specific version
-npm unpublish @code-detective/types@1.0.1
+npm unpublish @agent-detective/types@1.0.1
 
 # Unpublish entire package (use with caution)
-npm unpublish @code-detective/types --force
+npm unpublish @agent-detective/types --force
 ```
 
 Note: You cannot unpublish a version if another package depends on it.
@@ -237,7 +237,7 @@ Note: You cannot unpublish a version if another package depends on it.
 
 ## Docker Image Publishing (ghcr.io)
 
-The code-detective Docker image is published to GitHub Container Registry (ghcr.io).
+The agent-detective Docker image is published to GitHub Container Registry (ghcr.io).
 
 ### Image Information
 
@@ -306,12 +306,12 @@ Build arguments control which agents are installed:
 
 ```bash
 # Build with default agents (opencode only)
-docker build --target production -t code-detective .
+docker build --target production -t agent-detective .
 
 # Build with multiple agents
 docker build --target production \
   --build-arg AGENTS="opencode,claude,gemini" \
-  -t code-detective:multi .
+  -t agent-detective:multi .
 
 # Available agents: opencode, claude, gemini
 # Note: codex is not available in Docker (requires VS Code extension)

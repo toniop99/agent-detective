@@ -1,6 +1,6 @@
 # Plugin Development Guide
 
-Plugins extend code-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers everything you need to build a plugin.
+Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers everything you need to build a plugin.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ A plugin is an ES module that exports a plain object with the following structur
 
 ```typescript
 // packages/my-adapter/src/index.ts
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-adapter',   // unique package name
@@ -56,7 +56,7 @@ export default myPlugin;
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `name` | `string` | Unique plugin identifier (e.g., `@code-detective/jira-adapter`) |
+| `name` | `string` | Unique plugin identifier (e.g., `@agent-detective/jira-adapter`) |
 | `version` | `string` | Semver version (e.g., `1.0.0`) |
 | `register` | `function` | Called on load with `(app, context)` |
 | `schemaVersion` | `string` | Must be `'1.0'` |
@@ -172,7 +172,7 @@ Include `schemaVersion: '1.0'` in your plugin. This allows future schema version
 
 ```typescript
 export default {
-  name: '@code-detective/my-adapter',
+  name: '@agent-detective/my-adapter',
   version: '1.0.0',
   schemaVersion: '1.0',   // required - must be '1.0'
   // ...
@@ -189,7 +189,7 @@ All plugins produce a normalized `TaskEvent` object that the core processes iden
 const taskEvent: TaskEvent = {
   id: 'PROJ-123',                    // Unique task ID (e.g., Jira issue key)
   type: 'incident',                  // 'incident' | 'question' | 'command'
-  source: '@code-detective/my-adapter', // Plugin name
+  source: '@agent-detective/my-adapter', // Plugin name
 
   message: 'User reported login failure...', // Original text to process
 
@@ -252,7 +252,7 @@ packages/my-jira/
 
 ```json
 {
-  "name": "@myorg/code-detective-jira",
+  "name": "@myorg/agent-detective-jira",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -268,7 +268,7 @@ packages/my-jira/
     "test": "tsx --test"
   },
   "dependencies": {
-    "@code-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
@@ -281,12 +281,12 @@ packages/my-jira/
 
 ```typescript
 // packages/my-jira/src/index.ts
-import type { Plugin, PluginContext, TaskEvent, RepoContext } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent, RepoContext } from '@agent-detective/types';
 import { normalizePayload } from './normalizer.js';
 import { createJiraClient } from './jira-client.js';
 
 const plugin: Plugin = {
-  name: '@myorg/code-detective-jira',
+  name: '@myorg/agent-detective-jira',
   version: '0.1.0',
   schemaVersion: '1.0',
 
@@ -294,7 +294,7 @@ const plugin: Plugin = {
     type: 'object',
     properties: {
       enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/code-detective-jira-adapter/webhook/jira' },
+      webhookPath: { type: 'string', default: '/plugins/agent-detective-jira-adapter/webhook/jira' },
       mockMode: { type: 'boolean', default: false },
       baseUrl: { type: 'string', default: '' },
       email: { type: 'string', default: '' },
@@ -410,7 +410,7 @@ function buildPrompt(taskEvent: TaskEvent, repoContextText: string): string {
 
 ```typescript
 // packages/my-jira/src/normalizer.ts
-import type { TaskEvent } from '@code-detective/types';
+import type { TaskEvent } from '@agent-detective/types';
 
 export function normalizePayload(payload: JiraPayload): TaskEvent {
   const issue = payload.issue || payload;
@@ -418,7 +418,7 @@ export function normalizePayload(payload: JiraPayload): TaskEvent {
   return {
     id: issue.key || String(Date.now()),
     type: 'incident',
-    source: '@myorg/code-detective-jira',
+    source: '@myorg/agent-detective-jira',
     message: buildIncidentMessage(issue),
     context: {
       repoPath: null,
@@ -462,10 +462,10 @@ This pattern handles conversational messages where a user asks a question. The p
 
 ```typescript
 // packages/my-telegram/src/index.ts
-import type { Plugin, PluginContext, TaskEvent } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
 
 const plugin: Plugin = {
-  name: '@myorg/code-detective-telegram',
+  name: '@myorg/agent-detective-telegram',
   version: '0.1.0',
   schemaVersion: '1.0',
 
@@ -498,7 +498,7 @@ const plugin: Plugin = {
       const taskEvent: TaskEvent = {
         id: `${chatId}:${messageId}`,
         type: 'question',
-        source: '@myorg/code-detective-telegram',
+        source: '@myorg/agent-detective-telegram',
         message: text.replace(/proj:\S+\s*/, '').trim(),
         context: {
           repoPath,
@@ -536,10 +536,10 @@ Handles bot commands like `/analyze`, `/status`, `/help`. Commands are typically
 
 ```typescript
 // packages/my-slash-command/src/index.ts
-import type { Plugin, PluginContext, TaskEvent } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
 
 const plugin: Plugin = {
-  name: '@myorg/code-detective-slack',
+  name: '@myorg/agent-detective-slack',
   version: '0.1.0',
   schemaVersion: '1.0',
 
@@ -587,10 +587,10 @@ Polls an external API periodically instead of receiving webhooks. Useful for che
 
 ```typescript
 // packages/my-poller/src/index.ts
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 const plugin: Plugin = {
-  name: '@myorg/code-detective-poller',
+  name: '@myorg/agent-detective-poller',
   version: '0.1.0',
   schemaVersion: '1.0',
 
@@ -666,7 +666,7 @@ export default plugin;
 For development within the monorepo, put your plugin in `packages/`:
 
 ```
-code-detective/
+agent-detective/
 ├── packages/
 │   ├── jira-adapter/           # Official
 │   └── my-adapter/             # Your plugin
@@ -697,7 +697,7 @@ my-adapter/
 
 ```json
 {
-  "name": "@myorg/code-detective-my-adapter",
+  "name": "@myorg/agent-detective-my-adapter",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -713,13 +713,13 @@ my-adapter/
     "test": "tsx --test"
   },
   "dependencies": {
-    "@code-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
     "tsx": "^4.19.0"
   },
-  "keywords": ["code-detective", "plugin"]
+  "keywords": ["agent-detective", "plugin"]
 }
 ```
 
@@ -732,11 +732,11 @@ pnpm run build
 pnpm publish --access public
 ```
 
-**4. Install in code-detective:**
+**4. Install in agent-detective:**
 
 ```bash
-cd code-detective
-pnpm add @myorg/code-detective-my-adapter
+cd agent-detective
+pnpm add @myorg/agent-detective-my-adapter
 ```
 
 **5. Configure in `config/default.json`:**
@@ -745,7 +745,7 @@ pnpm add @myorg/code-detective-my-adapter
 {
   "plugins": [
     {
-      "package": "@myorg/code-detective-my-adapter",
+      "package": "@myorg/agent-detective-my-adapter",
       "options": {
         "enabled": true,
         "webhookPath": "/webhook/my"
@@ -761,7 +761,7 @@ The plugin system tries to load plugins in this order:
 
 1. If `package` starts with `./`, `../`, or `/` → treat as file path relative to project root
 2. Try `import(packageName)` from node_modules
-3. Try `import(packages/{name}/src/index.js)` where `@code-detective/X` maps to `packages/X/src/index.js`
+3. Try `import(packages/{name}/src/index.js)` where `@agent-detective/X` maps to `packages/X/src/index.js`
 
 ---
 
@@ -961,7 +961,7 @@ test('normalizePayload extracts correct fields', () => {
 
   assert.equal(taskEvent.id, 'PROJ-123');
   assert.equal(taskEvent.type, 'incident');
-  assert.equal(taskEvent.source, '@myorg/code-detective-jira');
+  assert.equal(taskEvent.source, '@myorg/agent-detective-jira');
   assert.ok(taskEvent.message.includes('Login fails'));
   assert.deepEqual(taskEvent.metadata.labels, ['backend', 'auth']);
   assert.equal(taskEvent.replyTo.type, 'issue');
@@ -1045,7 +1045,7 @@ The official Docker image includes these plugins:
 
 Manages local repository configuration with validation, tech stack detection, and summary generation.
 
-**Package:** `@code-detective/local-repos-plugin`
+**Package:** `@agent-detective/local-repos-plugin`
 
 **Can Disable:** Yes (`"enabled": false` in config)
 
@@ -1054,7 +1054,7 @@ Manages local repository configuration with validation, tech stack detection, an
 {
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "enabled": true,
         "repos": [
@@ -1070,7 +1070,7 @@ Manages local repository configuration with validation, tech stack detection, an
 
 Handles Jira webhooks with intelligent repository discovery.
 
-**Package:** `@code-detective/jira-adapter`
+**Package:** `@agent-detective/jira-adapter`
 
 **Can Disable:** Yes (`"enabled": false` in config)
 
@@ -1079,10 +1079,10 @@ Handles Jira webhooks with intelligent repository discovery.
 {
   "plugins": [
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": false,
         "baseUrl": "https://your-domain.atlassian.net",
         "email": "bot@example.com",

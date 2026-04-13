@@ -1,4 +1,4 @@
-import type { Plugin, BuildRepoContextOptions, Commit, AgentRunner } from '@code-detective/types';
+import type { Plugin, BuildRepoContextOptions, Commit, AgentRunner } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -69,7 +69,7 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
 }
 
 const localReposPlugin: Plugin = {
-  name: '@code-detective/local-repos-plugin',
+  name: '@agent-detective/local-repos-plugin',
   version: '0.1.0',
   dependsOn: [],
 

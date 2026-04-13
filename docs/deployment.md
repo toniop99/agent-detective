@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Single-server deployment guide for code-detective.
+Single-server deployment guide for agent-detective.
 
 ## Prerequisites
 
@@ -13,14 +13,14 @@ Single-server deployment guide for code-detective.
 
 ## Docker Deployment
 
-Docker is the recommended way to run code-detective, both for local development and production.
+Docker is the recommended way to run agent-detective, both for local development and production.
 
 ### Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/code-detective.git
-cd code-detective
+git clone https://github.com/your-org/agent-detective.git
+cd agent-detective
 
 # Start development environment (hot reload enabled)
 docker-compose up
@@ -29,7 +29,7 @@ docker-compose up
 ### File Structure
 
 ```
-code-detective/
+agent-detective/
 ├── Dockerfile              # Multi-stage: dev + production
 ├── docker-compose.yml     # Development environment
 ├── docker-compose.prod.yml # Production deployment
@@ -109,12 +109,12 @@ volumes:
 
 ```bash
 # Build with default agents (opencode only)
-docker build --target production -t code-detective:latest .
+docker build --target production -t agent-detective:latest .
 
 # Build with specific agents
 docker build --target production \
   --build-arg AGENTS="opencode,claude,gemini" \
-  -t code-detective:latest .
+  -t agent-detective:latest .
 
 # Available agents: opencode, claude, gemini
 # Note: codex is not available in Docker due to its installation method
@@ -127,7 +127,7 @@ docker build --target production \
 docker run -d \
   -p 3001:3001 \
   -v $(pwd)/config:/app/config:ro \
-  code-detective:latest
+  agent-detective:latest
 
 # With environment variables
 docker run -d \
@@ -136,7 +136,7 @@ docker run -d \
   -e NODE_ENV=production \
   -e AGENT=opencode \
   -e JIRA_API_TOKEN=your-token \
-  code-detective:latest
+  agent-detective:latest
 ```
 
 ### Production docker-compose
@@ -233,7 +233,7 @@ docker run -e AGENT=claude -e AGENTS_CLAUDE_MODEL=claude-opus-4 ...
 
 ## Production Distribution (Docker Hub / ghcr.io)
 
-The recommended way to run code-detective in production is to pull the official Docker image from GitHub Container Registry.
+The recommended way to run agent-detective in production is to pull the official Docker image from GitHub Container Registry.
 
 ### Pulling the Image
 
@@ -287,7 +287,7 @@ Create `docker-compose.yml`:
 
 ```yaml
 services:
-  code-detective:
+  agent-detective:
     image: ghcr.io/toniop99/agent-detective:latest
     ports:
       - "3001:3001"
@@ -306,8 +306,8 @@ The official image includes these plugins (can be disabled in config):
 
 | Plugin | Description |
 |--------|-------------|
-| `@code-detective/local-repos-plugin` | Local repository configuration |
-| `@code-detective/jira-adapter` | Jira webhook integration |
+| `@agent-detective/local-repos-plugin` | Local repository configuration |
+| `@agent-detective/jira-adapter` | Jira webhook integration |
 
 ### Installing Third-Party Plugins
 
@@ -354,8 +354,8 @@ For more details, see [docs/plugin-development.md](plugin-development.md).
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone https://github.com/your-org/code-detective.git
-cd code-detective
+git clone https://github.com/your-org/agent-detective.git
+cd agent-detective
 pnpm install
 ```
 
@@ -366,10 +366,10 @@ pnpm run build
 ```
 
 This builds all packages in the monorepo:
-- `@code-detective/types`
-- `@code-detective/local-repos-plugin`
-- `@code-detective/jira-adapter`
-- `code-detective` (main app)
+- `@agent-detective/types`
+- `@agent-detective/local-repos-plugin`
+- `@agent-detective/jira-adapter`
+- `agent-detective` (main app)
 
 ### 3. Configure
 
@@ -399,7 +399,7 @@ All configuration is in `config/default.json`:
   },
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [...],
         "techStackDetection": {...},
@@ -408,10 +408,10 @@ All configuration is in `config/default.json`:
       }
     },
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
         "discovery": {...},
         "discoveryContext": {...},
@@ -489,7 +489,7 @@ Settings for repository analysis:
 ```json
 {
   "enabled": true,
-  "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+  "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
   "mockMode": true,
   "baseUrl": "https://your-domain.atlassian.net",
   "email": "bot@example.com",
@@ -515,7 +515,7 @@ Settings for repository analysis:
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable the plugin |
-| `webhookPath` | string | `"/plugins/code-detective-jira-adapter/webhook/jira"` | Webhook endpoint path |
+| `webhookPath` | string | `"/plugins/agent-detective-jira-adapter/webhook/jira"` | Webhook endpoint path |
 | `mockMode` | boolean | `false` | Use mock Jira client |
 | `baseUrl` | string | - | Jira instance URL |
 | `email` | string | - | Jira account email |
@@ -532,7 +532,7 @@ Settings for repository analysis:
 
 ### systemd Unit File
 
-Create `/etc/systemd/system/code-detective.service`:
+Create `/etc/systemd/system/agent-detective.service`:
 
 ```ini
 [Unit]
@@ -541,8 +541,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=code-detective
-WorkingDirectory=/opt/code-detective
+User=agent-detective
+WorkingDirectory=/opt/agent-detective
 ExecStart=/usr/bin/pnpm start
 Restart=always
 RestartSec=5
@@ -557,38 +557,38 @@ WantedBy=multi-user.target
 
 ```bash
 # Create dedicated user
-sudo useradd -r -s /usr/sbin/nologin code-detective
+sudo useradd -r -s /usr/sbin/nologin agent-detective
 
 # Create installation directory
-sudo mkdir -p /opt/code-detective
-sudo cp -r . /opt/code-detective
-sudo chown -R code-detective:code-detective /opt/code-detective
+sudo mkdir -p /opt/agent-detective
+sudo cp -r . /opt/agent-detective
+sudo chown -R agent-detective:agent-detective /opt/agent-detective
 
 # Install dependencies and build
-cd /opt/code-detective
-sudo -u code-detective pnpm install
-sudo -u code-detective pnpm run build
+cd /opt/agent-detective
+sudo -u agent-detective pnpm install
+sudo -u agent-detective pnpm run build
 
 # Enable and start
 sudo systemctl daemon-reload
-sudo systemctl enable code-detective
-sudo systemctl start code-detective
+sudo systemctl enable agent-detective
+sudo systemctl start agent-detective
 ```
 
 ### Managing the Service
 
 ```bash
 # Check status
-sudo systemctl status code-detective
+sudo systemctl status agent-detective
 
 # View logs
-sudo journalctl -u code-detective -f
+sudo journalctl -u agent-detective -f
 
 # Restart
-sudo systemctl restart code-detective
+sudo systemctl restart agent-detective
 
 # Stop
-sudo systemctl stop code-detective
+sudo systemctl stop agent-detective
 ```
 
 ## Reverse Proxy
@@ -600,7 +600,7 @@ For HTTPS + SSE/WebSocket support:
 ```nginx
 server {
     listen 443 ssl;
-    server_name code-detective.example.com;
+    server_name agent-detective.example.com;
 
     ssl_certificate /etc/ssl/certs/example.com.pem;
     ssl_certificate_key /etc/ssl/private/example.com.key;
@@ -690,7 +690,7 @@ curl http://localhost:3001/agent/list
 Logs are written to stdout/stderr (captured by systemd journal):
 
 ```bash
-sudo journalctl -u code-detective -n 100
+sudo journalctl -u agent-detective -n 100
 ```
 
 ### Log Levels
@@ -717,7 +717,7 @@ sudo lsof -i :3001
 
 ```bash
 # Verify plugin paths exist
-ls -la node_modules/@code-detective/*/dist/
+ls -la node_modules/@agent-detective/*/dist/
 
 # Check plugin schema validation
 pnpm run lint
@@ -728,7 +728,7 @@ pnpm run lint
 1. Verify `mockMode: false` in config
 2. Check `baseUrl`, `email`, `apiToken` are set
 3. Ensure webhook URL is accessible from internet
-4. Check logs: `sudo journalctl -u code-detective | grep jira`
+4. Check logs: `sudo journalctl -u agent-detective | grep jira`
 
 ### Agent Not Responding
 
@@ -760,7 +760,7 @@ Reduce `gitLogMaxCommits` or `searchPatterns` in config to limit repository anal
 docker builder prune
 
 # Rebuild without cache
-docker build --no-cache --target production -t code-detective:latest .
+docker build --no-cache --target production -t agent-detective:latest .
 
 # Check available disk space
 docker system df
@@ -774,5 +774,5 @@ The `codex` agent is not available in Docker due to its installation method (req
 # Build with available agents
 docker build --target production \
   --build-arg AGENTS="opencode,claude,gemini" \
-  -t code-detective:latest .
+  -t agent-detective:latest .
 ```

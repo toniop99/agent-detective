@@ -4,7 +4,7 @@ This document describes the monorepo structure, tooling, and architecture decisi
 
 ## Overview
 
-The code-detective project is a TypeScript monorepo using:
+The agent-detective project is a TypeScript monorepo using:
 - **pnpm workspaces** for package management
 - **Turborepo** for task orchestration and build caching
 - **tsup** for fast TypeScript package builds
@@ -13,13 +13,13 @@ The code-detective project is a TypeScript monorepo using:
 ## Package Structure
 
 ```
-code-detective/                    # Root (private, not published)
+agent-detective/                    # Root (private, not published)
 ├── packages/
-│   ├── types/                    # @code-detective/types
+│   ├── types/                    # @agent-detective/types
 │   │   ├── src/index.ts          # Shared type definitions
 │   │   ├── tsup.config.ts        # Build configuration
 │   │   └── dist/                 # Built output
-│   └── jira-adapter/             # @code-detective/jira-adapter
+│   └── jira-adapter/             # @agent-detective/jira-adapter
 │       ├── src/
 │       ├── test/
 │       ├── tsup.config.ts        # Build configuration
@@ -104,8 +104,8 @@ export default defineConfig({
 
 When running `pnpm run build`, Turborepo ensures correct build order:
 
-1. **@code-detective/types** builds first (no dependencies)
-2. **@code-detective/jira-adapter** builds second (depends on types)
+1. **@agent-detective/types** builds first (no dependencies)
+2. **@agent-detective/jira-adapter** builds second (depends on types)
 
 The `dependsOn: ["^build"]` in turbo.json ensures dependencies build before dependents.
 
@@ -128,7 +128,7 @@ Within the monorepo, packages reference each other using `workspace:*`:
 // packages/jira-adapter/package.json
 {
   "dependencies": {
-    "@code-detective/types": "workspace:*"
+    "@agent-detective/types": "workspace:*"
   }
 }
 ```
@@ -137,11 +137,11 @@ When published, pnpm replaces `workspace:*` with the actual version.
 
 ### Type Imports
 
-All type imports between packages should use `@code-detective/types`:
+All type imports between packages should use `@agent-detective/types`:
 
 ```typescript
 // ✅ Correct
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 // ❌ Wrong - will break plugin builds
 import type { Plugin } from '../../../src/core/types.js';
@@ -174,7 +174,7 @@ mkdir -p packages/my-adapter/src
 
 ```json
 {
-  "name": "@code-detective/my-adapter",
+  "name": "@agent-detective/my-adapter",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -194,7 +194,7 @@ mkdir -p packages/my-adapter/src
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@code-detective/types": "workspace:*"
+    "@agent-detective/types": "workspace:*"
   }
 }
 ```
@@ -209,7 +209,7 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
-  external: ['@code-detective/types'],
+  external: ['@agent-detective/types'],
 });
 ```
 

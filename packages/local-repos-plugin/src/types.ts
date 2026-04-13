@@ -1,4 +1,4 @@
-import type { Commit } from '@code-detective/types';
+import type { Commit } from '@agent-detective/types';
 
 export interface RepoConfig {
   name: string;

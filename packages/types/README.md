@@ -1,17 +1,17 @@
-# @code-detective/types
+# @agent-detective/types
 
-Shared TypeScript type definitions for code-detective core and plugins.
+Shared TypeScript type definitions for agent-detective core and plugins.
 
 ## Installation
 
 ```bash
-npm install @code-detective/types
+npm install @agent-detective/types
 ```
 
 ## Usage
 
 ```typescript
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 ```
 
 ## Types Included
@@ -50,10 +50,10 @@ import type { Plugin, PluginContext } from '@code-detective/types';
 
 ## For Plugin Developers
 
-When building a plugin for code-detective, import the types you need:
+When building a plugin for agent-detective, import the types you need:
 
 ```typescript
-import type { Plugin, PluginSchema, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginSchema, PluginContext } from '@agent-detective/types';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-plugin',
@@ -69,7 +69,7 @@ export default myPlugin;
 
 ## Version Compatibility
 
-| @code-detective/types | code-detective |
+| @agent-detective/types | agent-detective |
 |----------------------|----------------|
 | 1.x | 0.x |
 

@@ -40,22 +40,22 @@ This is a **pnpm monorepo** with the following packages:
 
 | Package | Description |
 |---------|-------------|
-| `code-detective` | Main application |
-| `@code-detective/types` | Shared TypeScript types |
-| `@code-detective/local-repos-plugin` | Local repository configuration and discovery |
-| `@code-detective/jira-adapter` | Jira webhook adapter |
+| `agent-detective` | Main application |
+| `@agent-detective/types` | Shared TypeScript types |
+| `@agent-detective/local-repos-plugin` | Local repository configuration and discovery |
+| `@agent-detective/jira-adapter` | Jira webhook adapter |
 
-### @code-detective/types
+### @agent-detective/types
 
 All shared types are defined in `packages/types/src/index.ts`. This package is:
 
-- Published to npm as `@code-detective/types`
+- Published to npm as `@agent-detective/types`
 - Used by internal packages via pnpm workspace resolution
-- Available to external plugins via `npm install @code-detective/types`
+- Available to external plugins via `npm install @agent-detective/types`
 
 ## Plugins
 
-Plugins are npm packages that extend code-detective's capabilities. Each plugin:
+Plugins are npm packages that extend agent-detective's capabilities. Each plugin:
 - Exports a `register(app, context)` function
 - Defines its configuration schema
 - Is independently versioned and installable
@@ -64,8 +64,8 @@ Plugins are npm packages that extend code-detective's capabilities. Each plugin:
 
 ### Official Plugins
 
-- `@code-detective/local-repos-plugin` - Local repository configuration with tech stack detection
-- `@code-detective/jira-adapter` - Jira webhook integration
+- `@agent-detective/local-repos-plugin` - Local repository configuration with tech stack detection
+- `@agent-detective/jira-adapter` - Jira webhook integration
 
 ### Configuration
 
@@ -81,7 +81,7 @@ Plugins are configured in `config/default.json`:
   },
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [
           {
@@ -96,10 +96,10 @@ Plugins are configured in `config/default.json`:
       }
     },
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
         "discovery": {
           "enabled": true,
@@ -116,7 +116,7 @@ Plugins are configured in `config/default.json`:
 
 ```typescript
 // my-adapter/src/index.ts
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-adapter',

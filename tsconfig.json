@@ -21,7 +21,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@code-detective/types": ["./packages/types/src/index.ts"]
+      "@agent-detective/types": ["./packages/types/src/index.ts"]
     }
   },
   "include": ["src/**/*", "test/**/*", "packages/*/src/**/*"],

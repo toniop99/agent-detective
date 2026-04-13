@@ -1,4 +1,4 @@
-import type { TaskEvent } from '@code-detective/types';
+import type { TaskEvent } from '@agent-detective/types';
 
 interface JiraIssue {
   key?: string;

@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   splitting: false,
   clean: true,
-  external: ['@code-detective/types'],
+  external: ['@agent-detective/types'],
 });

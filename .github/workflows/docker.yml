@@ -78,14 +78,14 @@ jobs:
 
       - name: Start container
         run: |
-          docker run -d --name code-detective-test \
+          docker run -d --name agent-detective-test \
             -p 3001:3001 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Wait for container to be ready
         run: |
           for i in {1..30}; do
-            if docker exec code-detective-test wget --spider http://localhost:3001/health 2>/dev/null; then
+            if docker exec agent-detective-test wget --spider http://localhost:3001/health 2>/dev/null; then
               echo "Container is ready"
               exit 0
             fi
@@ -93,19 +93,19 @@ jobs:
             sleep 2
           done
           echo "Container failed to start"
-          docker logs code-detective-test
+          docker logs agent-detective-test
           exit 1
 
       - name: Check health endpoint
         run: |
-          docker exec code-detective-test curl -f http://localhost:3001/health || exit 1
+          docker exec agent-detective-test curl -f http://localhost:3001/health || exit 1
 
       - name: Check agent list endpoint
         run: |
-          docker exec code-detective-test curl -f http://localhost:3001/agent/list || exit 1
+          docker exec agent-detective-test curl -f http://localhost:3001/agent/list || exit 1
 
       - name: Cleanup
         if: always()
         run: |
-          docker stop code-detective-test || true
-          docker rm code-detective-test || true
+          docker stop agent-detective-test || true
+          docker rm agent-detective-test || true

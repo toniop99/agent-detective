@@ -15,12 +15,12 @@
 
 ## Type System
 
-All shared types are defined in `@code-detective/types` package (`packages/types/src/index.ts`).
+All shared types are defined in `@agent-detective/types` package (`packages/types/src/index.ts`).
 
-Plugin developers should import types from `@code-detective/types`:
+Plugin developers should import types from `@agent-detective/types`:
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@agent-detective/types';
 ```
 
 ### Core Types
@@ -36,10 +36,10 @@ import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@code-detect
 ## Plugin Interface
 
 ```typescript
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 const plugin: Plugin = {
-  name: '@code-detective/plugin-name',
+  name: '@agent-detective/plugin-name',
   version: '1.0.0',
   schemaVersion: '1.0',        // Must be '1.0'
   
@@ -93,7 +93,7 @@ export default plugin;
 ```
                               ┌──────────────────┐
                               │   Express Server  │
-                               │ /plugins/code-detective-:source │
+                               │ /plugins/agent-detective-:source │
                               └────────┬─────────┘
                                        │
                     ┌────────────────┼────────────────┐
@@ -136,14 +136,14 @@ export default plugin;
 ## Flow: Jira Incident
 
 ```
-1. Jira sends POST /plugins/code-detective-jira-adapter/webhook/jira with issue_created event
+1. Jira sends POST /plugins/agent-detective-jira-adapter/webhook/jira with issue_created event
          │
 2. Jira plugin webhook handler receives payload
          │
 3. Normalizer creates TaskEvent:
    {
      type: 'incident',
-     source: '@code-detective/jira-adapter',
+     source: '@agent-detective/jira-adapter',
      message: issue.description,
      context: { repoPath: lookup mapping, threadId: null },
      replyTo: { type: 'issue', id: 'PROJ-123' }
@@ -196,7 +196,7 @@ Configuration in `config/default.json`:
 {
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [
           { "name": "my-project", "path": "/path/to/project" }
@@ -204,7 +204,7 @@ Configuration in `config/default.json`:
       }
     },
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "discovery": {
           "enabled": true,
@@ -228,7 +228,7 @@ Each adapter plugin can run in mock mode for testing. When enabled:
 
 ```
 packages/
-├── types/                        # @code-detective/types
+├── types/                        # @agent-detective/types
 │   ├── src/index.ts             # All shared type definitions
 │   ├── package.json
 │   ├── tsconfig.json

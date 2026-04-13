@@ -1,7 +1,7 @@
 {
-  "name": "@code-detective/types",
+  "name": "@agent-detective/types",
   "version": "1.0.0",
-  "description": "Shared TypeScript types for code-detective core and plugins",
+  "description": "Shared TypeScript types for agent-detective core and plugins",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,6 +22,6 @@
   "devDependencies": {
     "typescript": "^5.7.0"
   },
-  "keywords": ["code-detective", "types"],
+  "keywords": ["agent-detective", "types"],
   "license": "MIT"
 }

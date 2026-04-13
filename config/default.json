@@ -14,7 +14,7 @@
   },
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [],
         "repoContext": {
@@ -39,10 +39,10 @@
       }
     },
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
         "discovery": {
           "enabled": true,

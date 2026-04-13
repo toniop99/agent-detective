@@ -1,4 +1,4 @@
-# Code Detective - Agent Guide
+# Agent Detective - Agent Guide
 
 This file provides essential information for AI agents working on this codebase.
 
@@ -6,7 +6,7 @@ This file provides essential information for AI agents working on this codebase.
 
 - **TypeScript monorepo** using pnpm workspaces
 - **Main app**: Express server that processes events via AI agents
-- **Packages**: `@code-detective/types`, `@code-detective/local-repos-plugin`, `@code-detective/jira-adapter`
+- **Packages**: `@agent-detective/types`, `@agent-detective/local-repos-plugin`, `@agent-detective/jira-adapter`
 - **Architecture**: Source-agnostic core with plugin-based adapters
 
 ## Architecture
@@ -58,11 +58,11 @@ This file provides essential information for AI agents working on this codebase.
 
 ### Critical Rule
 
-**All types shared between core and plugins are defined in `@code-detective/types` package.**
+**All types shared between core and plugins are defined in `@agent-detective/types` package.**
 
 ```typescript
-// ✅ CORRECT - import from @code-detective/types
-import type { Plugin, PluginContext } from '@code-detective/types';
+// ✅ CORRECT - import from @agent-detective/types
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 // ❌ WRONG - will break plugin standalone builds
 import type { Plugin } from '../../../src/core/types.js';
@@ -97,9 +97,9 @@ Plugins can declare dependencies using `dependsOn`. The plugin system loads plug
 
 ```typescript
 const myPlugin: Plugin = {
-  name: '@code-detective/my-adapter',
+  name: '@agent-detective/my-adapter',
   version: '1.0.0',
-  dependsOn: ['@code-detective/local-repos-plugin'],  // Loaded first
+  dependsOn: ['@agent-detective/local-repos-plugin'],  // Loaded first
   register(app, context) {
     // context.repoMapping, context.buildRepoContext available here
   }
@@ -131,11 +131,11 @@ All plugin routes are automatically prefixed with `/plugins/{plugin-name}` to en
 
 | Plugin Name | Sanitized Prefix |
 |------------|------------------|
-| `@code-detective/jira-adapter` | `/plugins/code-detective-jira-adapter` |
-| `@code-detective/local-repos-plugin` | `/plugins/code-detective-local-repos-plugin` |
+| `@agent-detective/jira-adapter` | `/plugins/agent-detective-jira-adapter` |
+| `@agent-detective/local-repos-plugin` | `/plugins/agent-detective-local-repos-plugin` |
 | `my-plugin` | `/plugins/my-plugin` |
 
-**Example**: If a plugin registers `/webhook/jira`, the actual endpoint becomes `/plugins/code-detective-jira-adapter/webhook/jira`.
+**Example**: If a plugin registers `/webhook/jira`, the actual endpoint becomes `/plugins/agent-detective-jira-adapter/webhook/jira`.
 
 Plugins should use relative paths (e.g., `/webhook/jira`) when registering routes - the prefix is automatically applied by core.
 
@@ -321,10 +321,10 @@ List all agents with availability status:
 ## Project Structure
 
 ```
-code-detective/
+agent-detective/
 ├── src/                              # Main application
 │   ├── core/
-│   │   ├── types.ts                  # Re-exports from @code-detective/types
+│   │   ├── types.ts                  # Re-exports from @agent-detective/types
 │   │   ├── agent-runner.ts           # Executes AI agents
 │   │   ├── queue.ts                 # Task queuing
 │   │   ├── process.ts               # Shell execution
@@ -334,7 +334,7 @@ code-detective/
 │   ├── server.ts                    # Express server (+ Core API endpoints)
 │   └── index.ts                     # Bootstrap
 ├── packages/
-│   ├── types/                       # @code-detective/types
+│   ├── types/                       # @agent-detective/types
 │   │   └── src/index.ts            # SINGLE SOURCE OF TRUTH
 │   ├── local-repos-plugin/          # Repository access and analysis
 │   │   └── src/index.ts
@@ -388,14 +388,14 @@ pnpm run lint -- --fix  # Auto-fix issues
 
 ## Common Issues & Solutions
 
-### "Cannot find module '@code-detective/types'"
+### "Cannot find module '@agent-detective/types'"
 
 **Cause**: Relative import path used instead of package import.
 
-**Fix**: Use `@code-detective/types` import path, ensure tsconfig has path mapping:
+**Fix**: Use `@agent-detective/types` import path, ensure tsconfig has path mapping:
 ```json
 "paths": {
-  "@code-detective/types": ["./packages/types/src/index.ts"]
+  "@agent-detective/types": ["./packages/types/src/index.ts"]
 }
 ```
 
@@ -403,7 +403,7 @@ pnpm run lint -- --fix  # Auto-fix issues
 
 **Cause**: Plugin's `tsconfig.build.json` has `rootDir: "./src"` but imports from `../../../src/core/types.js`.
 
-**Fix**: Use `@code-detective/types` which resolves via workspace. Do NOT use relative paths to `src/`.
+**Fix**: Use `@agent-detective/types` which resolves via workspace. Do NOT use relative paths to `src/`.
 
 ### Tests not running / duplicate test output
 
@@ -428,14 +428,14 @@ pnpm run lint -- --fix  # Auto-fix issues
 ### DO NOT
 
 - **Edit `dist/` files directly** - they are generated output
-- **Use relative imports to `src/core/types.js`** - use `@code-detective/types`
+- **Use relative imports to `src/core/types.js`** - use `@agent-detective/types`
 - **Create `.js` files alongside `.ts` files** - delete old files after migration
 - **Use `typeof import()` for function signatures** - use inline function types
 - **Set `rootDir` to include multiple directories** - each package has its own rootDir
 
 ### DO
 
-- **Import types from `@code-detective/types`**
+- **Import types from `@agent-detective/types`**
 - **Use `.ts` extension for all source files**
 - **Use `.test.ts` extension for test files**
 - **Follow ESM with `.js` extension in imports**
@@ -445,9 +445,9 @@ pnpm run lint -- --fix  # Auto-fix issues
 
 When releasing:
 
-1. **`@code-detective/types`** (publish first)
-2. **`@code-detective/jira-adapter`** (depends on types)
-3. **`code-detective`** (main app)
+1. **`@agent-detective/types`** (publish first)
+2. **`@agent-detective/jira-adapter`** (depends on types)
+3. **`agent-detective`** (main app)
 
 See `docs/publishing.md` for full workflow.
 

@@ -14,23 +14,23 @@ The codebase was migrated from JavaScript (ES modules) to TypeScript for:
 ### Package Architecture
 
 ```
-code-detective/
+agent-detective/
 ├── packages/
-│   ├── types/                      # NEW: @code-detective/types package
+│   ├── types/                      # NEW: @agent-detective/types package
 │   │   ├── src/index.ts            # Single source of truth for shared types
 │   │   └── dist/                   # Compiled output for npm publishing
-│   └── jira-adapter/               # Internal plugin (uses @code-detective/types)
+│   └── jira-adapter/               # Internal plugin (uses @agent-detective/types)
 └── src/                            # Main application
-    └── core/types.ts               # Re-exports from @code-detective/types
+    └── core/types.ts               # Re-exports from @agent-detective/types
 ```
 
-### Shared Types Package: `@code-detective/types`
+### Shared Types Package: `@agent-detective/types`
 
 All types that are shared between the core and plugins are defined in `packages/types/src/index.ts`. This package:
 
-- Is published to npm as `@code-detective/types`
+- Is published to npm as `@agent-detective/types`
 - Is used by internal plugins via workspace resolution
-- Can be used by external plugins via `npm install @code-detective/types`
+- Can be used by external plugins via `npm install @agent-detective/types`
 
 ### TypeScript Configuration
 
@@ -74,7 +74,7 @@ The `repoContext` configuration has been moved from the root `config/default.jso
   "repoContext": {
     "gitLogMaxCommits": 50
   },
-  "plugins": [{ "package": "@code-detective/local-repos-plugin", "options": {...} }]
+  "plugins": [{ "package": "@agent-detective/local-repos-plugin", "options": {...} }]
 }
 ```
 
@@ -82,7 +82,7 @@ The `repoContext` configuration has been moved from the root `config/default.jso
 ```json
 {
   "plugins": [{
-    "package": "@code-detective/local-repos-plugin",
+    "package": "@agent-detective/local-repos-plugin",
     "options": {
       "repos": [...],
       "repoContext": {
@@ -97,17 +97,17 @@ The `repoContext` configuration has been moved from the root `config/default.jso
 
 ### Plugin Development
 
-Plugins should import types from `@code-detective/types`:
+Plugins should import types from `@agent-detective/types`:
 
 ```typescript
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 ```
 
 ### Build Process
 
 ```bash
 pnpm install           # Install dependencies
-pnpm run build:types  # Build @code-detective/types → packages/types/dist/
+pnpm run build:types  # Build @agent-detective/types → packages/types/dist/
 pnpm run build:app    # Build main app → dist/
 pnpm run build:plugin # Build plugin → packages/jira-adapter/dist/
 ```
@@ -124,11 +124,11 @@ pnpm run test         # Run tests with tsx
 ### 1. Path Aliases
 
 Before: `import { Plugin } from '../../../src/core/types.js'`
-After: `import type { Plugin } from '@code-detective/types'`
+After: `import type { Plugin } from '@agent-detective/types'`
 
 ### 2. rootDir Conflicts
 
-Internal plugins cannot import from `src/` because `rootDir` is set to `./src` in plugin tsconfig.build.json. Solution: use `@code-detective/types` which is resolved via workspace.
+Internal plugins cannot import from `src/` because `rootDir` is set to `./src` in plugin tsconfig.build.json. Solution: use `@agent-detective/types` which is resolved via workspace.
 
 ### 3. Function Type Imports
 

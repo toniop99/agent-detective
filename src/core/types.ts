@@ -1,6 +1,6 @@
 export type { ChildProcess } from 'node:child_process';
 
-export type { TaskEvent, TaskContext, ReplyTarget } from '@code-detective/types';
+export type { TaskEvent, TaskContext, ReplyTarget } from '@agent-detective/types';
 
 export type {
   Plugin,
@@ -28,4 +28,4 @@ export type {
   ExecLocalStreamingOptions,
   ProcessUtils,
   EnqueueFn,
-} from '@code-detective/types';
+} from '@agent-detective/types';

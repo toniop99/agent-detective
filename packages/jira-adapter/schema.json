@@ -9,7 +9,7 @@
     },
     "webhookPath": {
       "type": "string",
-      "default": "/plugins/code-detective-jira-adapter/webhook/jira",
+      "default": "/plugins/agent-detective-jira-adapter/webhook/jira",
       "description": "Webhook endpoint path"
     },
     "mockMode": {

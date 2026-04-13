@@ -1,5 +1,5 @@
 services:
-  code-detective:
+  agent-detective:
     build:
       context: .
       target: production
@@ -8,8 +8,8 @@ services:
         # Separate multiple agents with commas
         # Example: AGENTS=opencode,claude,gemini
         AGENTS: ${AGENTS:-opencode}
-    image: code-detective:latest
-    container_name: code-detective
+    image: agent-detective:latest
+    container_name: agent-detective
     ports:
       - "${PORT:-3001}:3001"
     volumes:
@@ -65,7 +65,7 @@ secrets:
 
 networks:
   default:
-    name: code-detective-network
+    name: agent-detective-network
 
 # Optional: Run with nginx reverse proxy
 # Uncomment and adjust for your setup
@@ -79,5 +79,5 @@ networks:
 #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
 #     - ./ssl:/etc/ssl/certs:ro
 #   depends_on:
-#     - code-detective
+#     - agent-detective
 #   restart: unless-stopped

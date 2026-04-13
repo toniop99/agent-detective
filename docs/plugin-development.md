@@ -1,6 +1,6 @@
 # Third-Party Plugin Development Guide
 
-This guide explains how to develop and distribute third-party plugins for code-detective.
+This guide explains how to develop and distribute third-party plugins for agent-detective.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ This guide explains how to develop and distribute third-party plugins for code-d
 
 ## Overview
 
-Third-party plugins extend code-detective's capabilities. They can be:
+Third-party plugins extend agent-detective's capabilities. They can be:
 
 - **Shared publicly** on npm or GitHub
 - **Distributed privately** within an organization
@@ -45,9 +45,9 @@ my-plugin/
 
 ```json
 {
-  "name": "@myorg/code-detective-my-plugin",
+  "name": "@myorg/agent-detective-my-plugin",
   "version": "1.0.0",
-  "description": "My custom plugin for code-detective",
+  "description": "My custom plugin for agent-detective",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -61,12 +61,12 @@ my-plugin/
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.json --watch"
   },
-  "keywords": ["code-detective", "plugin"],
+  "keywords": ["agent-detective", "plugin"],
   "peerDependencies": {
-    "@code-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0"
   },
   "devDependencies": {
-    "@code-detective/types": "^1.0.0",
+    "@agent-detective/types": "^1.0.0",
     "typescript": "^5.7.0"
   }
 }
@@ -109,10 +109,10 @@ my-plugin/
 
 ```typescript
 // src/index.ts
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 
 const myPlugin: Plugin = {
-  name: '@myorg/code-detective-my-plugin',
+  name: '@myorg/agent-detective-my-plugin',
   version: '1.0.0',
   schemaVersion: '1.0',
 
@@ -120,7 +120,7 @@ const myPlugin: Plugin = {
     type: 'object',
     properties: {
       enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/code-detective-my-plugin/webhook' },
+      webhookPath: { type: 'string', default: '/plugins/agent-detective-my-plugin/webhook' },
       someOption: { type: 'string', default: 'default' },
     },
     required: []
@@ -172,7 +172,7 @@ pnpm init
 ### 2. Install dependencies
 
 ```bash
-pnpm add @code-detective/types
+pnpm add @agent-detective/types
 pnpm add -D typescript tsx
 ```
 
@@ -207,7 +207,7 @@ npm publish --access public
 
 Users can then install it via:
 ```bash
-npm install @myorg/code-detective-my-plugin
+npm install @myorg/agent-detective-my-plugin
 ```
 
 ### Option B: GitHub Release
@@ -283,7 +283,7 @@ Add to `config/default.json`:
       "package": "/app/plugins/my-plugin",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-my-plugin/webhook"
+        "webhookPath": "/plugins/agent-detective-my-plugin/webhook"
       }
     }
   ]
@@ -298,7 +298,7 @@ If your plugin is published to npm:
 {
   "plugins": [
     {
-      "package": "@myorg/code-detective-my-plugin",
+      "package": "@myorg/agent-detective-my-plugin",
       "options": {
         "enabled": true
       }
@@ -330,7 +330,7 @@ my-jira-plugin/
 
 ```json
 {
-  "name": "@myorg/code-detective-jira-plus",
+  "name": "@myorg/agent-detective-jira-plus",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -345,7 +345,7 @@ my-jira-plugin/
     "build": "tsc -p tsconfig.build.json"
   },
   "peerDependencies": {
-    "@code-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0"
   }
 }
 ```
@@ -353,10 +353,10 @@ my-jira-plugin/
 ### src/index.ts
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent } from '@code-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
 
 const jiraPlusPlugin: Plugin = {
-  name: '@myorg/code-detective-jira-plus',
+  name: '@myorg/agent-detective-jira-plus',
   version: '1.0.0',
   schemaVersion: '1.0',
 
@@ -364,7 +364,7 @@ const jiraPlusPlugin: Plugin = {
     type: 'object',
     properties: {
       enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/code-detective-my-plugin/webhook' },
+      webhookPath: { type: 'string', default: '/plugins/agent-detective-my-plugin/webhook' },
       baseUrl: { type: 'string', default: '' },
       email: { type: 'string', default: '' },
       apiToken: { type: 'string', default: '' },
@@ -434,7 +434,7 @@ export default jiraPlusPlugin;
 
 ### Type Errors
 
-1. Ensure `@code-detective/types` version is compatible
+1. Ensure `@agent-detective/types` version is compatible
 2. Run `pnpm run build` to generate `.d.ts` files
 3. Use `import type` for type-only imports
 

@@ -10,7 +10,7 @@
 ## Installation
 
 ```bash
-cd code-detective
+cd agent-detective
 pnpm install
 ```
 
@@ -24,7 +24,7 @@ pnpm install
   "agent": "opencode",
   "plugins": [
     {
-      "package": "@code-detective/local-repos-plugin",
+      "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [
           {
@@ -43,10 +43,10 @@ pnpm install
       }
     },
     {
-      "package": "@code-detective/jira-adapter",
+      "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
         "discovery": {
           "enabled": true,
@@ -102,10 +102,10 @@ pnpm run test:watch
 ## Project Structure
 
 ```
-code-detective/
+agent-detective/
 ├── src/                              # Main application (TypeScript)
 │   ├── core/
-│   │   ├── types.ts                  # Re-exports from @code-detective/types
+│   │   ├── types.ts                  # Re-exports from @agent-detective/types
 │   │   ├── agent-runner.ts           # Executes prompts against AI agents
 │   │   ├── queue.ts                  # Task queuing (prevents parallel execution)
 │   │   ├── process.ts                # Shell command execution
@@ -122,7 +122,7 @@ code-detective/
 │   ├── server.ts                     # Express server (+ Core API endpoints)
 │   └── index.ts                      # Bootstrap
 ├── packages/                         # Workspace packages
-│   ├── types/                        # @code-detective/types (shared types)
+│   ├── types/                        # @agent-detective/types (shared types)
 │   │   ├── src/index.ts              # SINGLE SOURCE OF TRUTH for types
 │   │   └── dist/                     # Built output for npm
 │   ├── local-repos-plugin/          # Repository management plugin
@@ -162,7 +162,7 @@ When `mockMode: true` in plugin config, the adapter uses `mock-jira-client.ts` w
 
 ```bash
 # Test webhook locally
-curl -X POST http://localhost:3001/plugins/code-detective-jira-adapter/webhook/jira \
+curl -X POST http://localhost:3001/plugins/agent-detective-jira-adapter/webhook/jira \
   -H "Content-Type: application/json" \
   -d @packages/jira-adapter/test/fixtures/issue-created.json
 ```
@@ -195,8 +195,8 @@ Check the console output - plugins log warnings instead of crashing.
 
 For a complete plugin development guide, see [docs/plugins.md](plugins.md).
 
-For type definitions, plugins should import from `@code-detective/types`:
+For type definitions, plugins should import from `@agent-detective/types`:
 
 ```typescript
-import type { Plugin, PluginContext } from '@code-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/types';
 ```

@@ -7,7 +7,7 @@ import { getAgent, getAgentLabel } from './agents/index.js';
 
 const config = loadConfig();
 
-console.info('Starting code-detective...');
+console.info('Starting agent-detective...');
 console.info(`Agent: ${getAgentLabel(config.agent || 'opencode')}`);
 console.info(`Port: ${config.port || 3001}`);
 

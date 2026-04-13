@@ -1,10 +1,10 @@
 services:
-  code-detective:
+  agent-detective:
     build:
       context: .
       target: dev
-    image: code-detective:dev
-    container_name: code-detective-dev
+    image: agent-detective:dev
+    container_name: agent-detective-dev
     ports:
       - "3001:3001"
     volumes:
@@ -35,7 +35,7 @@ services:
 #   driver: local
 #
 # services:
-#   code-detective:
+#   agent-detective:
 #     volumes:
 #       - repos-data:/repos
 #
@@ -49,4 +49,4 @@ services:
 
 networks:
   default:
-    name: code-detective-network
+    name: agent-detective-network

@@ -1,5 +1,5 @@
 import { normalizeJiraPayload } from './normalizer.js';
-import type { AgentRunner } from '@code-detective/types';
+import type { AgentRunner } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig, JiraTaskInfo, RepoInfo } from './types.js';
 import { formatTemplate, getDefaultAnalysisPrompt } from './types.js';

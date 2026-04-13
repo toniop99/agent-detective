@@ -1,10 +1,10 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import type { Plugin, PluginSchema, AgentRunner } from '@code-detective/types';
+import type { Plugin, PluginSchema, AgentRunner } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig } from './types.js';
 
-const PLUGIN_NAME = '@code-detective/jira-adapter';
+const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';
 const SCHEMA_VERSION = '1.0';
 
@@ -18,7 +18,7 @@ const pluginSchema: PluginSchema = {
     },
     webhookPath: {
       type: 'string',
-      default: '/plugins/code-detective-jira-adapter/webhook/jira',
+      default: '/plugins/agent-detective-jira-adapter/webhook/jira',
       description: 'Webhook endpoint path',
     },
     mockMode: {
@@ -72,7 +72,7 @@ const jiraAdapterPlugin: Plugin = {
   version: PLUGIN_VERSION,
   schemaVersion: SCHEMA_VERSION,
   schema: pluginSchema,
-  dependsOn: ['@code-detective/local-repos-plugin'],
+  dependsOn: ['@agent-detective/local-repos-plugin'],
 
   register(app, context) {
     const extContext = context as unknown as ExtendedContext;
@@ -110,7 +110,7 @@ const jiraAdapterPlugin: Plugin = {
       formatRepoContextForPrompt: extContext.formatRepoContextForPrompt!,
     });
 
-    const webhookPath = cfg.webhookPath || '/plugins/code-detective-jira-adapter/webhook/jira';
+    const webhookPath = cfg.webhookPath || '/plugins/agent-detective-jira-adapter/webhook/jira';
 
     app.post(webhookPath, async (req, res) => {
       try {

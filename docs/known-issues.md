@@ -1,6 +1,6 @@
 # Known Issues - Technical Debt
 
-This document tracks known issues and technical debt identified in the code-detective project for future resolution.
+This document tracks known issues and technical debt identified in the agent-detective project for future resolution.
 
 ---
 
@@ -50,17 +50,17 @@ The `dependsOn` field in plugin definitions creates a topological load order, bu
 ### Problem
 
 The Proxy auto-prefixes routes for plugins, but:
-1. If a plugin mistakenly registers a path that already looks prefixed (e.g., `/plugins/code-detective-local-repos-plugin/repos`), it would get double-prefixed
+1. If a plugin mistakenly registers a path that already looks prefixed (e.g., `/plugins/agent-detective-local-repos-plugin/repos`), it would get double-prefixed
 2. No validation or warning for such cases
 
 ### Example Scenario
 
 ```typescript
 // In a hypothetical misbehaving plugin:
-app.get('/plugins/code-detective-my-plugin/repos', handler);  // Already looks prefixed
+app.get('/plugins/agent-detective-my-plugin/repos', handler);  // Already looks prefixed
 
 // The Proxy would prefix this to:
-// /plugins/plugins/code-detective-my-plugin/plugins/code-detective-my-plugin/repos
+// /plugins/plugins/agent-detective-my-plugin/plugins/agent-detective-my-plugin/repos
 ```
 
 ### Current Mitigation
@@ -138,7 +138,7 @@ Not affecting any existing plugins. Would need to be addressed if a plugin requi
 
 ```typescript
 const localReposPlugin: Plugin = {
-  name: '@code-detective/local-repos-plugin',
+  name: '@agent-detective/local-repos-plugin',
   version: '0.1.0',
   dependsOn: [],
   // NO schema defined

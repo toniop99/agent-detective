@@ -86,7 +86,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
             const pluginModule = await import(packageName);
             plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
           } catch {
-            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@code-detective/', ''), 'src', 'index.js');
+            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@agent-detective/', ''), 'src', 'index.js');
             const pluginModule = await import(localPath);
             plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
           }
@@ -167,7 +167,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
             const pluginModule = await import(packageName);
             plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
           } catch {
-            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@code-detective/', ''), 'src', 'index.js');
+            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@agent-detective/', ''), 'src', 'index.js');
             const pluginModule = await import(localPath);
             plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
           }

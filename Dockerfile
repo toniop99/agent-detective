@@ -29,7 +29,7 @@ CMD ["pnpm", "run", "dev"]
 # Stage 2: Production
 # ================================================================
 # Multi-stage build with selectable agents.
-# Build with: docker build --target production --build-arg AGENTS="opencode,claude,gemini" -t code-detective:latest .
+# Build with: docker build --target production --build-arg AGENTS="opencode,claude,gemini" -t agent-detective:latest .
 # Supports multi-platform: linux/amd64, linux/arm64
 FROM node:20-bookworm AS production
 

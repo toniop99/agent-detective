@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import type { AgentRunner, EnqueueFn, AgentRunRequest, AgentProgressEvent } from '@code-detective/types';
+import type { AgentRunner, EnqueueFn, AgentRunRequest, AgentProgressEvent } from '@agent-detective/types';
 import { listAgents, isAgentInstalled, isKnownAgent } from './agents/index.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -214,7 +214,7 @@ export function createServer(
 
   app.get('/', (_req: Request, res: Response) => {
     res.json({
-      name: 'code-detective',
+      name: 'agent-detective',
       version: '0.1.0',
       adapters: Object.keys(_config.adapters || {}),
     });

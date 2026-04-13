@@ -20,7 +20,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@code-detective/types": ["../../types/src/index.ts"]
+      "@agent-detective/types": ["../../types/src/index.ts"]
     }
   },
   "include": ["src/**/*", "test/**/*"]

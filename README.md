@@ -1,4 +1,4 @@
-# Code Detective
+# Agent Detective
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -29,10 +29,10 @@ pnpm build
 
 | Package | Description |
 |---------|-------------|
-| `code-detective` | Main application (Express server) |
-| `@code-detective/types` | Shared TypeScript types |
-| `@code-detective/local-repos-plugin` | Local repository configuration |
-| `@code-detective/jira-adapter` | Jira webhook adapter |
+| `agent-detective` | Main application (Express server) |
+| `@agent-detective/types` | Shared TypeScript types |
+| `@agent-detective/local-repos-plugin` | Local repository configuration |
+| `@agent-detective/jira-adapter` | Jira webhook adapter |
 
 ## Configuration
 
