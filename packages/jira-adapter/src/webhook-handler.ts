@@ -1,5 +1,5 @@
 import { normalizeJiraPayload } from './normalizer.js';
-import type { AgentRunner } from '@agent-detective/types';
+import type { AgentRunner, EnqueueFn } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig, JiraTaskInfo, RepoInfo } from './types.js';
 import { formatTemplate, getDefaultAnalysisPrompt } from './types.js';
@@ -9,6 +9,7 @@ interface JiraWebhookHandlerOptions {
   jiraClient: MockJiraClient;
   config: JiraAdapterConfig;
   agentRunner: AgentRunner;
+  enqueue: EnqueueFn;
   getAvailableRepos: () => RepoInfo[];
   buildRepoContext: (repoPath: string, options?: unknown) => Promise<unknown>;
   formatRepoContextForPrompt: (context: unknown) => string;
@@ -19,37 +20,11 @@ export function createJiraWebhookHandler(options: JiraWebhookHandlerOptions) {
     jiraClient,
     config,
     agentRunner,
+    enqueue,
     getAvailableRepos,
     buildRepoContext,
     formatRepoContextForPrompt,
   } = options;
-
-  const queues = new Map<string, Promise<void>>();
-
-  function enqueue(queueKey: string, fn: () => Promise<void>): Promise<void> {
-    const enqueuedAt = Date.now();
-    const prev = queues.get(queueKey) || Promise.resolve();
-
-    const next = prev
-      .then(async () => {
-        const queueWaitMs = Date.now() - enqueuedAt;
-        console.info(`queue_start key=${queueKey} queue_wait_ms=${queueWaitMs}`);
-        return fn();
-      })
-      .catch((err: Error) => {
-        console.error('Queue error', err);
-      }) as Promise<void>;
-
-    queues.set(queueKey, next);
-
-    next.finally(() => {
-      if (queues.get(queueKey) === next) {
-        queues.delete(queueKey);
-      }
-    });
-
-    return next;
-  }
 
   async function handleWebhook(payload: unknown): Promise<{ status: string; taskId: string }> {
     const taskEvent = normalizeJiraPayload(payload as Parameters<typeof normalizeJiraPayload>[0]);

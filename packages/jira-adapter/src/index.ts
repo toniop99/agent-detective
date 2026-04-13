@@ -1,6 +1,6 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import type { Plugin, PluginSchema, AgentRunner } from '@agent-detective/types';
+import type { Plugin, PluginSchema, AgentRunner, EnqueueFn } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig } from './types.js';
 
@@ -58,6 +58,7 @@ interface ExtendedContext {
   localRepos?: LocalReposContext;
   buildRepoContext?: (repoPath: string, options?: unknown) => Promise<unknown>;
   formatRepoContextForPrompt?: (context: unknown) => string;
+  enqueue?: EnqueueFn;
   config: Record<string, unknown>;
   agentRunner?: AgentRunner;
   logger?: {
@@ -93,6 +94,11 @@ const jiraAdapterPlugin: Plugin = {
       return;
     }
 
+    if (!extContext.enqueue) {
+      extContext.logger?.error('Enqueue function not available - core plugin system not properly initialized');
+      return;
+    }
+
     const mockMode = cfg.mockMode ?? true;
     const jiraClient = mockMode
       ? createMockJiraClient()
@@ -102,6 +108,7 @@ const jiraAdapterPlugin: Plugin = {
       jiraClient,
       config: cfg,
       agentRunner: extContext.agentRunner,
+      enqueue: extContext.enqueue,
       getAvailableRepos: () => {
         const repos = extContext.localRepos!.getAllRepos();
         return repos.filter((r) => r.exists);
