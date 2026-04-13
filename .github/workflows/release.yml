@@ -8,11 +8,46 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  IMAGE_FULL_NAME: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  release:
+  ci:
     runs-on: ubuntu-latest
+    outputs:
+      pass: ${{ steps.ci-result.outputs.pass }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm run build
+
+      - id: ci-result
+        run: echo "pass=true" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: ubuntu-latest
+    needs: ci
+    if: needs.ci.outputs.pass == 'true'
     permissions:
       contents: read
       packages: write
@@ -31,11 +66,12 @@ jobs:
           fi
           echo "Releasing version: $VERSION"
 
-      - name: Extract major/minor version
+      - name: Extract version components
         run: |
           VERSION=${{ env.VERSION }}
           MAJOR=${VERSION%%.*}
-          MINOR=${VERSION%.*}
+          MINOR=${VERSION#*.}
+          MINOR=${MINOR%.*}
 
           echo "MAJOR_VERSION=$MAJOR" >> $GITHUB_ENV
           echo "MINOR_VERSION=$MINOR" >> $GITHUB_ENV
@@ -58,12 +94,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_FULL_NAME }}
           tags: |
             type=raw,value=latest
             type=raw,value=stable
             type=raw,value=${{ env.MAJOR_VERSION }}
-            type=raw,value=${{ env.MINOR_VERSION }}
+            type=raw,value=${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}
             type=raw,value=${{ env.FULL_VERSION }}
             type=semver,pattern={{version}}
 
@@ -71,6 +107,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          target: production
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -79,6 +116,52 @@ jobs:
             AGENTS=opencode,claude,gemini
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify multi-arch manifest
+        run: |
+          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest
+          echo "Checking for amd64 architecture..."
+          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest | grep '"architecture":"amd64"' || { echo "ERROR: amd64 not found"; exit 1; }
+          echo "Checking for arm64 architecture..."
+          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest | grep '"architecture":"arm64"' || { echo "ERROR: arm64 not found"; exit 1; }
+          echo "Multi-arch manifest verified successfully"
+
+  scan:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Pull image
+        run: docker pull ${{ env.IMAGE_FULL_NAME }}:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_FULL_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [ci, build, scan]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -90,9 +173,9 @@ jobs:
             Pull the image:
 
             ```bash
-            docker pull ghcr.io/toniop99/agent-detective:${{ env.FULL_VERSION }}
-            docker pull ghcr.io/toniop99/agent-detective:latest
-            docker pull ghcr.io/toniop99/agent-detective:stable
+            docker pull ${{ env.IMAGE_FULL_NAME }}:${{ env.FULL_VERSION }}
+            docker pull ${{ env.IMAGE_FULL_NAME }}:latest
+            docker pull ${{ env.IMAGE_FULL_NAME }}:stable
             ```
 
             ### Available Tags
@@ -102,8 +185,12 @@ jobs:
             | `latest` | Most recent build |
             | `stable` | Most recent release |
             | `${{ env.MAJOR_VERSION }}` | Latest v${{ env.MAJOR_VERSION }}.x.x |
-            | `${{ env.MINOR_VERSION }}` | Latest v${{ env.MINOR_VERSION }}.x |
+            | `${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}` | Latest v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.x |
             | `${{ env.FULL_VERSION }}` | This specific version |
+
+            ### Security
+
+            Vulnerability scan results are available in the Security tab under "Code Scanning".
 
           draft: false
           prerelease: ${{ contains(env.VERSION, 'alpha') || contains(env.VERSION, 'beta') || contains(env.VERSION, 'rc') }}
@@ -112,10 +199,10 @@ jobs:
 
       - name: Display image tags
         run: |
-          echo "Image pushed to: ghcr.io/toniop99/agent-detective"
+          echo "Image pushed to: ${{ env.IMAGE_FULL_NAME }}"
           echo "Tags pushed:"
           echo "  - latest"
           echo "  - stable"
           echo "  - ${{ env.MAJOR_VERSION }}"
-          echo "  - ${{ env.MINOR_VERSION }}"
+          echo "  - ${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
           echo "  - ${{ env.FULL_VERSION }}"
