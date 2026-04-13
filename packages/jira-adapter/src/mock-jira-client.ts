@@ -38,7 +38,7 @@ export function createMockJiraClient(): MockJiraClient {
         text: commentText,
         createdAt: new Date().toISOString(),
       });
-      console.info(`[MOCK] Added comment to ${issueKey}: ${commentText.slice(0, 50)}...`);
+      console.warn(`[MOCK] Added comment to ${issueKey}: ${commentText.slice(0, 50)}...`);
       return { success: true, issueKey };
     },
 

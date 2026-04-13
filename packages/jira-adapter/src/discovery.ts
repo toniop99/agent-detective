@@ -63,7 +63,7 @@ export function parseAgentDiscoveryResponse(response: string): string | null {
   const firstLine = lines[0].trim();
 
   if (firstLine.startsWith('-') || firstLine.startsWith('*')) {
-    const match = firstLine.match(/^[-\*]\s*(.+)/);
+    const match = firstLine.match(/^[-*]\s*(.+)/);
     if (match) {
       return match[1].trim();
     }

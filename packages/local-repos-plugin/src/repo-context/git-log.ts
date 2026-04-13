@@ -41,7 +41,7 @@ export async function gitShow(repoPath: string, commitHash: string): Promise<Com
     });
 
     const lines = output.split('\n');
-    const [hash, author, email, date, subject, ..._body] = lines;
+    const [hash, author, email, date, subject] = lines;
 
     return {
       hash,

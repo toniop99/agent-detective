@@ -32,37 +32,35 @@ export function detectTechStack(
     return [];
   }
 
-  let files: string[] = [];
-
   try {
     const entries = readdirSync(repoPath, { withFileTypes: true });
-    files = entries.map((e) => e.name);
-  } catch {
-    return [];
-  }
+    const files = entries.map((e) => e.name);
 
-  const detected: string[] = [];
+    const detected: string[] = [];
 
-  for (const [tech, techPatterns] of Object.entries(patterns)) {
-    for (const pattern of techPatterns) {
-      if (pattern.startsWith('*.')) {
-        const ext = pattern.slice(1);
-        if (files.some((f) => f.endsWith(ext))) {
-          if (!detected.includes(tech)) {
-            detected.push(tech);
+    for (const [tech, techPatterns] of Object.entries(patterns)) {
+      for (const pattern of techPatterns) {
+        if (pattern.startsWith('*.')) {
+          const ext = pattern.slice(1);
+          if (files.some((f) => f.endsWith(ext))) {
+            if (!detected.includes(tech)) {
+              detected.push(tech);
+            }
+            break;
           }
-          break;
-        }
-      } else {
-        if (files.includes(pattern)) {
-          if (!detected.includes(tech)) {
-            detected.push(tech);
+        } else {
+          if (files.includes(pattern)) {
+            if (!detected.includes(tech)) {
+              detected.push(tech);
+            }
+            break;
           }
-          break;
         }
       }
     }
-  }
 
-  return detected;
+    return detected;
+  } catch {
+    return [];
+  }
 }

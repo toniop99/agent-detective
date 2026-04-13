@@ -41,18 +41,16 @@ export function createJiraWebhookHandler(options: JiraWebhookHandlerOptions) {
       projectKey,
     };
 
-    console.info(`Jira webhook: ${taskEvent.id} labels: [${labels.join(', ')}]`);
+    console.warn(`Jira webhook: ${taskEvent.id} labels: [${labels.join(', ')}]`);
 
     const queueKey = taskEvent.id;
 
     enqueue(queueKey, async () => {
       const repos = getAvailableRepos();
-      let selectedRepo: RepoInfo | null = null;
-
       const discoveryConfig = config.discovery || {};
       const discoveryContext = config.discoveryContext || {};
 
-      selectedRepo = findDirectMatch(labels, repos);
+      let selectedRepo = findDirectMatch(labels, repos);
 
       if (!selectedRepo && !discoveryConfig.directMatchOnly) {
         const discoveryPrompt = buildDiscoveryPrompt(
@@ -116,7 +114,7 @@ export function createJiraWebhookHandler(options: JiraWebhookHandlerOptions) {
         repoPath: selectedRepo.path,
         onFinal: async (commentText: string) => {
           await jiraClient.addComment(taskEvent.replyTo.id, commentText);
-          console.info(`Comment added to ${taskEvent.replyTo.id}`);
+          console.warn(`Comment added to ${taskEvent.replyTo.id}`);
         },
       });
     });

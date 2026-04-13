@@ -1,4 +1,4 @@
-import type { Plugin, BuildRepoContextOptions, Commit, AgentRunner } from '@agent-detective/types';
+import type { Plugin, BuildRepoContextOptions, AgentRunner } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -35,34 +35,37 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
   for (const repo of repos) {
     const validationResult = validationResults.find((v) => v.name === repo.name)!;
 
-    let techStack: string[] = [];
-    let summary = '';
-    let commits: Commit[] = [];
-
     if (validationResult.exists) {
-      techStack = repo.techStack && repo.techStack.length > 0
+      const techStack = repo.techStack && repo.techStack.length > 0
         ? repo.techStack
         : detectTechStack(repo.path, techStackDetection);
 
-      summary = await generateSummary(repo.path, summaryGeneration || {}, agentRunner);
+      const summary = await generateSummary(repo.path, summaryGeneration || {}, agentRunner);
 
-      commits = await gitLog(repo.path, { maxCommits: repoContext?.gitLogMaxCommits });
+      const commits = await gitLog(repo.path, { maxCommits: repoContext?.gitLogMaxCommits });
+
+      results.push({
+        name: repo.name,
+        path: repo.path,
+        exists: validationResult.exists,
+        description: repo.description,
+        techStack,
+        summary,
+        commits,
+        lastChecked: new Date(),
+      });
     } else {
-      techStack = [];
-      summary = '';
-      commits = [];
+      results.push({
+        name: repo.name,
+        path: repo.path,
+        exists: validationResult.exists,
+        description: repo.description,
+        techStack: [],
+        summary: '',
+        commits: [],
+        lastChecked: new Date(),
+      });
     }
-
-    results.push({
-      name: repo.name,
-      path: repo.path,
-      exists: validationResult.exists,
-      description: repo.description,
-      techStack,
-      summary,
-      commits,
-      lastChecked: new Date(),
-    });
   }
 
   return results;
