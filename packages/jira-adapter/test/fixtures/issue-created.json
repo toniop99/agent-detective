@@ -1,0 +1,15 @@
+{
+  "issue": {
+    "key": "PROJ-123",
+    "fields": {
+      "summary": "NullPointerException in UserService.login()",
+      "description": "When a user tries to login with an empty password, the system throws a NullPointerException in the logs. Stack trace shows: java.lang.NullPointerException: Cannot invoke method getPassword() on null object at UserService.login (UserService.java:42)",
+      "labels": ["backend", "auth", "urgent"],
+      "project": { "key": "PROJ" },
+      "issuetype": { "name": "Bug" },
+      "reporter": { "displayName": "John Doe" },
+      "priority": { "name": "High" },
+      "status": { "name": "Open" }
+    }
+  }
+}

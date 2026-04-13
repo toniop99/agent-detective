@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the Jira adapter"
+    },
+    "webhookPath": {
+      "type": "string",
+      "default": "/plugins/code-detective-jira-adapter/webhook/jira",
+      "description": "Webhook endpoint path"
+    },
+    "mockMode": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use mock Jira client for testing"
+    }
+  },
+  "required": []
+}

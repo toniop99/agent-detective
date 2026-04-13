@@ -1,0 +1,83 @@
+services:
+  code-detective:
+    build:
+      context: .
+      target: production
+      args:
+        # Select agents to install: opencode, claude, gemini
+        # Separate multiple agents with commas
+        # Example: AGENTS=opencode,claude,gemini
+        AGENTS: ${AGENTS:-opencode}
+    image: code-detective:latest
+    container_name: code-detective
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      # Mount config directory (read-only) - edit config on host
+      - ./config:/app/config:ro
+      # Mount third-party plugins directory
+      # Place your plugins in ./plugins/{plugin-name}/ with index.js at the root
+      - ./plugins:/app/plugins:ro
+      # Optional: Mount repos directory for repository analysis
+      # Uncomment and set REPOS_PATH environment variable
+      # - ${REPOS_PATH:-./repos}:/repos:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Agent configuration
+      - AGENT=${AGENT:-opencode}
+      # Agent model configuration (overrides config/default.json)
+      - AGENTS_OPENCODE_MODEL=${AGENTS_OPENCODE_MODEL:-opencode/gpt-5-nano}
+      - AGENTS_CLAUDE_MODEL=${AGENTS_CLAUDE_MODEL:-claude-sonnet-4-20250514}
+      - AGENTS_GEMINI_MODEL=${AGENTS_GEMINI_MODEL:-gemini-2.5-pro-preview-06-05}
+      # Repo context settings
+      - REPO_CONTEXT_GIT_LOG_MAX_COMMITS=${REPO_CONTEXT_GIT_LOG_MAX_COMMITS:-50}
+      # Jira configuration (if using jira-adapter)
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+    secrets:
+      # Docker secrets for sensitive data
+      # Create secret files in ./secrets/ directory:
+      #   - ./secrets/jira_api_token.txt
+      #   - ./secrets/jira_email.txt
+      - jira_api_token
+      - jira_email
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+secrets:
+  jira_api_token:
+    file: ./secrets/jira_api_token.txt
+  jira_email:
+    file: ./secrets/jira_email.txt
+
+networks:
+  default:
+    name: code-detective-network
+
+# Optional: Run with nginx reverse proxy
+# Uncomment and adjust for your setup
+#
+# nginx:
+#   image: nginx:alpine
+#   ports:
+#     - "80:80"
+#     - "443:443"
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#     - ./ssl:/etc/ssl/certs:ro
+#   depends_on:
+#     - code-detective
+#   restart: unless-stopped

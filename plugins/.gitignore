@@ -1,0 +1,4 @@
+# Ignore all plugin directories
+*/
+# But don't ignore the directory itself
+!.gitkeep

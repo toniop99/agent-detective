@@ -1,0 +1,64 @@
+{
+  "port": 3001,
+  "agent": "opencode",
+  "agents": {
+    "opencode": {
+      "defaultModel": "opencode/gpt-5-nano"
+    },
+    "claude": {
+      "defaultModel": "claude-sonnet-4-20250514"
+    },
+    "gemini": {
+      "defaultModel": "gemini-2.5-pro-preview-06-05"
+    }
+  },
+  "plugins": [
+    {
+      "package": "@code-detective/local-repos-plugin",
+      "options": {
+        "repos": [],
+        "repoContext": {
+          "gitLogMaxCommits": 50
+        },
+        "summaryGeneration": {
+          "enabled": true,
+          "useAgent": true,
+          "agentId": "opencode",
+          "summaryPrompt": "Summarize this repository in 2-3 sentences",
+          "source": "both",
+          "maxReadmeLines": 3,
+          "commitCount": 10
+        },
+        "techStackDetection": {
+          "enabled": true
+        },
+        "validation": {
+          "validateOnStartup": true,
+          "failOnMissing": false
+        }
+      }
+    },
+    {
+      "package": "@code-detective/jira-adapter",
+      "options": {
+        "enabled": true,
+        "webhookPath": "/plugins/code-detective-jira-adapter/webhook/jira",
+        "mockMode": true,
+        "discovery": {
+          "enabled": true,
+          "useAgentForDiscovery": true,
+          "directMatchOnly": false,
+          "fallbackOnNoMatch": "ask-agent"
+        },
+        "discoveryContext": {
+          "includeTechStack": true,
+          "includeSummary": true,
+          "maxReposShown": 10
+        },
+        "analysis": {
+          "maxCommits": 50
+        }
+      }
+    }
+  ]
+}

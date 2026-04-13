@@ -1,0 +1,183 @@
+# Migration Guide: JavaScript to TypeScript
+
+This document outlines the TypeScript migration completed in 2026 and provides context for future maintenance.
+
+## Overview
+
+The codebase was migrated from JavaScript (ES modules) to TypeScript for:
+- Better type safety and IDE support
+- Clearer interfaces for plugin development
+- Improved code documentation through types
+
+## What Changed
+
+### Package Architecture
+
+```
+code-detective/
+├── packages/
+│   ├── types/                      # NEW: @code-detective/types package
+│   │   ├── src/index.ts            # Single source of truth for shared types
+│   │   └── dist/                   # Compiled output for npm publishing
+│   └── jira-adapter/               # Internal plugin (uses @code-detective/types)
+└── src/                            # Main application
+    └── core/types.ts               # Re-exports from @code-detective/types
+```
+
+### Shared Types Package: `@code-detective/types`
+
+All types that are shared between the core and plugins are defined in `packages/types/src/index.ts`. This package:
+
+- Is published to npm as `@code-detective/types`
+- Is used by internal plugins via workspace resolution
+- Can be used by external plugins via `npm install @code-detective/types`
+
+### TypeScript Configuration
+
+| Config | Purpose |
+|--------|---------|
+| `tsconfig.json` | Base config (noEmit: true) for type checking |
+| `tsconfig.build.json` | Build config (outputs to dist/) |
+
+### Old .d.ts Files Cleaned Up
+
+Previously, TypeScript declaration files (`.d.ts`) were generated during build and left in source directories. These have been removed:
+
+- `src/core/types.d.ts`
+- `src/core/process.d.ts`
+
+Declaration files are now only generated in `dist/` during build.
+
+### Duplicate repo-context Removed
+
+The `src/core/repo-context/` directory was a duplicate of the same code in `packages/local-repos-plugin/src/repo-context/`. It has been removed - the canonical location is now `packages/local-repos-plugin/src/repo-context/`.
+
+### File Search Removed
+
+The `searchFiles` and `searchErrorPatterns` functions have been removed. AI agents are now responsible for searching files themselves based on the task at hand. This simplifies the codebase and removes the dependency on `ripgrep`.
+
+**Removed types:**
+- `SearchResult` interface
+- `BuildRepoContextOptions.searchPatterns`
+- `BuildRepoContextOptions.errorPatterns`
+
+**Removed files:**
+- `packages/local-repos-plugin/src/repo-context/file-search.ts`
+
+### Config Restructured
+
+The `repoContext` configuration has been moved from the root `config/default.json` to the `local-repos-plugin` options:
+
+**Before:**
+```json
+{
+  "repoContext": {
+    "gitLogMaxCommits": 50
+  },
+  "plugins": [{ "package": "@code-detective/local-repos-plugin", "options": {...} }]
+}
+```
+
+**After:**
+```json
+{
+  "plugins": [{
+    "package": "@code-detective/local-repos-plugin",
+    "options": {
+      "repos": [...],
+      "repoContext": {
+        "gitLogMaxCommits": 50
+      }
+    }
+  }]
+}
+```
+
+## Migration Notes
+
+### Plugin Development
+
+Plugins should import types from `@code-detective/types`:
+
+```typescript
+import type { Plugin, PluginContext } from '@code-detective/types';
+```
+
+### Build Process
+
+```bash
+pnpm install           # Install dependencies
+pnpm run build:types  # Build @code-detective/types → packages/types/dist/
+pnpm run build:app    # Build main app → dist/
+pnpm run build:plugin # Build plugin → packages/jira-adapter/dist/
+```
+
+### Running in Development
+
+```bash
+pnpm run dev          # Run with tsx (no build step needed)
+pnpm run test         # Run tests with tsx
+```
+
+## Common Issues Resolved
+
+### 1. Path Aliases
+
+Before: `import { Plugin } from '../../../src/core/types.js'`
+After: `import type { Plugin } from '@code-detective/types'`
+
+### 2. rootDir Conflicts
+
+Internal plugins cannot import from `src/` because `rootDir` is set to `./src` in plugin tsconfig.build.json. Solution: use `@code-detective/types` which is resolved via workspace.
+
+### 3. Function Type Imports
+
+Before:
+```typescript
+buildRepoContext: typeof import('./repo-context/index.js').buildRepoContext
+```
+
+After:
+```typescript
+buildRepoContext: (repoPath: string, options?: BuildRepoContextOptions) => Promise<RepoContext>
+```
+
+Inline function signatures avoid circular dependencies between packages.
+
+## File Extensions
+
+All source files now use `.ts` extension. Tests use `.test.ts`.
+
+When importing:
+```typescript
+// Source files
+import { queue } from './queue.js';
+
+// Tests
+import { queue } from '../src/core/queue.js';
+```
+
+## Type Definitions
+
+All types are defined in `packages/types/src/index.ts`:
+
+- **TaskEvent interfaces**: TaskEvent, TaskContext, ReplyTarget
+- **Plugin interfaces**: Plugin, PluginSchema, PluginContext, Logger
+- **Agent interfaces**: Agent, AgentRunner, AgentOutput, StreamingOutput
+- **Repository interfaces**: RepoContext, RepoMapping, Commit
+- **Process interfaces**: ExecLocalOptions, ProcessUtils
+
+## Testing
+
+Tests run with `tsx --test` directly on TypeScript files:
+
+```bash
+pnpm run test          # Run all tests
+pnpm run test:watch    # Watch mode
+```
+
+## Future Work
+
+- Consider migrating remaining `.js` config files to `.json` with schema validation
+- Add integration tests with actual plugins
+- Document agent-specific configuration options

@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: Start",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "runtimeArgs": ["src/index.ts"],
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

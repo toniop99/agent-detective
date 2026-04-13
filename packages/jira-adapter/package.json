@@ -1,0 +1,33 @@
+{
+  "name": "@code-detective/jira-adapter",
+  "version": "0.1.0",
+  "description": "Jira webhook adapter for code-detective",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "tsx --test",
+    "test:watch": "tsx --test --watch",
+    "clean": "rm -rf dist"
+  },
+  "files": ["dist"],
+  "keywords": ["code-detective", "jira", "adapter"],
+  "license": "MIT",
+  "dependencies": {
+    "@code-detective/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

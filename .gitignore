@@ -1,0 +1,57 @@
+# .gitignore
+
+# Turborepo
+.turbo/
+*.tsbuildinfo
+
+# Changesets (keep README)
+.changeset/
+!.changeset/README.md
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+packages/types/dist/
+packages/jira-adapter/dist/
+
+# Build artifacts
+*.js.map
+*.d.ts.map
+*.d.ts
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Test
+coverage/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Local config (overrides default.json)
+config/local.json

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@code-detective/types": ["./packages/types/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*", "packages/*/src/**/*"],
+  "exclude": ["node_modules", "dist", "packages/*/dist", "packages/*/node_modules"]
+}

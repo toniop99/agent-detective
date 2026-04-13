@@ -1,0 +1,32 @@
+{
+  "port": 3001,
+  "agent": "opencode",
+  "agents": {
+    "opencode": {
+      "defaultModel": "minimax/MiniMax-M2.7"
+    }
+  },
+  "plugins": [
+    {
+      "package": "@code-detective/local-repos-plugin",
+      "options": {
+        "repos": [
+          {
+            "name": "my-repo",
+            "path": "/path/to/your/repo",
+            "description": "My project description"
+          }
+        ]
+      }
+    },
+    {
+      "package": "@code-detective/jira-adapter",
+      "options": {
+        "mockMode": false,
+        "discovery": {
+          "useAgentForDiscovery": true
+        }
+      }
+    }
+  ]
+}

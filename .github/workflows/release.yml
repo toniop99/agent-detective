@@ -1,0 +1,120 @@
+name: Release Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate version format
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format X.Y.Z"
+            exit 1
+          fi
+          echo "Releasing version: $VERSION"
+
+      - name: Extract major/minor version
+        run: |
+          VERSION=${{ env.VERSION }}
+          MAJOR=${VERSION%%.*}
+          MINOR=${VERSION%.*}
+
+          echo "MAJOR_VERSION=$MAJOR" >> $GITHUB_ENV
+          echo "MINOR_VERSION=$MINOR" >> $GITHUB_ENV
+          echo "FULL_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=stable
+            type=raw,value=${{ env.MAJOR_VERSION }}
+            type=raw,value=${{ env.MINOR_VERSION }}
+            type=raw,value=${{ env.FULL_VERSION }}
+            type=semver,pattern={{version}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            AGENTS=opencode,claude,gemini
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## Docker Image
+
+            Pull the image:
+
+            ```bash
+            docker pull ghcr.io/toniop99/agent-detective:${{ env.FULL_VERSION }}
+            docker pull ghcr.io/toniop99/agent-detective:latest
+            docker pull ghcr.io/toniop99/agent-detective:stable
+            ```
+
+            ### Available Tags
+
+            | Tag | Description |
+            |-----|-------------|
+            | `latest` | Most recent build |
+            | `stable` | Most recent release |
+            | `${{ env.MAJOR_VERSION }}` | Latest v${{ env.MAJOR_VERSION }}.x.x |
+            | `${{ env.MINOR_VERSION }}` | Latest v${{ env.MINOR_VERSION }}.x |
+            | `${{ env.FULL_VERSION }}` | This specific version |
+
+          draft: false
+          prerelease: ${{ contains(env.VERSION, 'alpha') || contains(env.VERSION, 'beta') || contains(env.VERSION, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display image tags
+        run: |
+          echo "Image pushed to: ghcr.io/toniop99/agent-detective"
+          echo "Tags pushed:"
+          echo "  - latest"
+          echo "  - stable"
+          echo "  - ${{ env.MAJOR_VERSION }}"
+          echo "  - ${{ env.MINOR_VERSION }}"
+          echo "  - ${{ env.FULL_VERSION }}"

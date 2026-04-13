@@ -1,0 +1,52 @@
+services:
+  code-detective:
+    build:
+      context: .
+      target: dev
+    image: code-detective:dev
+    container_name: code-detective-dev
+    ports:
+      - "3001:3001"
+    volumes:
+      # Hot reload: source code changes reflected immediately
+      - ./src:/app/src:rw
+      - ./packages:/app/packages:rw
+      # Config is read from host (edit on host, container uses updated config)
+      - ./config:/app/config:ro
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - LOG_LEVEL=info
+    # Agents (opencode, claude, etc.) must be installed on HOST machine
+    # They are invoked via host PATH when container spawns node process
+    # The container sees the host's PATH via the shell that spawns the agent
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Optional: Uncomment to mount repos directory for repository analysis
+# Replace /path/to/repos with actual path to your repositories
+#
+# repos:
+#   driver: local
+#
+# services:
+#   code-detective:
+#     volumes:
+#       - repos-data:/repos
+#
+# volumes:
+#   repos-data:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: /path/to/repos
+
+networks:
+  default:
+    name: code-detective-network

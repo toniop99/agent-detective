@@ -1,0 +1,32 @@
+{
+  "name": "@code-detective/local-repos-plugin",
+  "version": "0.1.0",
+  "description": "Local repository access plugin for code-detective",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "tsx --test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["code-detective", "repository", "local"],
+  "license": "MIT",
+  "dependencies": {
+    "@code-detective/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
