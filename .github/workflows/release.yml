@@ -8,7 +8,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  IMAGE_FULL_NAME: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+  IMAGE_FULL_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -118,11 +118,13 @@ jobs:
 
       - name: Verify multi-arch manifest
         run: |
-          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest
-          echo "Checking for amd64 architecture..."
-          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest | grep '"architecture":"amd64"' || { echo "ERROR: amd64 not found"; exit 1; }
-          echo "Checking for arm64 architecture..."
-          docker manifest inspect ${{ env.IMAGE_FULL_NAME }}:latest | grep '"architecture":"arm64"' || { echo "ERROR: arm64 not found"; exit 1; }
+          IMAGE="${{ env.IMAGE_FULL_NAME }}:latest"
+          echo "Inspecting multi-arch manifest for $IMAGE"
+          docker buildx imagetools inspect "$IMAGE"
+          echo "Checking for linux/amd64..."
+          docker buildx imagetools inspect "$IMAGE" | grep -q "linux/amd64" || { echo "ERROR: linux/amd64 not found"; exit 1; }
+          echo "Checking for linux/arm64..."
+          docker buildx imagetools inspect "$IMAGE" | grep -q "linux/arm64" || { echo "ERROR: linux/arm64 not found"; exit 1; }
           echo "Multi-arch manifest verified successfully"
 
   scan:
