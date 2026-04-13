@@ -34,7 +34,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --production
+RUN npm install -g pnpm && pnpm install --production
 
 RUN install_agent() { \
     case "$1" in \
@@ -66,9 +66,8 @@ RUN touch /app/plugins/.gitkeep && chown appuser:appgroup /app/plugins/.gitkeep
 
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV COREPACK_HOME=/app/.corepack
 
-RUN mkdir -p /app/.corepack && chown -R appuser:appgroup /app/.corepack
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 USER appuser
 
