@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AgentRunner } from '@agent-detective/types';
 import type { SummaryGenerationConfig } from './types.js';
-import { execLocal } from './process.js';
+import { execLocal } from '@agent-detective/process-utils';
 
 const DEFAULT_CONFIG: SummaryGenerationConfig = {
   enabled: true,

@@ -1,4 +1,4 @@
-import { execLocal } from '../process.js';
+import { execLocal } from '@agent-detective/process-utils';
 import type { Commit } from '@agent-detective/types';
 
 export async function gitLog(repoPath: string, options: { maxCommits?: number; filePattern?: string } = {}): Promise<Commit[]> {

@@ -1,4 +1,4 @@
-import type { Plugin, BuildRepoContextOptions, AgentRunner } from '@agent-detective/types';
+import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -12,17 +12,16 @@ import { generateSummary } from './summary-generator.js';
 import { gitLog } from './repo-context/git-log.js';
 import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/index.js';
 
-interface ExtendedContext {
+interface LocalReposPluginContext extends PluginContext {
   localRepos?: LocalReposContext;
   buildRepoContext?: (repoPath: string, options?: BuildRepoContextOptions) => ReturnType<typeof buildRepoContext>;
   formatRepoContextForPrompt?: typeof formatRepoContextForPrompt;
-  config: Record<string, unknown>;
-  agentRunner?: AgentRunner;
-  logger?: {
-    info: (msg: string, ...args: unknown[]) => void;
-    warn: (msg: string, ...args: unknown[]) => void;
-    error: (msg: string, ...args: unknown[]) => void;
-  };
+}
+
+// Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
+// The plugin schema validation ensures the config matches LocalReposPluginOptions at runtime.
+function asLocalReposConfig(context: PluginContext): LocalReposPluginOptions {
+  return context.config as unknown as LocalReposPluginOptions;
 }
 
 async function processRepos(options: LocalReposPluginOptions, agentRunner?: AgentRunner): Promise<ValidatedRepo[]> {
@@ -77,8 +76,8 @@ const localReposPlugin: Plugin = {
   dependsOn: [],
 
   async register(app, context) {
-    const extContext = context as unknown as ExtendedContext;
-    const options = extContext.config as unknown as LocalReposPluginOptions;
+    const extContext = context as LocalReposPluginContext;
+    const options = asLocalReposConfig(context);
 
     if (!options.repos || !Array.isArray(options.repos)) {
       extContext.logger?.warn('local-repos-plugin: No repos configured');

@@ -1,6 +1,6 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import type { Plugin, PluginSchema, AgentRunner, EnqueueFn } from '@agent-detective/types';
+import type { Plugin, PluginSchema, PluginContext } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig, JiraWebhookBehavior } from './types.js';
 
@@ -54,7 +54,18 @@ const pluginSchema: PluginSchema = {
 };
 
 function createRealJiraClient(_config: JiraAdapterConfig): MockJiraClient {
-  throw new Error('Real Jira client not yet implemented');
+  // TODO: Implement real Jira client
+  // Requirements:
+  // - Use @life-itself/jira or similar Jira REST API client
+  // - Support Jira Cloud and Server/DC authentication (API tokens, OAuth)
+  // - Implement webhook signature verification for incoming webhooks
+  // - Handle rate limiting and retries
+  // - Support: addComment, getIssue, updateIssue, getComments
+  throw new Error(
+    'Real Jira client not yet implemented. ' +
+    'Set mockMode: true in config to use mock client. ' +
+    'To implement real Jira support, see TODO in src/index.ts'
+  );
 }
 
 interface LocalReposContext {
@@ -69,18 +80,21 @@ interface LocalReposContext {
   getAllRepos(): Array<{ name: string; path: string; exists: boolean; techStack: string[]; summary: string }>;
 }
 
-interface ExtendedContext {
+// Extended context provided by the plugin system with additional local-repos-plugin context
+interface JiraAdapterPluginContext {
   localRepos?: LocalReposContext;
   buildRepoContext?: (repoPath: string, options?: unknown) => Promise<unknown>;
   formatRepoContextForPrompt?: (context: unknown) => string;
-  enqueue?: EnqueueFn;
+  enqueue?: (taskId: string, fn: () => Promise<void>) => Promise<void>;
   config: Record<string, unknown>;
-  agentRunner?: AgentRunner;
-  logger?: {
-    info: (msg: string, ...args: unknown[]) => void;
-    warn: (msg: string, ...args: unknown[]) => void;
-    error: (msg: string, ...args: unknown[]) => void;
-  };
+  agentRunner?: PluginContext['agentRunner'];
+  logger?: PluginContext['logger'];
+}
+
+// Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
+// The plugin schema validation ensures the config matches JiraAdapterConfig at runtime.
+function asJiraAdapterConfig(context: PluginContext): JiraAdapterConfig {
+  return context.config as unknown as JiraAdapterConfig;
 }
 
 const jiraAdapterPlugin: Plugin = {
@@ -91,8 +105,8 @@ const jiraAdapterPlugin: Plugin = {
   dependsOn: ['@agent-detective/local-repos-plugin'],
 
   register(app, context) {
-    const extContext = context as unknown as ExtendedContext;
-    const cfg = extContext.config as unknown as JiraAdapterConfig;
+    const extContext = context as JiraAdapterPluginContext;
+    const cfg = asJiraAdapterConfig(context);
 
     if (!cfg.enabled) {
       extContext.logger?.info(`Plugin ${PLUGIN_NAME} is disabled`);

@@ -1,7 +1,7 @@
 {
-  "name": "@agent-detective/local-repos-plugin",
+  "name": "@agent-detective/process-utils",
   "version": "0.1.0",
-  "description": "Local repository access plugin for agent-detective",
+  "description": "Process execution utilities for agent-detective",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,15 +16,10 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "test": "tsx --test",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "repository", "local"],
+  "keywords": ["agent-detective", "process"],
   "license": "MIT",
-  "dependencies": {
-    "@agent-detective/process-utils": "workspace:*",
-    "@agent-detective/types": "workspace:*"
-  },
   "devDependencies": {
     "@types/node": "^22.13.10",
     "tsx": "^4.19.0",

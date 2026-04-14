@@ -42,7 +42,7 @@ function extractTaskInfo(
     projectName: fields?.project?.name || '',
     issueType: fields?.issuetype?.name || 'Task',
     reporter: fields?.reporter?.displayName || 'unknown',
-    assignee: fields?.assignee?.displayName || null,
+    assignee: fields?.assignee?.displayName || undefined,
     priority: fields?.priority?.name || 'Medium',
     status: fields?.status?.name || 'Open',
     created: fields?.created ? String(fields.created) : undefined,

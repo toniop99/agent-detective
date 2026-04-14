@@ -67,9 +67,24 @@ importers:
 
   packages/local-repos-plugin:
     dependencies:
+      '@agent-detective/process-utils':
+        specifier: workspace:*
+        version: link:../process-utils
       '@agent-detective/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.17
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/process-utils:
     devDependencies:
       '@types/node':
         specifier: ^22.13.10

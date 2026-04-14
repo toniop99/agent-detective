@@ -54,7 +54,9 @@ function extractDescription(issue: JiraIssue): string {
   const desc = issue.fields.description;
   if (typeof desc === 'string') return desc;
   if (desc && typeof desc === 'object' && 'content' in desc) {
-    return (desc as JiraDescription).content
+    const content = (desc as JiraDescription).content;
+    if (!content) return '';
+    return content
       .map((block) => {
         if (block.content) {
           return block.content.map((text) => text.text || '').join('');
