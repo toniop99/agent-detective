@@ -1068,13 +1068,16 @@ Manages local repository configuration with validation, tech stack detection, an
 
 ### jira-adapter
 
-Handles Jira webhooks with intelligent repository discovery.
+Handles Jira webhooks with intelligent repository discovery and configurable webhook behavior.
 
 **Package:** `@agent-detective/jira-adapter`
 
 **Can Disable:** Yes (`"enabled": false` in config)
 
-**Configuration:**
+#### Webhook Behavior Configuration
+
+The `webhookBehavior` option lets you define what action to take for each Jira webhook event type:
+
 ```json
 {
   "plugins": [
@@ -1086,9 +1089,69 @@ Handles Jira webhooks with intelligent repository discovery.
         "mockMode": false,
         "baseUrl": "https://your-domain.atlassian.net",
         "email": "bot@example.com",
-        "apiToken": "your-api-token"
+        "apiToken": "your-api-token",
+        "webhookBehavior": {
+          "defaults": {
+            "action": "ignore",
+            "acknowledgmentMessage": "Thanks for the update! I will review this issue shortly."
+          },
+          "events": {
+            "jira:issue_created": { "action": "analyze" },
+            "jira:issue_updated": { "action": "acknowledge" }
+          }
+        }
       }
     }
   ]
+}
+```
+
+##### Actions
+
+| Action | Description |
+|--------|-------------|
+| `analyze` | Run full repository discovery and analysis, post results as a comment |
+| `acknowledge` | Post an acknowledgment comment only (no repository discovery) |
+| `ignore` | Log the event and skip processing |
+
+##### Configuration Options
+
+| Option | Description |
+|--------|-------------|
+| `webhookBehavior.defaults.action` | Default action for unhandled events |
+| `webhookBehavior.defaults.acknowledgmentMessage` | Default message for `acknowledge` action |
+| `webhookBehavior.events.{eventType}.action` | Action for a specific event type |
+| `webhookBehavior.events.{eventType}.acknowledgmentMessage` | Override message for a specific event |
+| `webhookBehavior.events.{eventType}.analysisPrompt` | Custom analysis prompt template |
+| `webhookBehavior.events.{eventType}.discoveryPrompt` | Custom discovery prompt template |
+
+##### Supported Event Types
+
+| Event Type | Default Action |
+|-----------|---------------|
+| `jira:issue_created` | `analyze` |
+| `jira:issue_updated` | `acknowledge` |
+| `jira:issue_deleted` | `ignore` (falls to default) |
+
+#### Discovery Configuration
+
+```json
+{
+  "discovery": {
+    "enabled": true,
+    "useAgentForDiscovery": true,
+    "directMatchOnly": false,
+    "fallbackOnNoMatch": "ask-agent"
+  }
+}
+```
+
+#### Analysis Configuration
+
+```json
+{
+  "analysis": {
+    "maxCommits": 50
+  }
 }
 ```

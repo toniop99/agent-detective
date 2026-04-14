@@ -44,6 +44,20 @@
         "enabled": true,
         "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
+        "webhookBehavior": {
+          "defaults": {
+            "action": "ignore",
+            "acknowledgmentMessage": "Thanks for the update! I will review this issue and provide feedback shortly."
+          },
+          "events": {
+            "jira:issue_created": {
+              "action": "analyze"
+            },
+            "jira:issue_updated": {
+              "action": "acknowledge"
+            }
+          }
+        },
         "discovery": {
           "enabled": true,
           "useAgentForDiscovery": true,

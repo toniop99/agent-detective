@@ -2,11 +2,22 @@ import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
 import type { Plugin, PluginSchema, AgentRunner, EnqueueFn } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
-import type { JiraAdapterConfig } from './types.js';
+import type { JiraAdapterConfig, JiraWebhookBehavior } from './types.js';
 
 const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';
 const SCHEMA_VERSION = '1.0';
+
+export const DEFAULT_WEBHOOK_BEHAVIOR: JiraWebhookBehavior = {
+  defaults: {
+    action: 'ignore',
+    acknowledgmentMessage: 'Thanks for the update! I will review this issue and provide feedback shortly.',
+  },
+  events: {
+    'jira:issue_created': { action: 'analyze' },
+    'jira:issue_updated': { action: 'acknowledge' },
+  },
+};
 
 const pluginSchema: PluginSchema = {
   type: 'object',
@@ -33,6 +44,10 @@ const pluginSchema: PluginSchema = {
     discoveryPrompt: {
       type: 'string',
       description: 'Custom prompt template for repository discovery',
+    },
+    webhookBehavior: {
+      type: 'object',
+      description: 'Configure behavior for each Jira webhook event type',
     },
   },
   required: [],
@@ -121,7 +136,8 @@ const jiraAdapterPlugin: Plugin = {
 
     app.post(webhookPath, async (req, res) => {
       try {
-        const result = await webhookHandler.handleWebhook(req.body);
+        const webhookEvent = req.body?.webhookEvent || 'unknown';
+        const result = await webhookHandler.handleWebhook(req.body, webhookEvent);
         res.json(result);
       } catch (err) {
         extContext.logger?.error(`Jira webhook error: ${(err as Error).message}`);

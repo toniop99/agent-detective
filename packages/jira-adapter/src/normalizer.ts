@@ -1,57 +1,33 @@
 import type { TaskEvent } from '@agent-detective/types';
-
-interface JiraIssue {
-  key?: string;
-  id?: string;
-  fields?: {
-    summary?: string;
-    description?: string | JiraDescription;
-    labels?: string[];
-    project?: { key?: string };
-    issuetype?: { name?: string };
-    reporter?: { displayName?: string };
-    priority?: { name?: string };
-    status?: { name?: string };
-    created?: string;
-  };
-  title?: string;
-  labels?: string[];
-  projectKey?: string;
-  issueType?: string;
-  reporter?: string;
-  priority?: string;
-  status?: string;
-  created?: string;
-}
-
-interface JiraDescription {
-  content?: Array<{
-    content?: Array<{ text?: string }>;
-    text?: string;
-  }>;
-}
-
-interface JiraPayload {
-  issue?: JiraIssue;
-}
+import type { JiraIssue, JiraDescription, JiraPayload } from './types.js';
 
 export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
   const issue = payload.issue || ({} as JiraIssue);
 
   const id = issue.key || issue.id || String(Date.now());
-  const title = issue.fields?.summary || issue.title || '';
+  const title = issue.fields?.summary || '';
   const description = extractDescription(issue);
-  const labels = issue.fields?.labels || issue.labels || [];
-  const projectKey = issue.fields?.project?.key || issue.projectKey || '';
+  const labels = issue.fields?.labels || [];
+  const projectKey = issue.fields?.project?.key || '';
+  const projectName = issue.fields?.project?.name || '';
 
   const metadata: Record<string, unknown> = {
     labels,
     projectKey,
-    issueType: issue.fields?.issuetype?.name || issue.issueType || 'Task',
-    reporter: issue.fields?.reporter?.displayName || issue.reporter || 'unknown',
-    priority: issue.fields?.priority?.name || issue.priority || 'Medium',
-    status: issue.fields?.status?.name || issue.status || 'Open',
-    created: issue.fields?.created || issue.created || new Date().toISOString(),
+    projectName,
+    issueType: issue.fields?.issuetype?.name || 'Task',
+    reporter: issue.fields?.reporter?.displayName || 'unknown',
+    assignee: issue.fields?.assignee?.displayName || null,
+    priority: issue.fields?.priority?.name || 'Medium',
+    status: issue.fields?.status?.name || 'Open',
+    created: issue.fields?.created ? String(issue.fields.created) : new Date().toISOString(),
+    timestamp: payload.timestamp || Date.now(),
+    webhookEvent: payload.webhookEvent || 'unknown',
+    user: payload.user ? {
+      accountId: payload.user.accountId,
+      displayName: payload.user.displayName,
+      emailAddress: payload.user.emailAddress,
+    } : null,
   };
 
   return {
@@ -77,8 +53,8 @@ function extractDescription(issue: JiraIssue): string {
 
   const desc = issue.fields.description;
   if (typeof desc === 'string') return desc;
-  if (desc?.content) {
-    return desc.content
+  if (desc && typeof desc === 'object' && 'content' in desc) {
+    return (desc as JiraDescription).content
       .map((block) => {
         if (block.content) {
           return block.content.map((text) => text.text || '').join('');
@@ -103,10 +79,15 @@ function buildIncidentMessage(title: string, description: string): string {
 
 export function extractLabelsFromPayload(payload: JiraPayload): string[] {
   const issue = payload.issue || ({} as JiraIssue);
-  return issue.fields?.labels || issue.labels || [];
+  return issue.fields?.labels || [];
 }
 
 export function extractProjectKeyFromPayload(payload: JiraPayload): string {
   const issue = payload.issue || ({} as JiraIssue);
-  return issue.fields?.project?.key || issue.projectKey || '';
+  return issue.fields?.project?.key || '';
+}
+
+export function extractProjectNameFromPayload(payload: JiraPayload): string {
+  const issue = payload.issue || ({} as JiraIssue);
+  return issue.fields?.project?.name || '';
 }

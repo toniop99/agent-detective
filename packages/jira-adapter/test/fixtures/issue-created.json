@@ -1,15 +1,232 @@
 {
+  "webhookEvent": "jira:issue_created",
+  "timestamp": 1776193443333,
   "issue": {
-    "key": "PROJ-123",
+    "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/10010",
+    "id": "10010",
+    "key": "KAN-4",
+    "changelog": {
+      "startAt": 0,
+      "maxResults": 0,
+      "total": 0,
+      "histories": null
+    },
     "fields": {
-      "summary": "NullPointerException in UserService.login()",
-      "description": "When a user tries to login with an empty password, the system throws a NullPointerException in the logs. Stack trace shows: java.lang.NullPointerException: Cannot invoke method getPassword() on null object at UserService.login (UserService.java:42)",
-      "labels": ["backend", "auth", "urgent"],
-      "project": { "key": "PROJ" },
-      "issuetype": { "name": "Bug" },
-      "reporter": { "displayName": "John Doe" },
-      "priority": { "name": "High" },
-      "status": { "name": "Open" }
-    }
+      "statuscategorychangedate": "2026-04-14T21:04:01.458+0200",
+      "issuetype": {
+        "namedValue": "Task",
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/issuetype/10007",
+        "id": "10007",
+        "description": "Tasks track small, distinct pieces of work.",
+        "iconUrl": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+        "name": "Task",
+        "untranslatedName": null,
+        "subtask": false,
+        "fields": {},
+        "statuses": [],
+        "hierarchyLevel": 0
+      },
+      "components": [],
+      "timespent": null,
+      "timeoriginalestimate": null,
+      "project": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/project/10001",
+        "id": "10001",
+        "key": "KAN",
+        "name": "Bug Tracking",
+        "description": null,
+        "avatarUrls": {
+          "48x48": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410",
+          "24x24": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=small",
+          "16x16": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=xsmall",
+          "32x32": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=medium"
+        },
+        "issuetypes": null,
+        "projectCategory": null,
+        "email": null,
+        "lead": null,
+        "components": null,
+        "versions": null,
+        "projectTypeKey": "software",
+        "simplified": true
+      },
+      "description": "Probando como funciona el webhook",
+      "fixVersions": [],
+      "statusCategory": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/statuscategory/2",
+        "id": 2,
+        "key": "new",
+        "colorName": "blue-gray",
+        "name": "New"
+      },
+      "aggregatetimespent": null,
+      "resolution": null,
+      "customfield_10036": null,
+      "timetracking": {
+        "originalEstimate": null,
+        "remainingEstimate": null,
+        "timeSpent": null,
+        "originalEstimateSeconds": 0,
+        "remainingEstimateSeconds": 0,
+        "timeSpentSeconds": 0
+      },
+      "customfield_10015": null,
+      "security": null,
+      "attachment": [],
+      "aggregatetimeestimate": null,
+      "resolutiondate": null,
+      "workratio": -1,
+      "summary": "Error critico en la aplicacion",
+      "watches": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/KAN-4/watchers",
+        "watchCount": 0,
+        "isWatching": false
+      },
+      "issuerestriction": {
+        "issuerestrictions": {},
+        "shouldDisplay": true
+      },
+      "lastViewed": null,
+      "creator": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "name": null,
+        "key": null,
+        "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "emailAddress": null,
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "24x24": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
+        },
+        "displayName": "Antonio Hernández",
+        "active": true,
+        "timeZone": "Europe/Madrid",
+        "groups": null,
+        "locale": null,
+        "accountType": "atlassian"
+      },
+      "subtasks": [],
+      "created": 1776193440941,
+      "customfield_10021": null,
+      "reporter": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "name": null,
+        "key": null,
+        "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "emailAddress": null,
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "24x24": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
+        },
+        "displayName": "Antonio Hernández",
+        "active": true,
+        "timeZone": "Europe/Madrid",
+        "groups": null,
+        "locale": null,
+        "accountType": "atlassian"
+      },
+      "aggregateprogress": {
+        "progress": 0,
+        "total": 0
+      },
+      "priority": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/priority/3",
+        "id": "3",
+        "name": "Medium",
+        "iconUrl": "https://hernandeztech.atlassian.net/images/icons/priorities/medium_new.svg",
+        "namedValue": "Medium"
+      },
+      "customfield_10001": null,
+      "labels": ["probando", "symfony"],
+      "environment": null,
+      "customfield_10019": "0|i00027:",
+      "timeestimate": null,
+      "aggregatetimeoriginalestimate": null,
+      "versions": [],
+      "duedate": null,
+      "progress": {
+        "progress": 0,
+        "total": 0
+      },
+      "issuelinks": [],
+      "votes": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/KAN-4/votes",
+        "votes": 0,
+        "hasVoted": false
+      },
+      "comment": {
+        "maxResults": 0,
+        "total": 0,
+        "startAt": 0,
+        "comments": [],
+        "last": false
+      },
+      "assignee": {
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "name": null,
+        "key": null,
+        "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "emailAddress": null,
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "24x24": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+          "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
+        },
+        "displayName": "Antonio Hernández",
+        "active": true,
+        "timeZone": "Europe/Madrid",
+        "groups": null,
+        "locale": null,
+        "accountType": "atlassian"
+      },
+      "worklog": {
+        "maxResults": 20,
+        "total": 0,
+        "startAt": 0,
+        "worklogs": [],
+        "last": false
+      },
+      "updated": 1776193440941,
+      "status": {
+        "untranslatedNameValue": null,
+        "self": "https://hernandeztech.atlassian.net/rest/api/2/status/10003",
+        "description": "",
+        "iconUrl": "https://hernandeztech.atlassian.net/images/icons/statuses/generic.png",
+        "name": "To Do",
+        "untranslatedName": null,
+        "id": "10003",
+        "statusCategory": {
+          "self": "https://hernandeztech.atlassian.net/rest/api/2/statuscategory/2",
+          "id": 2,
+          "key": "new",
+          "colorName": "blue-gray",
+          "name": "New"
+        }
+      }
+    },
+    "renderedFields": null
+  },
+  "user": {
+    "self": null,
+    "name": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+    "key": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+    "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+    "emailAddress": "andezdev@gmail.com",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+      "24x24": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+      "16x16": "https://secure.gravatar.com/adapter/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
+      "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
+    },
+    "displayName": "Antonio Hernández",
+    "active": true,
+    "timeZone": null,
+    "groups": null,
+    "locale": "es",
+    "accountType": "atlassian"
   }
 }

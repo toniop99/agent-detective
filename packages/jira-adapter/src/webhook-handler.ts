@@ -1,126 +1,50 @@
 import { normalizeJiraPayload } from './normalizer.js';
-import type { AgentRunner, EnqueueFn } from '@agent-detective/types';
-import type { MockJiraClient } from './mock-jira-client.js';
-import type { JiraAdapterConfig, JiraTaskInfo, RepoInfo } from './types.js';
-import { formatTemplate, getDefaultAnalysisPrompt } from './types.js';
-import { findDirectMatch, buildDiscoveryPrompt, parseAgentDiscoveryResponse } from './discovery.js';
+import type { JiraTaskInfo, JiraPayload } from './types.js';
+import { routeToHandler, HandlerContext } from './handlers/index.js';
 
-interface JiraWebhookHandlerOptions {
-  jiraClient: MockJiraClient;
-  config: JiraAdapterConfig;
-  agentRunner: AgentRunner;
-  enqueue: EnqueueFn;
-  getAvailableRepos: () => RepoInfo[];
-  buildRepoContext: (repoPath: string, options?: unknown) => Promise<unknown>;
-  formatRepoContextForPrompt: (context: unknown) => string;
-}
+export function createJiraWebhookHandler(options: HandlerContext) {
+  const handlerContext: HandlerContext = { ...options };
 
-export function createJiraWebhookHandler(options: JiraWebhookHandlerOptions) {
-  const {
-    jiraClient,
-    config,
-    agentRunner,
-    enqueue,
-    getAvailableRepos,
-    buildRepoContext,
-    formatRepoContextForPrompt,
-  } = options;
+  async function handleWebhook(
+    payload: unknown,
+    webhookEvent: string
+  ): Promise<{ status: string; taskId: string }> {
+    const taskEvent = normalizeJiraPayload(payload as JiraPayload);
 
-  async function handleWebhook(payload: unknown): Promise<{ status: string; taskId: string }> {
-    const taskEvent = normalizeJiraPayload(payload as Parameters<typeof normalizeJiraPayload>[0]);
+    const taskInfo = extractTaskInfo(payload, taskEvent, webhookEvent);
 
-    const labels: string[] = (payload as { issue?: { fields?: { labels?: string[] } } })?.issue?.fields?.labels || [];
-    const projectKey: string = (payload as { issue?: { fields?: { project?: { key?: string } } } })?.issue?.fields?.project?.key || '';
-
-    const taskInfo: JiraTaskInfo = {
-      id: taskEvent.id,
-      key: projectKey,
-      summary: taskEvent.message,
-      description: '', 
-      labels,
-      projectKey,
-    };
-
-    console.warn(`Jira webhook: ${taskEvent.id} labels: [${labels.join(', ')}]`);
-
-    const queueKey = taskEvent.id;
-
-    enqueue(queueKey, async () => {
-      const repos = getAvailableRepos();
-      const discoveryConfig = config.discovery || {};
-      const discoveryContext = config.discoveryContext || {};
-
-      let selectedRepo = findDirectMatch(labels, repos);
-
-      if (!selectedRepo && !discoveryConfig.directMatchOnly) {
-        const discoveryPrompt = buildDiscoveryPrompt(
-          taskInfo,
-          repos,
-          discoveryConfig,
-          discoveryContext
-        );
-
-        const discoveryAgentId = discoveryConfig.discoveryAgentId || 'opencode';
-
-        const discoveryResponse = await agentRunner.runAgentForChat(
-          taskEvent.id,
-          discoveryPrompt,
-          {
-            agentId: discoveryAgentId,
-            onFinal: () => {},
-          }
-        );
-
-        const repoName = parseAgentDiscoveryResponse(discoveryResponse);
-        if (repoName) {
-          selectedRepo = repos.find((r) => r.name.toLowerCase() === repoName.toLowerCase()) || null;
-        }
-      }
-
-      if (!selectedRepo) {
-        console.warn(`No repo found for task ${taskEvent.id}`);
-        await jiraClient.addComment(taskEvent.replyTo.id, 'Could not determine which repository is related to this issue.');
-        return;
-      }
-
-      let repoContextText = '';
-
-      try {
-        const repoContext = await buildRepoContext(selectedRepo.path, {
-          maxCommits: config.analysis?.maxCommits || 50,
-        }) as { repoName: string; recentCommits: Array<{ hash: string; message: string }> };
-
-        repoContextText = formatRepoContextForPrompt(repoContext);
-      } catch (err) {
-        console.warn(`Failed to build repo context: ${(err as Error).message}`);
-      }
-
-      const analysisPromptTemplate = config.analysisPrompt || getDefaultAnalysisPrompt();
-
-      const analysisPrompt = formatTemplate(analysisPromptTemplate, {
-        task_key: taskInfo.key,
-        task_summary: taskInfo.summary,
-        task_description: taskInfo.description,
-        task_labels: taskInfo.labels.join(', ') || '(no labels)',
-        repo_name: selectedRepo.name,
-        repo_path: selectedRepo.path,
-        repo_tech_stack: selectedRepo.techStack.join(', ') || '(unknown)',
-        repo_summary: selectedRepo.summary || '(no summary)',
-        repo_commits: repoContextText,
-      });
-
-      await agentRunner.runAgentForChat(taskEvent.id, analysisPrompt, {
-        contextKey: taskEvent.id,
-        repoPath: selectedRepo.path,
-        onFinal: async (commentText: string) => {
-          await jiraClient.addComment(taskEvent.replyTo.id, commentText);
-          console.warn(`Comment added to ${taskEvent.replyTo.id}`);
-        },
-      });
-    });
+    await routeToHandler(payload, taskInfo, webhookEvent, handlerContext);
 
     return { status: 'queued', taskId: taskEvent.id };
   }
 
   return { handleWebhook };
+}
+
+function extractTaskInfo(
+  payload: unknown,
+  taskEvent: ReturnType<typeof normalizeJiraPayload>,
+  _webhookEvent: string
+): JiraTaskInfo {
+  const p = payload as JiraPayload;
+  const issue = p?.issue;
+  const fields = issue?.fields;
+
+  const description = taskEvent.message.replace(/^## Incident: /, '').replace(/^\n### Description\n/, '\n').trim();
+
+  return {
+    id: taskEvent.id,
+    key: issue?.key || taskEvent.id,
+    summary: fields?.summary || '',
+    description: description,
+    labels: fields?.labels || [],
+    projectKey: fields?.project?.key || '',
+    projectName: fields?.project?.name || '',
+    issueType: fields?.issuetype?.name || 'Task',
+    reporter: fields?.reporter?.displayName || 'unknown',
+    assignee: fields?.assignee?.displayName || null,
+    priority: fields?.priority?.name || 'Medium',
+    status: fields?.status?.name || 'Open',
+    created: fields?.created ? String(fields.created) : undefined,
+  };
 }
