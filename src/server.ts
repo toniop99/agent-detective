@@ -3,8 +3,14 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import type { AgentRunner, EnqueueFn, AgentRunRequest, AgentProgressEvent } from '@agent-detective/types';
+import type {
+  AgentRunner,
+  EnqueueFn,
+  AgentRunRequest,
+  AgentProgressEvent
+} from '@agent-detective/types';
 import { listAgents, isAgentInstalled, isKnownAgent } from './agents/index.js';
+import { createObservability, createRequestLogger, type Observability, type ObservabilityConfig } from '@agent-detective/observability';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -19,6 +25,7 @@ export interface Config {
   };
   plugins?: Array<{ package?: string; options?: Record<string, unknown> }>;
   adapters?: Record<string, unknown>;
+  observability?: Partial<ObservabilityConfig>;
 }
 
 function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
@@ -102,8 +109,9 @@ export function loadConfig(): Config {
 }
 
 export function createServer(
-  _config: Config,
-  _agentModels?: {
+  config: Config,
+  observability: Observability,
+  agentModels?: {
     [agentId: string]: {
       defaultModel?: string;
     };
@@ -115,16 +123,37 @@ export function createServer(
 
   app.use(express.json());
 
-  app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.use(createRequestLogger({
+    logger: observability.logger,
+    tracing: observability.tracing,
+    metrics: observability.metrics,
+    excludePaths: ['/health', '/metrics'],
+  }));
+
+  app.get('/health', async (_req: Request, res: Response) => {
+    const healthStatus = await observability.health.check();
+    const statusCode = healthStatus.status === 'ok' ? 200 : healthStatus.status === 'degraded' ? 200 : 503;
+    res.status(statusCode).json(healthStatus);
   });
+
+  if (observability.config.metrics.enabled) {
+    app.get(observability.config.metrics.endpoint, async (_req: Request, res: Response) => {
+      try {
+        const metrics = await observability.metrics.getMetrics();
+        res.set('Content-Type', 'text/plain');
+        res.send(metrics);
+      } catch (err) {
+        res.status(500).send('Error collecting metrics');
+      }
+    });
+  }
 
   app.get('/agent/list', (_req: Request, res: Response) => {
     const agents = listAgents();
     const agentList = agents.map((agent) => ({
       id: agent.id,
       label: agent.label,
-      defaultModel: _agentModels?.[agent.id]?.defaultModel || agent.defaultModel,
+      defaultModel: agentModels?.[agent.id]?.defaultModel || agent.defaultModel,
       available: isAgentInstalled(agent.id),
       needsPty: agent.needsPty,
       mergeStderr: agent.mergeStderr,
@@ -216,7 +245,7 @@ export function createServer(
     res.json({
       name: 'agent-detective',
       version: '0.1.0',
-      adapters: Object.keys(_config.adapters || {}),
+      adapters: Object.keys(config.adapters || {}),
     });
   });
 

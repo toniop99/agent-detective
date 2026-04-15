@@ -4,12 +4,19 @@ import { createAgentRunner } from './core/agent-runner.js';
 import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgent, getAgentLabel } from './agents/index.js';
+import { createObservability } from '@agent-detective/observability';
 
 const config = loadConfig();
 
-console.info('Starting agent-detective...');
-console.info(`Agent: ${getAgentLabel(config.agent || 'opencode')}`);
-console.info(`Port: ${config.port || 3001}`);
+const observability = createObservability(config.observability || {});
+
+const logger = observability.logger;
+const serverLogger = logger.child('server');
+
+serverLogger.info('Starting agent-detective...', {
+  agent: getAgentLabel(config.agent || 'opencode'),
+  port: config.port || 3001,
+});
 
 const agentRunner = createAgentRunner({
   execLocal,
@@ -22,28 +29,27 @@ const agentRunner = createAgentRunner({
 const queues = new Map<string, Promise<void>>();
 const enqueue = createEnqueue(queues);
 
-const app = createServer(config, config.agents || {}, agentRunner, enqueue);
+const app = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
 
 const pluginSystem = createPluginSystem({
   agentRunner,
   enqueue,
-  logger: console,
+  logger: logger.child('plugin-system'),
 });
 
 const PORT = config.port || 3001;
 
 app.listen(PORT, async () => {
-  console.info(`Server listening on http://localhost:${PORT}`);
+  serverLogger.info('Server started', { port: PORT, listeningOn: `http://localhost:${PORT}` });
 
   await pluginSystem.loadAll(app, config);
 
   const loaded = pluginSystem.getLoadedPlugins();
   if (loaded.length > 0) {
-    console.info('Loaded plugins:');
-    for (const plugin of loaded) {
-      console.info(`  - ${plugin.name}@${plugin.version}`);
-    }
+    serverLogger.info('Loaded plugins', {
+      plugins: loaded.map((p) => `${p.name}@${p.version}`),
+    });
   } else {
-    console.info('No plugins loaded');
+    serverLogger.info('No plugins loaded');
   }
 });
