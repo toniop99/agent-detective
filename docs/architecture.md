@@ -235,25 +235,44 @@ packages/
 │   ├── tsconfig.build.json
 │   └── dist/                    # Built output for npm
 │
+├── process-utils/               # Shared process utilities (exec, pty)
+│   ├── src/index.ts            # Process execution helpers
+│   └── package.json
+│
 ├── local-repos-plugin/          # Repository configuration plugin
 │   ├── src/
 │   │   ├── index.ts            # Plugin entry point
 │   │   ├── types.ts            # Config interfaces
 │   │   ├── validate.ts         # Path validation
+│   │   ├── summary-generator.ts
+│   │   ├── repo-context/       # Git log and context building
 │   │   └── tech-stack-detector.ts
-│   ├── package.json
-│   └── dist/
+│   └── package.json
 │
-└── jira-adapter/               # Official Jira plugin
+├── jira-adapter/               # Official Jira plugin
+│   ├── src/
+│   │   ├── index.ts            # Plugin entry point
+│   │   ├── types.ts            # Config interfaces & types
+│   │   ├── normalizer.ts       # Jira payload → TaskEvent
+│   │   ├── webhook-handler.ts  # Main webhook router
+│   │   ├── handlers/           # Modular action handlers
+│   │   │   ├── index.ts       # Handler router
+│   │   │   ├── analyze-handler.ts
+│   │   │   ├── acknowledge-handler.ts
+│   │   │   └── ignore-handler.ts
+│   │   ├── discovery.ts        # Repo discovery logic
+│   │   └── mock-jira-client.ts
+│   └── package.json
+│
+└── observability/              # Logging, metrics, tracing, health
     ├── src/
-    │   ├── index.ts            # Plugin entry point
-    │   ├── types.ts            # Config interfaces
-    │   ├── normalizer.ts       # Jira payload → TaskEvent
-    │   ├── webhook-handler.ts
-    │   ├── discovery.ts        # Repo discovery logic
-    │   └── mock-jira-client.ts
-    ├── test/
-    │   └── normalizer.test.ts
-    ├── package.json
-    └── dist/                   # Built output for npm
+    │   ├── index.ts           # Main export
+    │   ├── config.ts          # Configuration
+    │   ├── logger.ts          # Structured logging
+    │   ├── metrics.ts         # Prometheus metrics
+    │   ├── tracing.ts         # Distributed tracing
+    │   ├── health.ts          # Health checks
+    │   ├── middleware.ts      # HTTP middleware
+    │   └── index.ts
+    └── package.json
 ```

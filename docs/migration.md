@@ -176,6 +176,44 @@ pnpm run test          # Run all tests
 pnpm run test:watch    # Watch mode
 ```
 
+## Package Reorganization
+
+### process-utils Package
+
+Process utilities (`execLocal`, `execLocalStreaming`, `terminateChildProcess`, `shellQuote`, `wrapCommandWithPT`) were moved from `packages/local-repos-plugin/src/process.ts` to a dedicated `packages/process-utils/` package.
+
+This allows sharing these utilities across multiple packages without circular dependencies.
+
+**Old location:** `packages/local-repos-plugin/src/process.ts`
+**New location:** `packages/process-utils/src/index.ts`
+
+**Migration:** Update imports:
+```typescript
+// Before
+import { execLocal, execLocalStreaming } from '../../local-repos-plugin/src/process.js';
+
+// After
+import { execLocal, execLocalStreaming } from '@agent-detective/process-utils';
+```
+
+### observability Package
+
+A new observability package was added to provide structured logging, metrics, tracing, and health checks.
+
+**Location:** `packages/observability/`
+
+**Components:**
+- `src/config.ts` — Configuration schema and defaults
+- `src/logger.ts` — Structured JSON logger
+- `src/metrics.ts` — Prometheus-compatible metrics
+- `src/tracing.ts` — Distributed tracing context
+- `src/health.ts` — Health check endpoints
+- `src/middleware.ts` — HTTP middleware (request logging, correlation)
+
+See [docs/observability.md](observability.md) for full documentation.
+
+---
+
 ## Future Work
 
 - Consider migrating remaining `.js` config files to `.json` with schema validation

@@ -394,8 +394,7 @@ All configuration is in `config/default.json`:
   "port": 3001,
   "agent": "opencode",
   "repoContext": {
-    "gitLogMaxCommits": 50,
-    "searchPatterns": ["*.js", "*.ts", "*.py", "*.java", "*.go"]
+    "gitLogMaxCommits": 50
   },
   "plugins": [
     {
@@ -436,7 +435,8 @@ Settings for repository analysis:
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `gitLogMaxCommits` | number | `50` | Max commits to retrieve for context |
-| `searchPatterns` | string[] | `["*.js", "*.ts", "*.py", "*.java", "*.go"]` | File patterns for error search |
+
+> **Note:** `searchPatterns` was removed in v0.2.0.
 
 ### local-repos-plugin Options
 
@@ -491,20 +491,19 @@ Settings for repository analysis:
   "enabled": true,
   "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
   "mockMode": true,
-  "baseUrl": "https://your-domain.atlassian.net",
-  "email": "bot@example.com",
-  "apiToken": "your-api-token",
+  "webhookBehavior": {
+    "defaults": { "action": "ignore" },
+    "events": {
+      "jira.issue.created": { "action": "analyze" },
+      "jira.issue.updated": { "action": "analyze" },
+      "jira.issue.acknowledged": { "action": "acknowledge", "acknowledgmentMessage": "Our team is investigating this issue." }
+    }
+  },
   "discovery": {
     "enabled": true,
     "useAgentForDiscovery": true,
-    "discoveryAgentId": "opencode",
     "directMatchOnly": false,
     "fallbackOnNoMatch": "ask-agent"
-  },
-  "discoveryContext": {
-    "includeTechStack": true,
-    "includeSummary": true,
-    "maxReposShown": 10
   },
   "analysis": {
     "maxCommits": 50
@@ -517,15 +516,13 @@ Settings for repository analysis:
 | `enabled` | boolean | `true` | Enable the plugin |
 | `webhookPath` | string | `"/plugins/agent-detective-jira-adapter/webhook/jira"` | Webhook endpoint path |
 | `mockMode` | boolean | `false` | Use mock Jira client |
-| `baseUrl` | string | - | Jira instance URL |
-| `email` | string | - | Jira account email |
-| `apiToken` | string | - | Jira API token |
+| `webhookBehavior.defaults.action` | string | `"ignore"` | Default action for unconfigured events |
+| `webhookBehavior.events.*.action` | string | - | Per-event action: `"analyze"`, `"acknowledge"`, `"ignore"` |
+| `webhookBehavior.events.*.acknowledgmentMessage` | string | - | Message for `acknowledge` action |
 | `discovery.enabled` | boolean | `true` | Enable repo discovery |
 | `discovery.useAgentForDiscovery` | boolean | `true` | Use AI for discovery |
 | `discovery.directMatchOnly` | boolean | `false` | Skip agent discovery |
 | `discovery.fallbackOnNoMatch` | string | `"ask-agent"` | Fallback strategy |
-| `discoveryContext.includeTechStack` | boolean | `true` | Include tech stack in discovery |
-| `discoveryContext.includeSummary` | boolean | `true` | Include summary in discovery |
 | `analysis.maxCommits` | number | `50` | Max commits for analysis |
 
 ## Process Management
@@ -751,7 +748,7 @@ npm install -g opencode
 
 ### High Memory Usage
 
-Reduce `gitLogMaxCommits` or `searchPatterns` in config to limit repository analysis scope.
+Reduce `gitLogMaxCommits` in config to limit repository analysis scope.
 
 ### Docker Build Fails
 

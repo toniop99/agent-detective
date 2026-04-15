@@ -1,5 +1,4 @@
 import { describe, it } from 'node:test';
-import assert from 'node:assert';
 import { handleIgnore } from '../../src/handlers/ignore-handler.js';
 import type { IgnoreHandlerDeps } from '../../src/handlers/ignore-handler.js';
 
