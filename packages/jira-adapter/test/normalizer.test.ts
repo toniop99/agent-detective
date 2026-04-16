@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { normalizeJiraPayload, extractLabelsFromPayload, extractProjectKeyFromPayload, extractProjectNameFromPayload } from '../src/normalizer.js';
-import issueCreatedFixture from './fixtures/issue-created.json';
+import type { JiraPayload } from '../src/types.js';
+import issueCreatedFixture from './fixtures/issue-created.json' with { type: 'json' };
 
 describe('Jira normalizer', () => {
   it('converts jira webhook payload to TaskEvent', () => {
@@ -93,7 +94,7 @@ describe('Jira normalizer', () => {
   });
 
   it('handles real Jira webhook structure from fixture', () => {
-    const event = normalizeJiraPayload(issueCreatedFixture);
+    const event = normalizeJiraPayload(issueCreatedFixture as any);
 
     assert.equal(event.id, 'KAN-4');
     assert.equal(event.type, 'incident');
@@ -113,14 +114,16 @@ describe('Jira normalizer', () => {
   });
 
   it('extracts user info from root level user object', () => {
-    const payload = {
+    const payload: JiraPayload = {
       webhookEvent: 'jira:issue_created',
       timestamp: 1776193443333,
       issue: {
         key: 'TEST-1',
+        id: '10000',
+        self: 'https://example.com/rest/api/2/issue/10000',
         fields: {
           summary: 'Test issue',
-          project: { key: 'TEST' },
+          project: { key: 'TEST', name: 'Test Project' },
         },
       },
       user: {
@@ -131,10 +134,11 @@ describe('Jira normalizer', () => {
     };
 
     const event = normalizeJiraPayload(payload);
+    const user = event.metadata.user as { accountId: string; displayName: string; emailAddress: string } | null;
 
-    assert.equal(event.metadata.user?.accountId, '12345');
-    assert.equal(event.metadata.user?.displayName, 'Test User');
-    assert.equal(event.metadata.user?.emailAddress, 'test@example.com');
+    assert.equal(user?.accountId, '12345');
+    assert.equal(user?.displayName, 'Test User');
+    assert.equal(user?.emailAddress, 'test@example.com');
     assert.equal(event.metadata.timestamp, 1776193443333);
     assert.equal(event.metadata.webhookEvent, 'jira:issue_created');
   });

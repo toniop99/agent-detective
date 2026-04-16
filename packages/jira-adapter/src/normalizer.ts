@@ -11,7 +11,7 @@ export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
   const projectKey = issue.fields?.project?.key || '';
   const projectName = issue.fields?.project?.name || '';
 
-  const metadata: Record<string, unknown> = {
+  const metadata = {
     labels,
     projectKey,
     projectName,
@@ -24,11 +24,11 @@ export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
     timestamp: payload.timestamp || Date.now(),
     webhookEvent: payload.webhookEvent || 'unknown',
     user: payload.user ? {
-      accountId: payload.user.accountId,
-      displayName: payload.user.displayName,
-      emailAddress: payload.user.emailAddress,
+      accountId: payload.user.accountId || null,
+      displayName: payload.user.displayName || null,
+      emailAddress: payload.user.emailAddress || null,
     } : null,
-  };
+  } satisfies Record<string, unknown>;
 
   return {
     id,

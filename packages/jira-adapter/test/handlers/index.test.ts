@@ -73,6 +73,7 @@ describe('Handler Registry', () => {
     const config: JiraAdapterConfig = {
       webhookBehavior: {
         defaults: { action: 'ignore' },
+        events: {},
       },
     };
 

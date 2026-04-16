@@ -120,7 +120,7 @@ export interface JiraIssue {
     startAt?: number;
     maxResults?: number;
     total?: number;
-    histories?: unknown[];
+    histories?: unknown[] | null;
   };
   fields?: {
     statuscategorychangedate?: string;
@@ -213,7 +213,7 @@ export interface JiraIssue {
       comments?: unknown[];
       last?: boolean;
     };
-    assignee?: JiraUser;
+    assignee?: JiraUser | null;
     worklog?: {
       maxResults?: number;
       total?: number;
