@@ -53,6 +53,7 @@ package-lock.json
 tmp/
 temp/
 *.tmp
+plans
 
 # Local config (overrides default.json)
 config/local.json

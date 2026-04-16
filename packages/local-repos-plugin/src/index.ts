@@ -11,6 +11,8 @@ import { detectTechStack } from './tech-stack-detector.js';
 import { generateSummary } from './summary-generator.js';
 import { gitLog } from './repo-context/git-log.js';
 import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/index.js';
+import { registerController } from '@agent-detective/core';
+import { ReposController } from './repos-controller.js';
 
 const localReposPluginSchema: PluginSchema = {
   type: 'object',
@@ -39,11 +41,7 @@ const localReposPluginSchema: PluginSchema = {
   required: ['repos'],
 };
 
-interface LocalReposPluginContext extends PluginContext {
-  localRepos?: LocalReposContext;
-  buildRepoContext?: (repoPath: string, options?: BuildRepoContextOptions) => ReturnType<typeof buildRepoContext>;
-  formatRepoContextForPrompt?: typeof formatRepoContextForPrompt;
-}
+type LocalReposPluginContext = PluginContext;
 
 // Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
 // The plugin schema validation ensures the config matches LocalReposPluginOptions at runtime.
@@ -135,14 +133,16 @@ const localReposPlugin: Plugin = {
       },
     };
 
-    extContext.localRepos = localRepos;
-    extContext.buildRepoContext = (repoPath: string, opts?: BuildRepoContextOptions) => {
-      return buildRepoContext(repoPath, {
-        ...opts,
-        maxCommits: repoContextOptions?.gitLogMaxCommits ?? opts?.maxCommits,
-      });
+    context.plugins['@agent-detective/local-repos-plugin'] = {
+      localRepos,
+      buildRepoContext: (repoPath: string, opts?: BuildRepoContextOptions) => {
+        return buildRepoContext(repoPath, {
+          ...opts,
+          maxCommits: repoContextOptions?.gitLogMaxCommits ?? opts?.maxCommits,
+        });
+      },
+      formatRepoContextForPrompt,
     };
-    extContext.formatRepoContextForPrompt = formatRepoContextForPrompt;
 
     extContext.logger?.info(
       `local-repos-plugin: Loaded ${validatedRepos.length} repos: ${validatedRepos.map((r) => r.name).join(', ')}`
@@ -150,18 +150,10 @@ const localReposPlugin: Plugin = {
 
     extContext.logger?.info('local-repos-plugin: Registering HTTP endpoints');
 
-    app.get('/repos', (_req, res) => {
-      res.json(localRepos.getAllRepos());
-    });
+    const reposController = new ReposController(localRepos);
+    registerController(app, reposController);
 
-    app.get('/repos/:name', (req, res) => {
-      const repo = localRepos.getRepo(req.params.name);
-      if (!repo) {
-        res.status(404).json({ error: 'Repo not found' });
-        return;
-      }
-      res.json(repo);
-    });
+    return [reposController];
   },
 };
 

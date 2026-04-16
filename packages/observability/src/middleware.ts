@@ -11,7 +11,7 @@ export interface RequestLoggingOptions {
 }
 
 export function createRequestLogger(options: RequestLoggingOptions): RequestHandler {
-  const { logger, tracing, metrics, excludePaths = ['/health', '/metrics'] } = options;
+  const { logger, tracing, metrics, excludePaths = ['/api/health', '/api/metrics'] } = options;
 
   const httpLogger = logger.child('http');
 

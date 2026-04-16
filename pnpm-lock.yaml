@@ -8,9 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@scalar/express-api-reference':
+        specifier: ^0.9.8
+        version: 0.9.8
+      '@scalar/openapi-types':
+        specifier: ^0.7.0
+        version: 0.7.0
       express:
         specifier: ^5.0.1
         version: 5.2.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
     devDependencies:
       '@changesets/changelog-git':
         specifier: ^0.2.1
@@ -49,8 +58,30 @@ importers:
         specifier: ^8.58.1
         version: 8.58.1(eslint@10.2.0)(typescript@5.9.3)
 
+  packages/core:
+    dependencies:
+      '@agent-detective/types':
+        specifier: workspace:*
+        version: link:../types
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.19.17
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/jira-adapter:
     dependencies:
+      '@agent-detective/core':
+        specifier: workspace:*
+        version: link:../core
       '@agent-detective/types':
         specifier: workspace:*
         version: link:../types
@@ -67,6 +98,9 @@ importers:
 
   packages/local-repos-plugin:
     dependencies:
+      '@agent-detective/core':
+        specifier: workspace:*
+        version: link:../core
       '@agent-detective/process-utils':
         specifier: workspace:*
         version: link:../process-utils
@@ -922,6 +956,48 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
+
+  /@scalar/client-side-rendering@0.1.1:
+    resolution: {integrity: sha512-ACASA/nQAC6HXQTIkkBlvCFxUN9xfCy3Zdgo75rw8jzUqsxRIpTuucR7r9VW1bO/N4qsgEQumC4hK4ESCMdZmQ==}
+    engines: {node: '>=22'}
+    dependencies:
+      '@scalar/types': 0.9.0
+    dev: false
+
+  /@scalar/core@0.5.1:
+    resolution: {integrity: sha512-LvH4m502KjEICn7d6lG28fU2TT5AIAJN/czpnx1wusLei2EAgVeEfy0Gkr/kQy+lU215fockVngcvOktYb6KrA==}
+    engines: {node: '>=22'}
+    dependencies:
+      '@scalar/client-side-rendering': 0.1.1
+      '@scalar/types': 0.9.0
+    dev: false
+
+  /@scalar/express-api-reference@0.9.8:
+    resolution: {integrity: sha512-wmIeHWp97z31mkocUS6CkklOHagzvrzP6XNI4HtcZkgV7tooNMtfxfLfyL2ZmFKFIVWb6JKXZC9kbG30CrPeuw==}
+    engines: {node: '>=22'}
+    dependencies:
+      '@scalar/core': 0.5.1
+    dev: false
+
+  /@scalar/helpers@0.5.0:
+    resolution: {integrity: sha512-S7m46UWqngUmDXuihUerNKS58vlUqF/qaXle3QREfc8Xh9wperAKxFmmxrnulAayrcCQ/fTJyGu5oSM2STlxkA==}
+    engines: {node: '>=22'}
+    dev: false
+
+  /@scalar/openapi-types@0.7.0:
+    resolution: {integrity: sha512-kN0PwlJW0de4bwQ4ib+mBHzKJUvBCyR/gwU4zLEq6SCbj+GfgYUh+2a0/yl1WYVUiSkkwFsHjfmQ8KjhR3HK0Q==}
+    engines: {node: '>=22'}
+    dev: false
+
+  /@scalar/types@0.9.0:
+    resolution: {integrity: sha512-SJNI2f2ZEsN+Cp7o4rAjPu2nFRFXdSkO1ocG9rzynhJhbMBniHnbkCAe19QT/iHMvSCXfj8J8qDOn2S+TnMymg==}
+    engines: {node: '>=22'}
+    dependencies:
+      '@scalar/helpers': 0.5.0
+      nanoid: 5.1.9
+      type-fest: 5.5.0
+      zod: 4.3.6
+    dev: false
 
   /@turbo/darwin-64@2.9.6:
     resolution: {integrity: sha512-X/56SnVXIQZBLKwniGTwEQTGmtE5brSACnKMBWpY3YafuxVYefrC2acamfjgxP7BG5w3I+6jf0UrLoSzgPcSJg==}
@@ -2184,6 +2260,12 @@ packages:
       thenify-all: 1.6.0
     dev: true
 
+  /nanoid@5.1.9:
+    resolution: {integrity: sha512-ZUvP7KeBLe3OZ1ypw6dI/TzYJuvHP77IM4Ry73waSQTLn8/g8rpdjfyVAh7t1/+FjBtG4lCP42MEbDxOsRpBMw==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    dev: false
+
   /natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
@@ -2530,6 +2612,10 @@ packages:
     engines: {node: '>= 12.13.0'}
     dev: false
 
+  /reflect-metadata@0.2.2:
+    resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
+    dev: false
+
   /resolve-from@5.0.0:
     resolution: {integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==}
     engines: {node: '>=8'}
@@ -2786,6 +2872,11 @@ packages:
       ts-interface-checker: 0.1.13
     dev: true
 
+  /tagged-tag@1.0.0:
+    resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
+    engines: {node: '>=20'}
+    dev: false
+
   /tdigest@0.1.2:
     resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
     dependencies:
@@ -2937,6 +3028,13 @@ packages:
       prelude-ls: 1.2.1
     dev: true
 
+  /type-fest@5.5.0:
+    resolution: {integrity: sha512-PlBfpQwiUvGViBNX84Yxwjsdhd1TUlXr6zjX7eoirtCPIr08NAmxwa+fcYBTeRQxHo9YC9wwF3m9i700sHma8g==}
+    engines: {node: '>=20'}
+    dependencies:
+      tagged-tag: 1.0.0
+    dev: false
+
   /type-is@2.0.1:
     resolution: {integrity: sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==}
     engines: {node: '>= 0.6'}
@@ -3019,3 +3117,7 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  /zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+    dev: false

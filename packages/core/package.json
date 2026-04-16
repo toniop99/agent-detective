@@ -1,7 +1,7 @@
 {
-  "name": "@agent-detective/local-repos-plugin",
+  "name": "@agent-detective/core",
   "version": "0.1.0",
-  "description": "Local repository access plugin for agent-detective",
+  "description": "Core utilities and decorators for agent-detective",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,12 +19,11 @@
     "test": "tsx --test",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "repository", "local"],
+  "keywords": ["agent-detective", "core", "decorators"],
   "license": "MIT",
   "dependencies": {
-    "@agent-detective/core": "workspace:*",
-    "@agent-detective/process-utils": "workspace:*",
-    "@agent-detective/types": "workspace:*"
+    "@agent-detective/types": "workspace:*",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

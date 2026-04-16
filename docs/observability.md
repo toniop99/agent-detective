@@ -166,12 +166,12 @@ metrics.set('custom_gauge', 100, { label: 'value' });
 
 ### Prometheus Endpoint
 
-When enabled, metrics are exposed at `/metrics` in Prometheus format:
+When enabled, metrics are exposed at `/api/metrics` in Prometheus format:
 
 ```
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
-http_requests_total{method="GET",path="/health",status="200"} 42
+http_requests_total{method="GET",path="/api/health",status="200"} 42
 
 # HELP agent_runs_total Total agent executions
 # TYPE agent_runs_total counter
@@ -196,8 +196,7 @@ const health = createHealthChecker({
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /health` | Basic health check (returns 200 if server is running) |
-| `GET /health/deep` | Deep health check (includes git status, plugin status) |
+| `GET /api/health` | Basic health check (returns 200 if server is running) |
 
 ### Health Check Response
 
@@ -249,7 +248,7 @@ import { createRequestLogger } from '@agent-detective/observability';
 const requestLogger = createRequestLogger({
   logger,
   metrics,
-  excludePaths: ['/health', '/metrics'],
+  excludePaths: ['/api/health', '/api/metrics'],
 });
 
 // Use with Express
@@ -285,12 +284,11 @@ const app = express();
 app.use(obs.middleware?.correlation ?? createCorrelationMiddleware());
 app.use(obs.middleware?.requestLogger ?? createRequestLogger({ logger: obs.logger, metrics: obs.metrics }));
 
-// Health endpoints
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json(obs.health.check());
 });
 
-app.get('/metrics', (req, res) => {
+app.get('/api/metrics', (req, res) => {
   res.send(obs.metrics.getPrometheusOutput());
 });
 ```
@@ -335,6 +333,56 @@ export type { TracingContext, CorrelationContext } from './tracing.js';
 export type { HealthChecker, HealthCheckResult, HealthStatus } from './health.js';
 export type { ObservabilityConfig, ObservabilityLoggingConfig, ObservabilityMetricsConfig, ObservabilityTracingConfig, ObservabilityHealthConfig } from './config.js';
 ```
+
+## API Documentation Endpoint
+
+Agent-detective provides an interactive API documentation UI at `/docs`.
+
+### Accessing the Docs
+
+Visit `http://localhost:3001/docs` in your browser to see the API reference.
+
+### Endpoints
+
+All core API endpoints are prefixed with `/api`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | Root info (no prefix) |
+| `GET /api` | Server info (alias for root) |
+| `GET /api/health` | Health check |
+| `GET /api/agent/list` | List available agents |
+| `POST /api/agent/run` | Run an agent |
+| `POST /api/events` | Submit an event |
+| `GET /api/queue/status` | Queue status |
+
+Plugin routes are available under `/plugins/<plugin-name>/*`.
+
+### Features
+
+- Interactive API explorer (try endpoints directly)
+- OpenAPI 3.0 specification
+- Core routes under `/api/*` automatically documented
+- Plugin routes under `/plugins/*` automatically documented
+
+### Authentication
+
+If `DOCS_AUTH_REQUIRED` is set to `true`, you must provide an `X-API-KEY` header:
+
+```bash
+curl -H "X-API-KEY: your-api-key" http://localhost:3001/docs
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DOCS_AUTH_REQUIRED` | Set to `true` to require API key |
+| `DOCS_API_KEY` | The API key value |
+
+### Plugin API Documentation
+
+All plugins that register HTTP endpoints will automatically have their routes appear in the `/docs` UI. Plugins can provide OpenAPI metadata (summary, description, responses) via the `openapi` property on the plugin object. See [Plugin Development Guide](./plugin-development.md#api-documentation-openapi) for details.
 
 ## Notes
 

@@ -23,6 +23,7 @@
   "keywords": ["agent-detective", "jira", "adapter"],
   "license": "MIT",
   "dependencies": {
+    "@agent-detective/core": "workspace:*",
     "@agent-detective/types": "workspace:*"
   },
   "devDependencies": {

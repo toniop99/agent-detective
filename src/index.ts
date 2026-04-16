@@ -1,10 +1,12 @@
-import { createServer, loadConfig } from './server.js';
+import 'reflect-metadata';
+import { createServer, loadConfig, setupDocs } from './server.js';
 import { createPluginSystem } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
 import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgent, getAgentLabel } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
+import { generateSpecFromControllers } from './core/openapi/index.js';
 
 const config = loadConfig();
 
@@ -29,7 +31,7 @@ const agentRunner = createAgentRunner({
 const queues = new Map<string, Promise<void>>();
 const enqueue = createEnqueue(queues);
 
-const app = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
+const { app, coreController } = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
 
 const pluginSystem = createPluginSystem({
   agentRunner,
@@ -52,4 +54,19 @@ app.listen(PORT, async () => {
   } else {
     serverLogger.info('No plugins loaded');
   }
+
+  const pluginControllers = pluginSystem.getControllers();
+  const allControllers = [coreController.constructor, ...pluginControllers.map((c: object) => (c as { constructor: new () => object }).constructor)];
+
+  setupDocs(app, allControllers as (new () => object)[], observability, config);
+
+  const spec = generateSpecFromControllers(allControllers as (new () => object)[], {
+    title: 'Agent Detective API',
+    version: '1.0.0',
+    description: 'API documentation for agent-detective and its plugins',
+  });
+  serverLogger.info('Generated OpenAPI spec', {
+    paths: Object.keys(spec.paths).length,
+    tags: spec.tags.map((t: { name: string }) => t.name).join(', '),
+  });
 });

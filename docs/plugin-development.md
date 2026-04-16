@@ -95,10 +95,15 @@ my-plugin/
     "moduleResolution": "bundler",
     "strict": true,
     "declaration": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"]
 }
+```
+
+> **Note:** `experimentalDecorators` and `emitDecoratorMetadata` are required for OpenAPI decorators to work properly.
 ```
 
 ---
@@ -408,6 +413,204 @@ const jiraPlusPlugin: Plugin = {
 };
 
 export default jiraPlusPlugin;
+```
+
+---
+
+## API Documentation (OpenAPI)
+
+Plugins can provide OpenAPI metadata for auto-generated API documentation at `/docs` using decorator-based approach.
+
+### Adding OpenAPI Metadata with Decorators
+
+First, add `@agent-detective/core` as a dependency:
+
+```json
+{
+  "dependencies": {
+    "@agent-detective/core": "workspace:*"
+  }
+}
+```
+
+Then create a controller class with decorators:
+
+```typescript
+// src/my-controller.ts
+import type { Request, Response } from 'express';
+import {
+  Controller,
+  Get,
+  Post,
+  Summary,
+  Description,
+  Tags,
+  Response as OpenApiResponse,
+  RequestBody,
+} from '@agent-detective/core';
+
+const PLUGIN_TAG = '@myorg/my-plugin';
+
+@Controller('/api', { tags: [PLUGIN_TAG], description: 'My plugin endpoints' })
+export class MyController {
+  private myService?: MyService;
+
+  constructor(myService?: MyService) {
+    this.myService = myService;
+  }
+
+  setMyService(service: MyService): void {
+    this.myService = service;
+  }
+
+  @Get('/status')
+  @Summary('Get status')
+  @Description('Returns current plugin status')
+  @Tags(PLUGIN_TAG)
+  @OpenApiResponse(200, 'Success', {
+    example: { status: 'ok', plugin: 'my-plugin' }
+  })
+  getStatus(_req: Request, res: Response) {
+    res.json({ status: 'ok', plugin: 'my-plugin' });
+  }
+
+  @Post('/webhook')
+  @Summary('Handle webhook')
+  @Description('Receives events from external systems')
+  @Tags(PLUGIN_TAG)
+  @RequestBody({
+    description: 'Webhook payload',
+    required: true,
+    example: { event: 'issue_created', data: { id: '123' } },
+    schema: {
+      type: 'object',
+      properties: {
+        event: { type: 'string' },
+        data: { type: 'object' }
+      },
+      required: ['event']
+    }
+  })
+  @OpenApiResponse(200, 'Success', {
+    example: { status: 'received', taskId: 'abc123' }
+  })
+  @OpenApiResponse(400, 'Bad Request')
+  handleWebhook(req: Request, res: Response) {
+    // Handle webhook
+    res.json({ status: 'received' });
+  }
+}
+```
+
+### Registering the Controller
+
+In your plugin's register function:
+
+```typescript
+import type { Plugin, PluginContext } from '@agent-detective/types';
+import { registerController } from '@agent-detective/core';
+import { MyController } from './my-controller.js';
+
+const myPlugin: Plugin = {
+  name: '@myorg/my-plugin',
+  version: '1.0.0',
+  schemaVersion: '1.0',
+
+  schema: {
+    type: 'object',
+    properties: {
+      enabled: { type: 'boolean', default: true }
+    }
+  },
+
+  register(app, context) {
+    const { logger } = context;
+
+    const myService = new MyService();
+    const controller = new MyController(myService);
+    controller.setMyService(myService);
+
+    registerController(app, controller);
+
+    logger.info('My plugin registered');
+  }
+};
+
+export default myPlugin;
+```
+
+### Available Decorators
+
+| Decorator | Type | Description |
+|-----------|------|-------------|
+| `@Controller(prefix, options?)` | Class | Marks a class as a controller with base path |
+| `@Get(path)` | Method | Marks a method as GET endpoint |
+| `@Post(path)` | Method | Marks a method as POST endpoint |
+| `@Put(path)` | Method | Marks a method as PUT endpoint |
+| `@Delete(path)` | Method | Marks a method as DELETE endpoint |
+| `@Patch(path)` | Method | Marks a method as PATCH endpoint |
+| `@Summary(text)` | Method | Adds summary to OpenAPI spec |
+| `@Description(text)` | Method | Adds description to OpenAPI spec |
+| `@Tags(...tags)` | Method | Adds tags for grouping in docs |
+| `@RequestBody(options?)` | Method | Documents request body |
+| `@Response(status, desc, options?)` | Method | Documents response |
+| `@OperationId(id)` | Method | Sets operation ID |
+| `@Deprecated()` | Method | Marks endpoint as deprecated |
+| `@Security(scheme)` | Method | Adds security scheme |
+
+### Response Decorator Options
+
+```typescript
+@OpenApiResponse(200, 'Success', {
+  contentType: 'application/json',
+  example: { id: 1, name: 'Example' },
+  schema: {
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      name: { type: 'string' }
+    }
+  }
+})
+```
+
+### RequestBody Decorator Options
+
+```typescript
+@RequestBody({
+  description: 'User data',
+  required: true,
+  contentType: 'application/json',
+  example: { name: 'John', email: 'john@example.com' },
+  schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      email: { type: 'string', format: 'email' }
+    },
+    required: ['name', 'email']
+  }
+})
+```
+
+### Accessing API Documentation
+
+- **Without auth**: Visit `/docs` directly
+- **With auth**: Set `X-API-KEY` header or configure `DOCS_AUTH_REQUIRED=true` and `DOCS_API_KEY`
+
+### Environment Variables for Docs
+
+| Variable | Description |
+|----------|-------------|
+| `DOCS_AUTH_REQUIRED=true` | Require API key to access docs |
+| `DOCS_API_KEY=<key>` | The API key to use for authentication |
+
+Or via config:
+```json
+{
+  "docsAuthRequired": true,
+  "docsApiKey": "your-secret-key"
+}
 ```
 
 ---

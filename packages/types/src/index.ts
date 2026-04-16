@@ -41,7 +41,15 @@ export interface Plugin {
   schemaVersion?: '1.0';
   schema?: PluginSchema;
   dependsOn?: string[];
-  register(app: import('express').Application, context: PluginContext): void;
+  register(app: import('express').Application, context: PluginContext): Promise<object[] | void> | object[] | void;
+}
+
+export interface PathOperation {
+  summary?: string;
+  description?: string;
+  responses?: Record<string, { description: string; content?: Record<string, unknown> }>;
+  parameters?: unknown[];
+  [key: string]: unknown;
 }
 
 export interface LoadedPlugin {
@@ -87,6 +95,8 @@ export interface PluginContext {
   enqueue?: EnqueueFn;
   config: Record<string, unknown>;
   logger: Logger;
+  controllers: object[];
+  plugins: Record<string, Record<string, unknown>>;
 }
 
 export interface RunAgentOptions {

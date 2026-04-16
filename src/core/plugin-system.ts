@@ -15,7 +15,6 @@ function sanitizePluginName(name: string): string {
 function createPrefixedApp(
   app: import('express').Application,
   pluginName: string,
-  logger?: { warn?: (message: string, ...args: unknown[]) => void }
 ): import('express').Application {
   const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
 
@@ -35,10 +34,7 @@ function createPrefixedApp(
             return (target as any).use(path, ...handlers);
           }
           if (path.startsWith('/plugins/')) {
-            const warnFn = logger?.warn;
-            if (warnFn) {
-              warnFn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
-            }
+            console.warn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
           }
           const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,6 +56,8 @@ interface CreatePluginSystemOptions {
   logger?: PluginContext['logger'];
 }
 
+type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<string, unknown> }> };
+
 export function createPluginSystem(context: CreatePluginSystemOptions) {
   const {
     agentRunner,
@@ -71,11 +69,13 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
   } = context;
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
+  const pluginControllers: object[] = [];
 
   async function loadPlugin(
     packageNameOrPlugin: string | Plugin,
     app: import('express').Application,
-    pluginConfig: Record<string, unknown> = {}
+    pluginConfig: Record<string, unknown> = {},
+    sharedContext?: PluginContext
   ): Promise<LoadedPlugin | null> {
     let packageName: string;
     let plugin: Plugin;
@@ -131,20 +131,29 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       validatePluginConfig(plugin, mergedConfig);
 
-      const pluginContext: PluginContext = {
-        agentRunner,
-        repoMapping,
-        buildRepoContext,
-        formatRepoContextForPrompt,
-        enqueue,
-        config: mergedConfig,
-        logger: 'child' in logger && typeof logger.child === 'function' 
-          ? logger.child({ plugin: packageName }) 
-          : logger,
-      };
+      const pluginContext: PluginContext = sharedContext
+        ? { ...sharedContext, config: mergedConfig }
+        : {
+          agentRunner,
+          repoMapping,
+          buildRepoContext,
+          formatRepoContextForPrompt,
+          enqueue,
+          config: mergedConfig,
+          logger: 'child' in logger && typeof logger.child === 'function'
+            ? logger.child({ plugin: packageName })
+            : logger,
+          controllers: pluginControllers,
+          plugins: {},
+        };
 
-      const prefixedApp = createPrefixedApp(app, plugin.name, logger);
-      await plugin.register(prefixedApp, pluginContext);
+      const prefixedApp = createPrefixedApp(app, plugin.name);
+      const result = await plugin.register(prefixedApp, pluginContext);
+
+      if (result) {
+        const ctrls = Array.isArray(result) ? result : [result];
+        pluginControllers.push(...ctrls);
+      }
 
       const loaded: LoadedPlugin = {
         name: plugin.name,
@@ -163,7 +172,10 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     }
   }
 
-  async function loadAll(app: import('express').Application, config: { plugins?: Array<{ package?: string; options?: Record<string, unknown> }> }): Promise<void> {
+  async function loadAll(
+    app: import('express').Application,
+    config: PluginConfig
+  ): Promise<void> {
     const plugins = config.plugins || [];
 
     const pluginData = new Map<string, { plugin: Plugin; packageName: string; options: Record<string, unknown> }>();
@@ -215,7 +227,10 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       }
 
       const data = pluginData.get(name);
-      if (!data) return true;
+      if (!data) {
+        errors.push(`Plugin ${name} not found in config but required by ${path.join(' -> ')}`);
+        return false;
+      }
 
       visiting.add(name);
       const deps = data.plugin.dependsOn || [];
@@ -241,9 +256,23 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       logger.error(`Plugin dependency error: ${error}`);
     }
 
+    logger.info(`Plugin load order: ${loadOrder.join(' -> ')}`);
+
+    const sharedContext: PluginContext = {
+      agentRunner,
+      repoMapping,
+      buildRepoContext,
+      formatRepoContextForPrompt,
+      enqueue,
+      config: {},
+      logger,
+      controllers: pluginControllers,
+      plugins: {},
+    };
+
     for (const name of loadOrder) {
       const data = pluginData.get(name)!;
-      await loadPlugin(data.plugin, app, data.options);
+      await loadPlugin(data.plugin, app, data.options, sharedContext);
     }
   }
 
@@ -251,9 +280,14 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return Array.from(loadedPlugins.values());
   }
 
+  function getControllers(): object[] {
+    return [...pluginControllers];
+  }
+
   return {
     loadPlugin,
     loadAll,
     getLoadedPlugins,
+    getControllers,
   };
 }
