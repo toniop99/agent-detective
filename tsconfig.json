@@ -21,7 +21,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@agent-detective/types": ["./packages/types/src/index.ts"]
+      "@agent-detective/types": ["./packages/types/src/index.ts"],
+      "@agent-detective/observability": ["./packages/observability/src/index.ts"],
+      "@agent-detective/local-repos-plugin": ["./packages/local-repos-plugin/src/index.ts"],
+      "@agent-detective/jira-adapter": ["./packages/jira-adapter/src/index.ts"],
+      "@agent-detective/process-utils": ["./packages/process-utils/src/index.ts"]
     }
   },
   "include": ["src/**/*", "test/**/*", "packages/*/src/**/*"],

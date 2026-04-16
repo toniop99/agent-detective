@@ -10,7 +10,6 @@ export type {
   Logger,
   BuildRepoContextOptions,
   Commit,
-  SearchResult,
   RepoContext,
   PluginContext,
   RunAgentOptions,

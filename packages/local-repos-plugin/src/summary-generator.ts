@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AgentRunner } from '@agent-detective/types';
+import type { AgentRunner, Logger } from '@agent-detective/types';
 import type { SummaryGenerationConfig } from './types.js';
 import { execLocal } from '@agent-detective/process-utils';
 
@@ -14,12 +14,11 @@ const DEFAULT_CONFIG: SummaryGenerationConfig = {
   summaryPrompt: 'Summarize this repository in 2-3 sentences based on the provided context.',
 };
 
-const DEFAULT_SUMMARY_PROMPT = 'Summarize this repository in 2-3 sentences based on the provided context.';
-
 export async function generateSummary(
   repoPath: string,
   config: SummaryGenerationConfig = DEFAULT_CONFIG,
-  agentRunner?: AgentRunner
+  agentRunner?: AgentRunner,
+  logger?: Logger
 ): Promise<string> {
   if (config.enabled === false) {
     return '';
@@ -31,7 +30,7 @@ export async function generateSummary(
     try {
       return await generateSummaryWithAgent(repoPath, resolvedConfig, agentRunner);
     } catch (err) {
-      console.warn(`Agent summary failed for ${repoPath}, falling back to pattern-based: ${(err as Error).message}`);
+      logger?.warn(`Agent summary failed for ${repoPath}, falling back to pattern-based: ${(err as Error).message}`);
     }
   }
 
@@ -56,7 +55,7 @@ async function generateSummaryWithAgent(
   config: SummaryGenerationConfig,
   agentRunner: AgentRunner
 ): Promise<string> {
-  const prompt = config.summaryPrompt || DEFAULT_SUMMARY_PROMPT;
+  const prompt = config.summaryPrompt || DEFAULT_CONFIG.summaryPrompt;
   const taskId = `summary-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   const response = await agentRunner.runAgentForChat(taskId, `${prompt}\n\nRepository path: ${repoPath}`, {

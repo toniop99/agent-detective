@@ -14,7 +14,8 @@ function sanitizePluginName(name: string): string {
 
 function createPrefixedApp(
   app: import('express').Application,
-  pluginName: string
+  pluginName: string,
+  logger?: { warn?: (message: string, ...args: unknown[]) => void }
 ): import('express').Application {
   const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
 
@@ -23,10 +24,29 @@ function createPrefixedApp(
       if (['get', 'post', 'put', 'delete', 'patch'].includes(prop as string)) {
         return (path: string, ...handlers: unknown[]) => {
           const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
-          return (target as Record<string, unknown>)[prop as string](prefixedPath, ...handlers);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (target as any)[prop](prefixedPath, ...handlers);
         };
       }
-      return (target as Record<string, unknown>)[prop as string];
+      if (prop === 'use') {
+        return (path: string | Function, ...handlers: unknown[]) => {
+          if (typeof path === 'function') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (target as any).use(path, ...handlers);
+          }
+          if (path.startsWith('/plugins/')) {
+            const warnFn = logger?.warn;
+            if (warnFn) {
+              warnFn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
+            }
+          }
+          const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (target as any).use(prefixedPath, ...handlers);
+        };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (target as any)[prop];
     }
   });
 }
@@ -123,8 +143,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           : logger,
       };
 
-      const prefixedApp = createPrefixedApp(app, plugin.name);
-      plugin.register(prefixedApp, pluginContext);
+      const prefixedApp = createPrefixedApp(app, plugin.name, logger);
+      await plugin.register(prefixedApp, pluginContext);
 
       const loaded: LoadedPlugin = {
         name: plugin.name,

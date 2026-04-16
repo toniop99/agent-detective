@@ -1,4 +1,4 @@
-import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext } from '@agent-detective/types';
+import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext, PluginSchema, Logger } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -12,6 +12,33 @@ import { generateSummary } from './summary-generator.js';
 import { gitLog } from './repo-context/git-log.js';
 import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/index.js';
 
+const localReposPluginSchema: PluginSchema = {
+  type: 'object',
+  properties: {
+    repos: {
+      type: 'array',
+      description: 'Array of repository configurations (each with name, path, description, techStack)',
+    },
+    techStackDetection: {
+      type: 'object',
+      description: 'Configuration for technology stack detection (enabled, patterns)',
+    },
+    summaryGeneration: {
+      type: 'object',
+      description: 'Configuration for repository summary generation (enabled, source, maxReadmeLines, commitCount, useAgent, agentId, model, summaryPrompt)',
+    },
+    validation: {
+      type: 'object',
+      description: 'Configuration for repository validation (validateOnStartup, failOnMissing)',
+    },
+    repoContext: {
+      type: 'object',
+      description: 'Configuration for repository context generation (gitLogMaxCommits)',
+    },
+  },
+  required: ['repos'],
+};
+
 interface LocalReposPluginContext extends PluginContext {
   localRepos?: LocalReposContext;
   buildRepoContext?: (repoPath: string, options?: BuildRepoContextOptions) => ReturnType<typeof buildRepoContext>;
@@ -24,7 +51,7 @@ function asLocalReposConfig(context: PluginContext): LocalReposPluginOptions {
   return context.config as unknown as LocalReposPluginOptions;
 }
 
-async function processRepos(options: LocalReposPluginOptions, agentRunner?: AgentRunner): Promise<ValidatedRepo[]> {
+async function processRepos(options: LocalReposPluginOptions, agentRunner?: AgentRunner, logger?: Logger): Promise<ValidatedRepo[]> {
   const { repos, techStackDetection, summaryGeneration, validation, repoContext } = options;
 
   const validationResults = validateRepos(repos, validation || {});
@@ -39,7 +66,7 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
         ? repo.techStack
         : detectTechStack(repo.path, techStackDetection);
 
-      const summary = await generateSummary(repo.path, summaryGeneration || {}, agentRunner);
+      const summary = await generateSummary(repo.path, summaryGeneration || {}, agentRunner, logger);
 
       const commits = await gitLog(repo.path, { maxCommits: repoContext?.gitLogMaxCommits });
 
@@ -73,6 +100,8 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
 const localReposPlugin: Plugin = {
   name: '@agent-detective/local-repos-plugin',
   version: '0.1.0',
+  schemaVersion: '1.0',
+  schema: localReposPluginSchema,
   dependsOn: [],
 
   async register(app, context) {
@@ -84,7 +113,7 @@ const localReposPlugin: Plugin = {
       return;
     }
 
-    const validatedRepos = await processRepos(options, extContext.agentRunner);
+    const validatedRepos = await processRepos(options, extContext.agentRunner, extContext.logger);
 
     if (options.validation?.failOnMissing) {
       const validationResults = validateRepos(options.repos, options.validation || {});

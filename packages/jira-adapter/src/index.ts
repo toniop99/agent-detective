@@ -114,8 +114,7 @@ const jiraAdapterPlugin: Plugin = {
     }
 
     if (!extContext.localRepos) {
-      extContext.logger?.warn(`${PLUGIN_NAME} requires local-repos-plugin to be loaded first`);
-      return;
+      throw new Error(`${PLUGIN_NAME} requires @agent-detective/local-repos-plugin to be loaded as a dependency`);
     }
 
     if (!extContext.agentRunner) {

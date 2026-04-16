@@ -29,38 +29,33 @@ obs.metrics.increment('http_requests_total', { method: 'GET' });
 
 ## Configuration
 
-### Basic Configuration
+### Programmatic Configuration
 
-```json
-{
-  "plugins": [
-    {
-      "package": "@agent-detective/observability",
-      "options": {
-        "enabled": true,
-        "serviceName": "agent-detective",
-        "logging": {
-          "level": "info",
-          "format": "json",
-          "destination": "stdout"
-        },
-        "metrics": {
-          "enabled": true,
-          "endpoint": "/metrics"
-        },
-        "tracing": {
-          "enabled": true,
-          "sampleRate": 1.0
-        },
-        "health": {
-          "deep": true,
-          "includeGit": true,
-          "includePlugins": true
-        }
-      }
-    }
-  ]
-}
+```typescript
+import { createObservability } from '@agent-detective/observability';
+
+const obs = createObservability({
+  enabled: true,
+  serviceName: 'agent-detective',
+  logging: {
+    level: 'info',
+    format: 'json',
+    destination: 'stdout'
+  },
+  metrics: {
+    enabled: true,
+    endpoint: '/metrics'
+  },
+  tracing: {
+    enabled: true,
+    sampleRate: 1.0
+  },
+  health: {
+    deep: true,
+    includeGit: true,
+    includePlugins: true
+  }
+});
 ```
 
 ### Environment Variable Overrides

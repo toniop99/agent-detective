@@ -223,6 +223,59 @@ describe('Plugin System', () => {
     });
   });
 
+  describe('async register handling', () => {
+    it('awaits async register() before marking plugin as loaded', async () => {
+      let registerCompleted = false;
+      const asyncRegisterPlugin = {
+        name: 'async-plugin',
+        version: '1.0.0',
+        register: async () => {
+          await new Promise(resolve => setTimeout(resolve, 10));
+          registerCompleted = true;
+        },
+      };
+
+      await pluginSystem.loadPlugin(asyncRegisterPlugin as unknown as Plugin, {} as never, {});
+
+      assert.ok(registerCompleted, 'register should have completed before loadPlugin returns');
+      const plugins = pluginSystem.getLoadedPlugins();
+      assert.equal(plugins.length, 1);
+    });
+
+    it('logs error when dependency plugin is not available', async () => {
+      let registerCompleted = false;
+      const dependentPlugin = {
+        name: 'dependent-plugin',
+        version: '1.0.0',
+        register: async (_app: unknown, context: unknown) => {
+          const extContext = context as { localRepos?: unknown };
+          if (!extContext.localRepos) {
+            registerCompleted = true;
+            throw new Error('dependent-plugin requires local-repos-plugin to be loaded first');
+          }
+        },
+      };
+
+      const mockLogger = createMockLogger();
+      const testPluginSystem = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        repoMapping: createMockRepoMapping(),
+        buildRepoContext: createMockBuildRepoContext,
+        formatRepoContextForPrompt: () => 'Mock repo context',
+        logger: mockLogger,
+      });
+
+      const loaded = await testPluginSystem.loadPlugin(dependentPlugin as unknown as Plugin, {} as never, {});
+
+      assert.equal(loaded, null, 'plugin should fail to load');
+      assert.ok(registerCompleted, 'register should have been called');
+      assert.ok(
+        mockLogger.warn.mock.calls.some(call => call.arguments[0]?.includes('dependent-plugin')),
+        'should log warning about failed plugin'
+      );
+    });
+  });
+
   describe('config merging', () => {
     it('merges plugin config with defaults', async () => {
       const mockPlugin = {

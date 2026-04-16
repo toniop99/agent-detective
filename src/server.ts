@@ -10,7 +10,7 @@ import type {
   AgentProgressEvent
 } from '@agent-detective/types';
 import { listAgents, isAgentInstalled, isKnownAgent } from './agents/index.js';
-import { createObservability, createRequestLogger, type Observability, type ObservabilityConfig } from '@agent-detective/observability';
+import { createRequestLogger, type Observability, type ObservabilityConfig } from '@agent-detective/observability';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -28,11 +28,11 @@ export interface Config {
   observability?: Partial<ObservabilityConfig>;
 }
 
-function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   const result = { ...target };
   for (const key in source) {
     const sourceValue = source[key];
-    const targetValue = target[key];
+    const targetValue = target[key as keyof T];
     if (
       sourceValue !== undefined &&
       typeof sourceValue === 'object' &&
@@ -41,12 +41,12 @@ function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial
       targetValue !== null &&
       !Array.isArray(targetValue)
     ) {
-      (result as Record<string, unknown>)[key] = deepMerge(
+      (result as Record<string, unknown>)[key as string] = deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>
       );
     } else if (sourceValue !== undefined) {
-      (result as Record<string, unknown>)[key] = sourceValue;
+      (result as Record<string, unknown>)[key as string] = sourceValue;
     }
   }
   return result;
