@@ -64,7 +64,22 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
   const pluginControllers: object[] = [];
-  const pluginsRegistry: Record<string, unknown> = {};
+  const servicesRegistry = new Map<string, unknown>();
+
+  function registerService<T>(name: string, service: T): void {
+    if (servicesRegistry.has(name)) {
+      logger.warn(`Service ${name} already registered, overwriting`);
+    }
+    servicesRegistry.set(name, service);
+  }
+
+  function getService<T>(name: string): T {
+    const service = servicesRegistry.get(name);
+    if (!service) {
+      throw new Error(`Service ${name} not found. Ensure the providing plugin is loaded.`);
+    }
+    return service as T;
+  }
 
   async function loadPlugin(
     packageNameOrPlugin: string | Plugin,
@@ -126,7 +141,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           ? logger.child({ plugin: plugin.name })
           : logger,
         controllers: pluginControllers,
-        plugins: sharedContext?.plugins || pluginsRegistry,
+        registerService: sharedContext?.registerService || registerService,
+        getService: sharedContext?.getService || getService,
       };
 
       const prefixedApp = createPrefixedApp(app, plugin.name);
@@ -254,7 +270,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       config: {},
       logger,
       controllers: pluginControllers,
-      plugins: pluginsRegistry,
+      registerService,
+      getService,
     };
 
     for (const name of loadOrder) {

@@ -5,6 +5,7 @@ import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig, JiraWebhookBehavior } from './types.js';
 import { registerController } from '@agent-detective/core';
 import { JiraWebhookController } from './jira-webhook-controller.js';
+import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 
 const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';
@@ -70,21 +71,6 @@ function createRealJiraClient(_config: JiraAdapterConfig): MockJiraClient {
   );
 }
 
-interface LocalReposContext {
-  repos: Array<{
-    name: string;
-    path: string;
-    exists: boolean;
-    techStack: string[];
-    summary: string;
-  }>;
-  getRepo(name: string): { name: string; path: string; exists: boolean; techStack: string[]; summary: string } | null;
-  getAllRepos(): Array<{ name: string; path: string; exists: boolean; techStack: string[]; summary: string }>;
-}
-
-// Note: local-repos-plugin data is now accessed via context.plugins['@agent-detective/local-repos-plugin']
-type JiraAdapterPluginContext = PluginContext;
-
 // Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
 // The plugin schema validation ensures the config matches JiraAdapterConfig at runtime.
 function asJiraAdapterConfig(context: PluginContext): JiraAdapterConfig {
@@ -99,7 +85,7 @@ const jiraAdapterPlugin: Plugin = {
   dependsOn: ['@agent-detective/local-repos-plugin'],
 
   register(app, context) {
-    const extContext = context as JiraAdapterPluginContext;
+    const extContext = context;
     const cfg = asJiraAdapterConfig(context);
 
     if (!cfg.enabled) {
@@ -107,11 +93,9 @@ const jiraAdapterPlugin: Plugin = {
       return;
     }
 
-    const localReposData = context.plugins['@agent-detective/local-repos-plugin'];
-    if (!localReposData?.localRepos) {
-      throw new Error(`${PLUGIN_NAME} requires @agent-detective/local-repos-plugin to be loaded as a dependency`);
-    }
-    const localRepos = localReposData.localRepos as LocalReposContext;
+    // Use type-safe service registry
+    const localReposService = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
+    const localRepos = localReposService.localRepos;
 
     if (!extContext.agentRunner) {
       extContext.logger?.error('Agent runner not available');
@@ -134,11 +118,11 @@ const jiraAdapterPlugin: Plugin = {
       agentRunner: extContext.agentRunner,
       enqueue: extContext.enqueue,
       getAvailableRepos: () => {
-        const repos = localRepos.getAllRepos();
-        return repos.filter((r) => r.exists);
+        const repos: any[] = localRepos.getAllRepos();
+        return repos.filter((r: any) => r.exists);
       },
-      buildRepoContext: localReposData.buildRepoContext as (repoPath: string, options?: unknown) => Promise<unknown>,
-      formatRepoContextForPrompt: localReposData.formatRepoContextForPrompt as (context: unknown) => string,
+      buildRepoContext: localReposService.buildRepoContext,
+      formatRepoContextForPrompt: localReposService.formatRepoContextForPrompt,
     });
 
     const webhookPath = cfg.webhookPath || '/plugins/agent-detective-jira-adapter/webhook/jira';

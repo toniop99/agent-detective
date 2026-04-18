@@ -19,11 +19,18 @@
     "test:watch": "tsx --test --watch",
     "clean": "rm -rf dist"
   },
-  "files": ["dist"],
-  "keywords": ["agent-detective", "jira", "adapter"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "agent-detective",
+    "jira",
+    "adapter"
+  ],
   "license": "MIT",
   "dependencies": {
     "@agent-detective/core": "workspace:*",
+    "@agent-detective/local-repos-plugin": "workspace:^",
     "@agent-detective/types": "workspace:*"
   },
   "devDependencies": {

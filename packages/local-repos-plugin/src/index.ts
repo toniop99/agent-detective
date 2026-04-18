@@ -95,6 +95,12 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
   return results;
 }
 
+export interface LocalReposService {
+  localRepos: LocalReposContext;
+  buildRepoContext: (repoPath: string, options?: any) => Promise<unknown>;
+  formatRepoContextForPrompt: (context: unknown) => string;
+}
+
 const localReposPlugin: Plugin = {
   name: '@agent-detective/local-repos-plugin',
   version: '0.1.0',
@@ -133,7 +139,7 @@ const localReposPlugin: Plugin = {
       },
     };
 
-    context.plugins['@agent-detective/local-repos-plugin'] = {
+    const localReposService: LocalReposService = {
       localRepos,
       buildRepoContext: (repoPath: string, opts?: BuildRepoContextOptions) => {
         return buildRepoContext(repoPath, {
@@ -141,8 +147,10 @@ const localReposPlugin: Plugin = {
           maxCommits: repoContextOptions?.gitLogMaxCommits ?? opts?.maxCommits,
         });
       },
-      formatRepoContextForPrompt,
+      formatRepoContextForPrompt: formatRepoContextForPrompt as (context: unknown) => string,
     };
+
+    context.registerService<LocalReposService>('@agent-detective/local-repos-plugin', localReposService);
 
     extContext.logger?.info(
       `local-repos-plugin: Loaded ${validatedRepos.length} repos: ${validatedRepos.map((r) => r.name).join(', ')}`

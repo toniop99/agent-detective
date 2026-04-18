@@ -79,14 +79,15 @@ register(app, context: PluginContext) {
     agentRunner,              // run AI agents
     config,                   // validated plugin config with defaults applied
     logger,                   // logger with plugin prefix
-    plugins,                  // access other plugins
   } = context;
 
   // Accessing repository context from local-repos-plugin
-  const localReposPlugin = plugins['@agent-detective/local-repos-plugin'];
-  if (localReposPlugin) {
-    const localRepos = localReposPlugin.localRepos;
+  try {
+    const localReposService = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
+    const localRepos = localReposService.localRepos;
     // ...
+  } catch (err) {
+    logger.warn('Local repos service not available');
   }
 }
 ```
@@ -98,8 +99,52 @@ register(app, context: PluginContext) {
 | `agentRunner` | `AgentRunner` | Executes AI agent prompts (see Section 10) |
 | `config` | `object` | Plugin config validated against schema, with defaults merged |
 | `logger` | `Logger` | Logger with `.info()`, `.warn()`, `.error()` |
-| `plugins` | `object` | Dictionary of loaded plugins and their exported APIs |
+| `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
+| `getService<T>(name)` | `function` | Get a registered service by name with type safety |
 | `enqueue` | `function` | Enqueue tasks to be executed sequentially per key |
+
+### Type-Safe Service Registry
+
+Plugins can share functionality by registering services. This is preferred over accessing the `plugins` dictionary directly as it provides better type safety and error handling.
+
+#### Providing a Service
+
+```typescript
+// In your plugin's index.ts
+export interface MyService {
+  doSomething(): string;
+}
+
+const myPlugin: Plugin = {
+  name: 'my-provider-plugin',
+  // ...
+  register(app, context) {
+    const service: MyService = {
+      doSomething: () => 'Hello from service!'
+    };
+    
+    context.registerService<MyService>('my-service', service);
+  }
+};
+```
+
+#### Consuming a Service
+
+```typescript
+// In the consumer plugin
+import type { MyService } from 'my-provider-plugin';
+
+const consumerPlugin: Plugin = {
+  name: 'my-consumer-plugin',
+  dependsOn: ['my-provider-plugin'],
+  register(app, context) {
+    // getService will throw if the service is not found
+    const myService = context.getService<MyService>('my-service');
+    
+    console.log(myService.doSomething());
+  }
+};
+```
 
 ### LocalReposContext
 

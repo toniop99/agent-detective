@@ -93,7 +93,15 @@ export interface PluginContext {
   config: Record<string, unknown>;
   logger: Logger;
   controllers: object[];
-  plugins: Record<string, Record<string, unknown>>;
+  /**
+   * Register a service that other plugins can consume.
+   */
+  registerService<T>(name: string, service: T): void;
+  /**
+   * Get a service registered by another plugin.
+   * Throws an error if the service is not found.
+   */
+  getService<T>(name: string): T;
 }
 
 export interface RunAgentOptions {

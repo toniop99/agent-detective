@@ -10,11 +10,9 @@ import {
   Tags,
   Response,
   RequestBody,
-} from '@agent-detective/core';
-import {
   generateSpecFromControllers,
   generateSpecFromRoutes,
-} from '../../../src/core/openapi/spec-generator.js';
+} from '@agent-detective/core';
 
 describe('generateSpecFromControllers', () => {
   @Controller('/plugins/repos', { tags: ['local-repos-plugin'], description: 'Repository management' })

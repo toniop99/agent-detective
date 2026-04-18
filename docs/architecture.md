@@ -58,9 +58,8 @@ const plugin: Plugin = {
     //   agentRunner: AgentRunner,
     //   config: Record<string, unknown>,
     //   logger: Logger,
-    //   plugins: {
-    //      '@agent-detective/local-repos-plugin': { localRepos, buildRepoContext, ... }
-    //   }
+    //   registerService: (name, service) => void,
+    //   getService: (name) => T
     // }
   }
 

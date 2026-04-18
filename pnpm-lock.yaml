@@ -85,6 +85,9 @@ importers:
       '@agent-detective/core':
         specifier: workspace:*
         version: link:../core
+      '@agent-detective/local-repos-plugin':
+        specifier: workspace:^
+        version: link:../local-repos-plugin
       '@agent-detective/types':
         specifier: workspace:*
         version: link:../types

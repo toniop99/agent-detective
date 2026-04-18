@@ -10,7 +10,7 @@ export interface AnalyzeHandlerDeps {
   agentRunner: AgentRunner;
   enqueue: EnqueueFn;
   getAvailableRepos: () => RepoInfo[];
-  buildRepoContext: (repoPath: string, options?: unknown) => Promise<unknown>;
+  buildRepoContext: (repoPath: string, options?: any) => Promise<unknown>;
   formatRepoContextForPrompt: (context: unknown) => string;
 }
 

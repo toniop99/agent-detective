@@ -63,7 +63,8 @@ interface Plugin {
 
 interface PluginContext {
   agentRunner: AgentRunner;       // Always available
-  plugins: Record<string, any>;   // Access other plugins
+  registerService<T>(name: string, service: T): void;
+  getService<T>(name: string): T;
   enqueue?: EnqueueFn;
   config: object;                  // Validated config
   logger: Logger;                  // info/warn/error
@@ -90,14 +91,14 @@ Plugin routes are auto-prefixed with `/plugins/{sanitized-name}`:
 Register routes with relative paths - prefix is applied automatically.
 
 ### Plugin Dependencies
-Use `dependsOn` to ensure plugins load in order:
+Use `dependsOn` to ensure plugins load in order and services are available:
 ```typescript
 {
   name: '@agent-detective/my-adapter',
   dependsOn: ['@agent-detective/local-repos-plugin'],
   register(app, context) {
-    const localReposPlugin = context.plugins['@agent-detective/local-repos-plugin'];
-    // localReposPlugin.localRepos, localReposPlugin.buildRepoContext available here
+    const localReposService = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
+    // localReposService.localRepos, localReposService.buildRepoContext available here
   }
 }
 ```

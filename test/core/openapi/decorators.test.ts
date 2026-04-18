@@ -19,8 +19,9 @@ import {
   QueryParam,
   HeaderParam,
   Body,
-} from '../../../src/core/openapi/decorators.js';
-import { getRouteMetadata, getOperationMetadata } from '../../../src/core/openapi/metadata.js';
+  getRouteMetadata,
+  getOperationMetadata,
+} from '@agent-detective/core';
 
 describe('HTTP Method Decorators', () => {
   class TestController {

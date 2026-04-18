@@ -295,5 +295,70 @@ describe('Plugin System', () => {
 
       assert.ok(loaded);
     });
-  });
-});
+    });
+
+    describe('Service Registry', () => {
+    it('allows a plugin to register and another to get a service', async () => {
+      const serviceObj = { doSomething: () => 'done' };
+
+      const providerPlugin = {
+        name: 'provider-plugin',
+        version: '1.0.0',
+        register: (_app: any, context: any) => {
+          context.registerService('test-service', serviceObj);
+        },
+      };
+
+      let retrievedService: any = null;
+      const consumerPlugin = {
+        name: 'consumer-plugin',
+        version: '1.0.0',
+        dependsOn: ['provider-plugin'],
+        register: (_app: any, context: any) => {
+          retrievedService = context.getService('test-service');
+        },
+      };
+
+      await pluginSystem.loadPlugin(providerPlugin as unknown as Plugin, {} as any, {});
+      await pluginSystem.loadPlugin(consumerPlugin as unknown as Plugin, {} as any, {});
+
+      assert.strictEqual(retrievedService, serviceObj);
+      assert.strictEqual(retrievedService.doSomething(), 'done');
+    });
+
+    it('returns null when a plugin fails to register due to missing service', async () => {
+      const consumerPlugin = {
+        name: 'consumer-plugin-error',
+        version: '1.0.0',
+        register: (_app: any, context: any) => {
+          context.getService('non-existent');
+        },
+      };
+
+      const loaded = await pluginSystem.loadPlugin(consumerPlugin as unknown as Plugin, {} as any, {});
+      assert.strictEqual(loaded, null);
+    });
+
+    it('warns when overwriting a service', async () => {
+      const mockLogger = createMockLogger();
+      const systemWithMockLogger = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        logger: mockLogger as any,
+      });
+
+      const plugin = {
+        name: 'overwrite-plugin',
+        version: '1.0.0',
+        register: (_app: any, context: any) => {
+          context.registerService('dup', { i: 1 });
+          context.registerService('dup', { i: 2 });
+        },
+      };
+
+      await systemWithMockLogger.loadPlugin(plugin as unknown as Plugin, {} as any, {});
+
+      assert.ok(mockLogger.warn.mock.calls.length > 0);
+      assert.match(mockLogger.warn.mock.calls[0].arguments[0], /Service dup already registered/);
+    });
+    });
+    });

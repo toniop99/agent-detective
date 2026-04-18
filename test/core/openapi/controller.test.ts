@@ -7,9 +7,14 @@ import {
   registerController,
   registerControllers,
   getRegisteredRoutes,
-} from '../../../src/core/openapi/controller.js';
-import { getControllerMetadata, getControllerRoutes } from '../../../src/core/openapi/metadata.js';
-import { Get, Post, Delete, Summary, Response } from '../../../src/core/openapi/decorators.js';
+  getControllerMetadata,
+  getControllerRoutes,
+  Get,
+  Post,
+  Delete,
+  Summary,
+  Response,
+} from '@agent-detective/core';
 
 describe('Controller decorator', () => {
   @Controller('/test-prefix', { tags: ['test-controller'], description: 'Test controller' })

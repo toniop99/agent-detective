@@ -132,7 +132,7 @@ const myPlugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, plugins, logger } = context;
+    const { config, agentRunner, logger } = context;
 
     if (!config.enabled) {
       logger.info('Plugin is disabled');
@@ -157,7 +157,8 @@ export default myPlugin;
 | Member | Type | Description |
 |--------|------|-------------|
 | `agentRunner` | `AgentRunner` | Execute AI agent prompts |
-| `plugins` | `object` | Access to other loaded plugins (e.g. local-repos) |
+| `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
+| `getService<T>(name)` | `function` | Get a registered service by name with type safety |
 | `config` | `object` | Validated plugin configuration |
 | `logger` | `Logger` | Structured logging |
 | `enqueue` | `function` | Queue tasks for sequential execution |
@@ -385,7 +386,7 @@ const jiraPlusPlugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, plugins, logger } = context;
+    const { config, agentRunner, logger } = context;
 
     if (!config.enabled) {
       logger.info('Jira Plus plugin is disabled');
