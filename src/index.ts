@@ -1,12 +1,13 @@
 import 'reflect-metadata';
 import { createServer, loadConfig, setupDocs } from './server.js';
-import { createPluginSystem } from './core/plugin-system.js';
+import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
 import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgent, getAgentLabel } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
-import { generateSpecFromControllers } from './core/openapi/index.js';
+import { generateSpecFromRoutes, getRegisteredRoutes } from './core/openapi/index.js';
+import { CORE_PLUGIN_TAG } from './core/openapi/constants.js';
 
 const config = loadConfig();
 
@@ -56,15 +57,44 @@ app.listen(PORT, async () => {
   }
 
   const pluginControllers = pluginSystem.getControllers();
-  const allControllers = [coreController.constructor, ...pluginControllers.map((c: object) => (c as { constructor: new () => object }).constructor)];
+  
+  const allRoutes: Array<{
+    method: string;
+    path: string;
+    prefixedPath: string;
+    pluginName: string;
+    operationMetadata?: any;
+  }> = [];
 
-  setupDocs(app, allControllers as (new () => object)[], observability, config);
+  const coreRoutes = getRegisteredRoutes(coreController);
+  for (const r of coreRoutes) {
+    allRoutes.push({
+      method: r.method,
+      path: r.path,
+      prefixedPath: r.path,
+      pluginName: CORE_PLUGIN_TAG,
+      operationMetadata: r.operationMetadata,
+    });
+  }
 
-  const spec = generateSpecFromControllers(allControllers as (new () => object)[], {
-    title: 'Agent Detective API',
-    version: '1.0.0',
-    description: 'API documentation for agent-detective and its plugins',
-  });
+  for (const ctrl of pluginControllers) {
+    const pluginName = (ctrl as any).__pluginName || 'unknown-plugin';
+    const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
+    const routes = getRegisteredRoutes(ctrl);
+    for (const r of routes) {
+      allRoutes.push({
+        method: r.method,
+        path: r.path,
+        prefixedPath: `${prefix}${r.path}`,
+        pluginName: pluginName,
+        operationMetadata: r.operationMetadata,
+      });
+    }
+  }
+
+  setupDocs(app, allRoutes, observability, config);
+
+  const spec = generateSpecFromRoutes(allRoutes);
   serverLogger.info('Generated OpenAPI spec', {
     paths: Object.keys(spec.paths).length,
     tags: spec.tags.map((t: { name: string }) => t.name).join(', '),

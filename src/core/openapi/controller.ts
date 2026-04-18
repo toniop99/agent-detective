@@ -82,6 +82,7 @@ export function getRegisteredRoutes(controllerOrClass: object | (new () => objec
   method: string;
   path: string;
   handler: Function;
+  operationMetadata?: import('./metadata.js').OperationMetadata;
 }> {
   let controllerInstance: object;
   let controllerClass: new () => object;
@@ -100,5 +101,6 @@ export function getRegisteredRoutes(controllerOrClass: object | (new () => objec
     method: route.method,
     path: ctrlMeta ? `${ctrlMeta.prefix}${route.path}` : route.path,
     handler: route.handler,
+    operationMetadata: route.operationMetadata,
   }));
 }

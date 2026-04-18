@@ -61,7 +61,7 @@ export async function handleAnalyze(
         }
       );
 
-      const repoName = parseAgentDiscoveryResponse(discoveryResponse);
+      const repoName = parseAgentDiscoveryResponse(discoveryResponse, repos);
       if (repoName) {
         selectedRepo = repos.find((r) => r.name.toLowerCase() === repoName.toLowerCase()) || null;
       }

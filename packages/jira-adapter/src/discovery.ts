@@ -52,22 +52,58 @@ export function buildDiscoveryPrompt(
   });
 }
 
-export function parseAgentDiscoveryResponse(response: string): string | null {
+export function parseAgentDiscoveryResponse(response: string, availableRepos: RepoInfo[]): string | null {
   const trimmed = response.trim();
+  const lowerResponse = trimmed.toLowerCase();
 
-  if (trimmed.toLowerCase() === 'none') {
+  if (lowerResponse === 'none' || lowerResponse.includes('no repository seems related')) {
     return null;
   }
 
-  const lines = trimmed.split('\n');
-  const firstLine = lines[0].trim();
+  const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const repoNames = availableRepos.map(r => r.name);
+  const repoNamesLower = repoNames.map(n => n.toLowerCase());
 
-  if (firstLine.startsWith('-') || firstLine.startsWith('*')) {
-    const match = firstLine.match(/^[-*]\s*(.+)/);
-    if (match) {
-      return match[1].trim();
+  // 1. Look for a line that exactly matches a repo name (case-insensitive)
+  for (const line of lines) {
+    const lowerLine = line.toLowerCase();
+    const index = repoNamesLower.indexOf(lowerLine);
+    if (index !== -1) {
+      return repoNames[index];
     }
   }
 
-  return firstLine;
+  // 2. Look for a line that starts with a bullet point and contains a repo name
+  for (const line of lines) {
+    if (line.startsWith('-') || line.startsWith('*')) {
+      const content = line.replace(/^[-*]\s*/, '').trim();
+      const contentLower = content.toLowerCase();
+      
+      // Exact match after bullet
+      const index = repoNamesLower.indexOf(contentLower);
+      if (index !== -1) {
+        return repoNames[index];
+      }
+
+      // See if the content starts with a repo name
+      for (let i = 0; i < repoNamesLower.length; i++) {
+        if (contentLower.startsWith(repoNamesLower[i])) {
+          return repoNames[i];
+        }
+      }
+    }
+  }
+
+  // 3. Just take the first line and try to find a repo name in it
+  if (lines.length > 0) {
+    const firstLine = lines[0];
+    const firstLineLower = firstLine.toLowerCase();
+    for (let i = 0; i < repoNamesLower.length; i++) {
+      if (firstLineLower.includes(repoNamesLower[i])) {
+        return repoNames[i];
+      }
+    }
+  }
+
+  return null;
 }

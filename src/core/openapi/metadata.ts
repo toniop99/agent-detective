@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 
-export const ROUTE_METADATA_KEY = Symbol('route');
-export const OPERATION_METADATA_KEY = Symbol('operation');
-export const CONTROLLER_METADATA_KEY = Symbol('controller');
-export const PARAMETER_METADATA_KEY = Symbol('parameter');
+export const ROUTE_METADATA_KEY = Symbol.for('agent-detective:route');
+export const OPERATION_METADATA_KEY = Symbol.for('agent-detective:operation');
+export const CONTROLLER_METADATA_KEY = Symbol.for('agent-detective:controller');
+export const PARAMETER_METADATA_KEY = Symbol.for('agent-detective:parameter');
 
 export interface RouteMetadata {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch' | 'use';

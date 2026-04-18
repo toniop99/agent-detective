@@ -6,7 +6,7 @@ import type { Plugin, PluginContext, LoadedPlugin } from './types.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = resolve(__dirname, '../..');
 
-function sanitizePluginName(name: string): string {
+export function sanitizePluginName(name: string): string {
   return name
     .replace(/^@/, '')
     .replace(/\//g, '-');
@@ -20,7 +20,7 @@ function createPrefixedApp(
 
   return new Proxy(app, {
     get(target, prop) {
-      if (['get', 'post', 'put', 'delete', 'patch'].includes(prop as string)) {
+      if (['get', 'post', 'put', 'delete', 'patch', 'all', 'head', 'options'].includes(prop as string)) {
         return (path: string, ...handlers: unknown[]) => {
           const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,6 +70,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
   const pluginControllers: object[] = [];
+  const pluginsRegistry: Record<string, unknown> = {};
 
   async function loadPlugin(
     packageNameOrPlugin: string | Plugin,
@@ -77,25 +78,12 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     pluginConfig: Record<string, unknown> = {},
     sharedContext?: PluginContext
   ): Promise<LoadedPlugin | null> {
-    let packageName: string;
     let plugin: Plugin;
 
     if (typeof packageNameOrPlugin === 'object' && packageNameOrPlugin !== null) {
       plugin = packageNameOrPlugin as Plugin;
-      packageName = plugin.name;
-
-      if (loadedPlugins.has(packageName)) {
-        logger.warn(`Plugin ${packageName} already loaded, skipping`);
-        return loadedPlugins.get(packageName) ?? null;
-      }
     } else {
-      packageName = packageNameOrPlugin;
-
-      if (loadedPlugins.has(packageName)) {
-        logger.warn(`Plugin ${packageName} already loaded, skipping`);
-        return loadedPlugins.get(packageName) ?? null;
-      }
-
+      const packageName = packageNameOrPlugin;
       try {
         if (packageName.startsWith('./') || packageName.startsWith('../') || packageName.startsWith('/')) {
           const resolvedPath = resolve(ROOT_DIR, packageName);
@@ -117,6 +105,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       }
     }
 
+    if (loadedPlugins.has(plugin.name)) {
+      logger.warn(`Plugin ${plugin.name} already loaded, skipping`);
+      return loadedPlugins.get(plugin.name) ?? null;
+    }
+
     try {
       validatePluginSchema(plugin);
 
@@ -131,27 +124,28 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       validatePluginConfig(plugin, mergedConfig);
 
-      const pluginContext: PluginContext = sharedContext
-        ? { ...sharedContext, config: mergedConfig }
-        : {
-          agentRunner,
-          repoMapping,
-          buildRepoContext,
-          formatRepoContextForPrompt,
-          enqueue,
-          config: mergedConfig,
-          logger: 'child' in logger && typeof logger.child === 'function'
-            ? logger.child({ plugin: packageName })
-            : logger,
-          controllers: pluginControllers,
-          plugins: {},
-        };
+      const pluginContext: PluginContext = {
+        agentRunner,
+        repoMapping,
+        buildRepoContext,
+        formatRepoContextForPrompt,
+        enqueue,
+        config: mergedConfig,
+        logger: 'child' in logger && typeof logger.child === 'function'
+          ? logger.child({ plugin: plugin.name })
+          : logger,
+        controllers: pluginControllers,
+        plugins: sharedContext?.plugins || pluginsRegistry,
+      };
 
       const prefixedApp = createPrefixedApp(app, plugin.name);
       const result = await plugin.register(prefixedApp, pluginContext);
 
       if (result) {
         const ctrls = Array.isArray(result) ? result : [result];
+        for (const ctrl of ctrls) {
+          (ctrl as any).__pluginName = plugin.name;
+        }
         pluginControllers.push(...ctrls);
       }
 
@@ -161,13 +155,13 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         config: mergedConfig,
         dependsOn: plugin.dependsOn || [],
       };
-      loadedPlugins.set(packageName, loaded);
+      loadedPlugins.set(plugin.name, loaded);
 
       logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
 
       return loaded;
     } catch (err) {
-      logger.warn(`Failed to load plugin ${packageName}: ${(err as Error).message}. Continuing...`);
+      logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
       return null;
     }
   }
@@ -185,8 +179,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     for (const p of plugins) {
       const packageName = typeof p === 'string' ? p : p.package;
       if (!packageName) continue;
-
-      if (loadedPlugins.has(packageName)) continue;
 
       let plugin: Plugin;
       try {
@@ -209,7 +201,9 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         continue;
       }
 
-      pluginData.set(packageName, {
+      if (loadedPlugins.has(plugin.name)) continue;
+
+      pluginData.set(plugin.name, {
         plugin,
         packageName,
         options: typeof p === 'object' ? (p.options || {}) : {},
@@ -228,6 +222,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       const data = pluginData.get(name);
       if (!data) {
+        // If it's already loaded, it's fine
+        if (loadedPlugins.has(name)) {
+          visited.add(name);
+          return true;
+        }
         errors.push(`Plugin ${name} not found in config but required by ${path.join(' -> ')}`);
         return false;
       }

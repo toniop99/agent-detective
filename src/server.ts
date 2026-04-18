@@ -9,8 +9,13 @@ import type {
 } from '@agent-detective/types';
 import { createRequestLogger, type Observability, type ObservabilityConfig } from '@agent-detective/observability';
 import { apiReference } from '@scalar/express-api-reference';
-import { registerController, generateSpecFromControllers } from './core/openapi/index.js';
+import {
+  registerController,
+  generateSpecFromRoutes,
+  getRegisteredRoutes,
+} from './core/openapi/index.js';
 import { CoreApiController, createCoreApiController } from './core/core-api-controller.js';
+import { sanitizePluginName } from './core/plugin-system.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -157,7 +162,13 @@ export function createServer(
 
 export function setupDocs(
   app: Application,
-  controllers: (new () => object)[],
+  allRoutes: Array<{
+    method: string;
+    path: string;
+    prefixedPath: string;
+    pluginName: string;
+    operationMetadata?: import('./core/openapi/index.js').OperationMetadata;
+  }>,
   observability: Observability,
   config: Config
 ): void {
@@ -173,11 +184,7 @@ export function setupDocs(
       }
     }
 
-    const spec = generateSpecFromControllers(controllers, {
-      title: 'Agent Detective API',
-      version: '1.0.0',
-      description: 'API documentation for agent-detective and its plugins',
-    });
+    const spec = generateSpecFromRoutes(allRoutes);
 
     const apiRefMiddleware = apiReference({
       content: spec,
