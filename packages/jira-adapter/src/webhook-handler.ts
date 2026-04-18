@@ -3,7 +3,7 @@ import type { JiraTaskInfo, JiraPayload } from './types.js';
 import { routeToHandler, HandlerContext } from './handlers/index.js';
 
 export function createJiraWebhookHandler(options: HandlerContext) {
-  const handlerContext: HandlerContext = { ...options };
+  const handlerContext: HandlerContext = options;
 
   async function handleWebhook(
     payload: unknown,

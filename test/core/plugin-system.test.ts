@@ -361,4 +361,42 @@ describe('Plugin System', () => {
       assert.match(mockLogger.warn.mock.calls[0].arguments[0], /Service dup already registered/);
     });
     });
+
+    describe('Capabilities Registry', () => {
+    it('allows plugins to register and check capabilities', async () => {
+      let hasCap = false;
+      const capabilityPlugin = {
+        name: 'cap-plugin',
+        version: '1.0.0',
+        register: (_app: any, context: any) => {
+          context.registerCapability('my-capability');
+          hasCap = context.hasCapability('my-capability');
+        },
+      };
+
+      const loaded = await pluginSystem.loadPlugin(capabilityPlugin as unknown as Plugin, {} as any, {});
+      assert.ok(loaded);
+      assert.strictEqual(hasCap, true);
     });
+
+    it('logs an error when a required capability is missing in loadPlugin', async () => {
+      const mockLogger = createMockLogger();
+      const systemWithMockLogger = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        logger: mockLogger as any,
+      });
+
+      const missingCapPlugin = {
+        name: 'missing-cap-plugin',
+        version: '1.0.0',
+        requiresCapabilities: ['code-analysis'],
+        register: () => {},
+      };
+
+      await systemWithMockLogger.loadPlugin(missingCapPlugin as unknown as Plugin, {} as any, {});
+
+      assert.ok(mockLogger.error.mock.calls.length > 0);
+      assert.match(mockLogger.error.mock.calls[0].arguments[0], /requires capability 'code-analysis' which is not provided/);
+      });
+      });
+      });

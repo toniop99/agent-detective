@@ -41,6 +41,7 @@ export interface Plugin {
   schemaVersion?: '1.0';
   schema?: PluginSchema;
   dependsOn?: string[];
+  requiresCapabilities?: string[];
   register(app: import('express').Application, context: PluginContext): Promise<object[] | void> | object[] | void;
 }
 
@@ -87,12 +88,18 @@ export interface RepoContext {
   };
 }
 
+export type EnqueueFn = (queueKey: string, fn: () => Promise<void>) => Promise<void>;
+
 export interface PluginContext {
   agentRunner: AgentRunner;
   enqueue?: EnqueueFn;
   config: Record<string, unknown>;
   logger: Logger;
   controllers: object[];
+  /**
+   * Event bus for inter-plugin communication and task lifecycle.
+   */
+  events: EventBus;
   /**
    * Register a service that other plugins can consume.
    */
@@ -106,6 +113,14 @@ export interface PluginContext {
    * Register an AI agent.
    */
   registerAgent(agent: Agent): void;
+  /**
+   * Register a capability provided by this plugin (e.g. 'code-analysis').
+   */
+  registerCapability(capability: string): void;
+  /**
+   * Check if a capability has been registered by any loaded plugin.
+   */
+  hasCapability(capability: string): boolean;
 }
 
 export interface RunAgentOptions {
@@ -215,7 +230,19 @@ export interface ProcessUtils {
   execLocalStreaming(cmd: string, args: string[], options?: ExecLocalStreamingOptions): Promise<string>;
 }
 
-export type EnqueueFn = (queueKey: string, fn: () => Promise<void>) => Promise<void>;
+export interface EventBus {
+  on(event: string, handler: (...args: any[]) => any): void;
+  off(event: string, handler: (...args: any[]) => any): void;
+  emit(event: string, ...args: any[]): void;
+  invokeAsync<T>(event: string, ...args: any[]): Promise<T[]>;
+}
+
+export const StandardEvents = {
+  TASK_CREATED: 'task:created',
+  TASK_GATHER_CONTEXT: 'task:gather_context',
+  TASK_COMPLETED: 'task:completed',
+  TASK_FAILED: 'task:failed',
+} as const;
 
 export interface AgentRunRequest {
   agentId: string;

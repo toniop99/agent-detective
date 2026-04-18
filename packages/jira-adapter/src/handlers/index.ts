@@ -1,17 +1,13 @@
+import { StandardEvents, type EventBus } from '@agent-detective/types';
 import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../types.js';
 import { getDefaultAcknowledgmentMessage } from '../types.js';
-import { handleAnalyze, AnalyzeHandlerDeps } from './analyze-handler.js';
 import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler.js';
 import { handleIgnore, IgnoreHandlerDeps } from './ignore-handler.js';
 
 export interface HandlerContext {
-  jiraClient: AnalyzeHandlerDeps['jiraClient'];
+  jiraClient: AcknowledgeHandlerDeps['jiraClient'];
   config: JiraAdapterConfig;
-  agentRunner: AnalyzeHandlerDeps['agentRunner'];
-  enqueue: AnalyzeHandlerDeps['enqueue'];
-  getAvailableRepos: AnalyzeHandlerDeps['getAvailableRepos'];
-  buildRepoContext: AnalyzeHandlerDeps['buildRepoContext'];
-  formatRepoContextForPrompt: AnalyzeHandlerDeps['formatRepoContextForPrompt'];
+  events: EventBus;
 }
 
 function getEventConfig(
@@ -42,22 +38,33 @@ export async function routeToHandler(
   webhookEvent: string,
   context: HandlerContext
 ): Promise<void> {
-  const { config, jiraClient, agentRunner, enqueue, getAvailableRepos, buildRepoContext, formatRepoContextForPrompt } = context;
+  const { config, jiraClient, events } = context;
 
   const eventConfig = getEventConfig(webhookEvent, config);
 
   switch (eventConfig.action) {
     case 'analyze': {
-      const analyzeDeps: AnalyzeHandlerDeps = {
-        jiraClient,
-        config,
-        agentRunner,
-        enqueue,
-        getAvailableRepos,
-        buildRepoContext,
-        formatRepoContextForPrompt,
-      };
-      await handleAnalyze(payload, taskInfo, analyzeDeps);
+      events.emit(StandardEvents.TASK_CREATED, {
+        id: taskInfo.key,
+        type: 'incident',
+        source: '@agent-detective/jira-adapter',
+        message: taskInfo.description,
+        context: {
+          repoPath: null,
+          threadId: null,
+          cwd: process.cwd(),
+        },
+        replyTo: {
+          type: 'issue',
+          id: taskInfo.key,
+        },
+        metadata: {
+          labels: taskInfo.labels,
+          projectKey: taskInfo.projectKey,
+          requiresCodeContext: true,
+          analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
+        },
+      });
       break;
     }
 

@@ -65,6 +65,8 @@ interface PluginContext {
   agentRunner: AgentRunner;       // Always available
   registerService<T>(name: string, service: T): void;
   getService<T>(name: string): T;
+  registerCapability(capability: string): void;
+  hasCapability(capability: string): boolean;
   enqueue?: EnqueueFn;
   config: object;                  // Validated config
   logger: Logger;                  // info/warn/error

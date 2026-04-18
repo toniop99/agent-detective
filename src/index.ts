@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import { createEventBus } from './core/event-bus.js';
+import { createOrchestrator } from './core/orchestrator.js';
 import { createServer, loadConfig, setupDocs } from './server.js';
 import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
@@ -33,13 +35,21 @@ for (const agent of listAgents()) {
 }
 
 const queues = new Map<string, Promise<void>>();
+
 const enqueue = createEnqueue(queues);
+
+const eventBus = createEventBus();
+
+
+const orchestrator = createOrchestrator({ eventBus, agentRunner, enqueue });
+orchestrator.start();
 
 const { app, coreController } = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
 
 const pluginSystem = createPluginSystem({
   agentRunner,
   enqueue,
+  events: eventBus,
   logger: logger.child('plugin-system'),
 });
 

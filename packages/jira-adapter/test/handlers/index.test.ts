@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { routeToHandler } from '../../src/handlers/index.js';
 import type { HandlerContext } from '../../src/handlers/index.js';
 import type { JiraAdapterConfig } from '../../src/types.js';
+import { StandardEvents } from '@agent-detective/types';
 
 interface MockComment {
   issueKey: string;
@@ -18,9 +19,11 @@ interface MockJiraClientForTest {
 describe('Handler Registry', () => {
   let mockComments: MockComment[];
   let mockJiraClient: MockJiraClientForTest;
+  let emittedEvents: Array<{ event: string, payload: any }>;
 
   beforeEach(() => {
     mockComments = [];
+    emittedEvents = [];
     mockJiraClient = {
       comments: mockComments,
       async addComment(issueKey: string, commentText: string) {
@@ -34,6 +37,19 @@ describe('Handler Registry', () => {
     };
   });
 
+  const createMockContext = (config: JiraAdapterConfig): HandlerContext => ({
+    jiraClient: mockJiraClient as unknown as HandlerContext['jiraClient'],
+    config,
+    events: {
+      emit: (event: string, payload: any) => {
+        emittedEvents.push({ event, payload });
+      },
+      on: () => {},
+      off: () => {},
+      invokeAsync: async () => [],
+    },
+  });
+
   it('routes to acknowledge handler for jira:issue_updated', async () => {
     const config: JiraAdapterConfig = {
       webhookBehavior: {
@@ -44,15 +60,7 @@ describe('Handler Registry', () => {
       },
     };
 
-    const context: HandlerContext = {
-      jiraClient: mockJiraClient as unknown as HandlerContext['jiraClient'],
-      config,
-      agentRunner: {} as HandlerContext['agentRunner'],
-      enqueue: async (_key: string, fn: () => Promise<void>) => { await fn(); },
-      getAvailableRepos: () => [],
-      buildRepoContext: async () => ({}),
-      formatRepoContextForPrompt: () => '',
-    };
+    const context = createMockContext(config);
 
     const taskInfo = {
       id: 'TEST-1',
@@ -77,15 +85,7 @@ describe('Handler Registry', () => {
       },
     };
 
-    const context: HandlerContext = {
-      jiraClient: mockJiraClient as unknown as HandlerContext['jiraClient'],
-      config,
-      agentRunner: {} as HandlerContext['agentRunner'],
-      enqueue: async (_key: string, fn: () => Promise<void>) => { await fn(); },
-      getAvailableRepos: () => [],
-      buildRepoContext: async () => ({}),
-      formatRepoContextForPrompt: () => '',
-    };
+    const context = createMockContext(config);
 
     const taskInfo = {
       id: 'TEST-2',
@@ -101,38 +101,34 @@ describe('Handler Registry', () => {
     assert.equal(mockComments.length, 0);
   });
 
-  it('uses event-specific acknowledgment message when configured', async () => {
+  it('emits task:created for analyze action', async () => {
     const config: JiraAdapterConfig = {
       webhookBehavior: {
-        defaults: { action: 'ignore', acknowledgmentMessage: 'Default' },
+        defaults: { action: 'ignore' },
         events: {
-          'jira:issue_updated': { action: 'acknowledge', acknowledgmentMessage: 'Custom message for updates' },
+          'jira:issue_created': { action: 'analyze' },
         },
       },
     };
 
-    const context: HandlerContext = {
-      jiraClient: mockJiraClient as unknown as HandlerContext['jiraClient'],
-      config,
-      agentRunner: {} as HandlerContext['agentRunner'],
-      enqueue: async (_key: string, fn: () => Promise<void>) => { await fn(); },
-      getAvailableRepos: () => [],
-      buildRepoContext: async () => ({}),
-      formatRepoContextForPrompt: () => '',
-    };
+    const context = createMockContext(config);
 
     const taskInfo = {
-      id: 'TEST-3',
-      key: 'TEST-3',
-      summary: 'Updated Issue',
-      description: '',
-      labels: [],
+      id: '10001',
+      key: 'TEST-101',
+      summary: 'New bug found',
+      description: 'The app crashes on startup',
+      labels: ['bug', 'critical'],
       projectKey: 'TEST',
     };
 
-    await routeToHandler({}, taskInfo, 'jira:issue_updated', context);
+    await routeToHandler({}, taskInfo, 'jira:issue_created', context);
 
-    assert.equal(mockComments.length, 1);
-    assert.equal(mockComments[0].text, 'Custom message for updates');
+    assert.equal(emittedEvents.length, 1);
+    assert.equal(emittedEvents[0].event, StandardEvents.TASK_CREATED);
+    assert.equal(emittedEvents[0].payload.id, 'TEST-101');
+    assert.equal(emittedEvents[0].payload.message, 'The app crashes on startup');
+    assert.equal(emittedEvents[0].payload.metadata.requiresCodeContext, true);
+    assert.deepEqual(emittedEvents[0].payload.metadata.labels, ['bug', 'critical']);
   });
 });

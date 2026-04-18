@@ -32,12 +32,38 @@ export interface RepoContextConfig {
   gitLogMaxCommits?: number;
 }
 
+export interface DiscoveryConfig {
+  enabled?: boolean;
+  useAgentForDiscovery?: boolean;
+  discoveryAgentId?: string;
+  discoveryModel?: string;
+  discoveryPrompt?: string;
+  directMatchOnly?: boolean;
+  fallbackOnNoMatch?: 'none' | 'ask-agent';
+}
+
+export interface DiscoveryContextConfig {
+  includeTechStack?: boolean;
+  includeSummary?: boolean;
+  maxReposShown?: number;
+}
+
 export interface LocalReposPluginOptions {
   repos: RepoConfig[];
   techStackDetection?: TechStackDetectionConfig;
   summaryGeneration?: SummaryGenerationConfig;
   validation?: ValidationConfig;
   repoContext?: RepoContextConfig;
+  discovery?: DiscoveryConfig;
+  discoveryContext?: DiscoveryContextConfig;
+}
+
+export interface TaskInfoForDiscovery {
+  id: string;
+  summary: string;
+  description: string;
+  labels: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export interface ValidatedRepo {
@@ -95,4 +121,56 @@ export function getDefaultSummaryConfig(): SummaryGenerationConfig {
 
 export function getDefaultValidationConfig(): ValidationConfig {
   return { ...DEFAULT_VALIDATION_CONFIG };
+}
+
+const DEFAULT_ANALYSIS_PROMPT = `You are a senior code analyst. A development team needs your help resolving an issue.
+
+## Issue Information
+Task ID: {task_id}
+Summary: {task_summary}
+Description: {task_description}
+Labels: {task_labels}
+
+## Related Repository
+Name: {repo_name}
+Path: {repo_path}
+Tech Stack: {repo_tech_stack}
+Summary: {repo_summary}
+Recent Commits: {repo_commits}
+
+## Your Task
+Analyze the repository for the issue described. Identify:
+1. Most likely root causes
+2. Files or areas that need investigation
+3. Suggested fixes or next steps
+
+Provide a detailed and actionable analysis.`;
+
+const DEFAULT_DISCOVERY_PROMPT = `Given this task:
+- Task ID: {task_id}
+- Summary: {task_summary}
+- Description: {task_description}
+- Labels: {task_labels}
+
+Which of these repositories is most likely the source of this issue?
+
+Available Repositories:
+{repos_list}
+
+Respond with ONLY the repository name that best matches. If no repository seems related, respond with "none".`;
+
+export function getDefaultAnalysisPrompt(): string {
+  return DEFAULT_ANALYSIS_PROMPT;
+}
+
+export function getDefaultDiscoveryPrompt(): string {
+  return DEFAULT_DISCOVERY_PROMPT;
+}
+
+export function formatTemplate(template: string, variables: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '(not available)');
+  }
+  return result;
 }

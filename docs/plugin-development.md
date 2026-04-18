@@ -159,6 +159,8 @@ export default myPlugin;
 | `agentRunner` | `AgentRunner` | Execute AI agent prompts |
 | `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
 | `getService<T>(name)` | `function` | Get a registered service by name with type safety |
+| `registerCapability(name)` | `function` | Register a capability provided by this plugin |
+| `hasCapability(name)` | `function` | Check if a capability is registered |
 | `config` | `object` | Validated plugin configuration |
 | `logger` | `Logger` | Structured logging |
 | `enqueue` | `function` | Queue tasks for sequential execution |

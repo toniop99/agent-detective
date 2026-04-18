@@ -13,6 +13,7 @@ import { gitLog } from './repo-context/git-log.js';
 import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/index.js';
 import { registerController } from '@agent-detective/core';
 import { ReposController } from './repos-controller.js';
+import { createRepoAnalyzer } from './analyzer.js';
 
 const localReposPluginSchema: PluginSchema = {
   type: 'object',
@@ -36,6 +37,14 @@ const localReposPluginSchema: PluginSchema = {
     repoContext: {
       type: 'object',
       description: 'Configuration for repository context generation (gitLogMaxCommits)',
+    },
+    discovery: {
+      type: 'object',
+      description: 'Configuration for repository discovery',
+    },
+    discoveryContext: {
+      type: 'object',
+      description: 'Context settings for discovery prompts',
     },
   },
   required: ['repos'],
@@ -151,6 +160,10 @@ const localReposPlugin: Plugin = {
     };
 
     context.registerService<LocalReposService>('@agent-detective/local-repos-plugin', localReposService);
+    context.registerCapability('code-analysis');
+
+    const analyzer = createRepoAnalyzer(context, localRepos, localReposService);
+    analyzer.start();
 
     extContext.logger?.info(
       `local-repos-plugin: Loaded ${validatedRepos.length} repos: ${validatedRepos.map((r) => r.name).join(', ')}`

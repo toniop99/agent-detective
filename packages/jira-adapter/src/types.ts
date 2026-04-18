@@ -1,37 +1,9 @@
-export interface RepoInfo {
-  name: string;
-  path: string;
-  techStack: string[];
-  summary: string;
-}
-
-export interface DiscoveryConfig {
-  enabled?: boolean;
-  useAgentForDiscovery?: boolean;
-  discoveryAgentId?: string;
-  directMatchOnly?: boolean;
-  fallbackOnNoMatch?: 'ask-agent' | 'use-first' | 'skip-analysis';
-  discoveryPrompt?: string;
-}
-
-export interface DiscoveryContext {
-  includeTechStack?: boolean;
-  includeSummary?: boolean;
-  maxReposShown?: number;
-}
-
-export interface AnalysisConfig {
-  maxCommits?: number;
-}
-
 export type JiraWebhookEventType = 'jira:issue_created' | 'jira:issue_updated' | 'jira:issue_deleted';
 export type EventAction = 'analyze' | 'acknowledge' | 'ignore';
 
 export interface JiraEventConfig {
   action: EventAction;
   analysisPrompt?: string;
-  discoveryPrompt?: string;
-  discoveryConfig?: DiscoveryConfig;
   acknowledgmentMessage?: string;
 }
 
@@ -48,13 +20,9 @@ export interface JiraAdapterConfig {
   email?: string;
   apiToken?: string;
 
-  discovery?: DiscoveryConfig;
-  discoveryContext?: DiscoveryContext;
-  analysis?: AnalysisConfig;
   webhookBehavior?: JiraWebhookBehavior;
 
   analysisPrompt?: string;
-  discoveryPrompt?: string;
 }
 
 export interface JiraTaskInfo {
@@ -249,51 +217,7 @@ export interface JiraPayload {
   user?: JiraUser;
 }
 
-const DEFAULT_ANALYSIS_PROMPT = `You are a senior code analyst. A development team needs your help resolving an issue.
-
-## Issue Information
-Task Key: {task_key}
-Summary: {task_summary}
-Description: {task_description}
-Labels: {task_labels}
-
-## Related Repository
-Name: {repo_name}
-Path: {repo_path}
-Tech Stack: {repo_tech_stack}
-Summary: {repo_summary}
-Recent Commits: {repo_commits}
-
-## Your Task
-Analyze the repository for the issue described. Identify:
-1. Most likely root causes
-2. Files or areas that need investigation
-3. Suggested fixes or next steps
-
-Provide a detailed and actionable analysis.`;
-
-const DEFAULT_DISCOVERY_PROMPT = `Given this Jira task:
-- Task Key: {task_key}
-- Summary: {task_summary}
-- Description: {task_description}
-- Labels: {task_labels}
-
-Which of these repositories is most likely the source of this issue?
-
-Available Repositories:
-{repos_list}
-
-Respond with ONLY the repository name that best matches. If no repository seems related, respond with "none".`;
-
 const DEFAULT_ACKNOWLEDGMENT_MESSAGE = 'Thanks for the update! I will review this issue and provide feedback shortly.';
-
-export function getDefaultAnalysisPrompt(): string {
-  return DEFAULT_ANALYSIS_PROMPT;
-}
-
-export function getDefaultDiscoveryPrompt(): string {
-  return DEFAULT_DISCOVERY_PROMPT;
-}
 
 export function getDefaultAcknowledgmentMessage(): string {
   return DEFAULT_ACKNOWLEDGMENT_MESSAGE;

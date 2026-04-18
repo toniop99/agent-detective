@@ -51,6 +51,7 @@ interface CreatePluginSystemOptions {
   agentRunner: PluginContext['agentRunner'];
   enqueue?: PluginContext['enqueue'];
   logger?: PluginContext['logger'];
+  events: PluginContext['events'];
 }
 
 type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<string, unknown> }> };
@@ -60,11 +61,21 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     agentRunner,
     enqueue,
     logger = console,
+    events,
   } = context;
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
   const pluginControllers: object[] = [];
   const servicesRegistry = new Map<string, unknown>();
+  const capabilitiesRegistry = new Set<string>();
+
+  function registerCapability(capability: string): void {
+    capabilitiesRegistry.add(capability);
+  }
+
+  function hasCapability(capability: string): boolean {
+    return capabilitiesRegistry.has(capability);
+  }
 
   function registerService<T>(name: string, service: T): void {
     if (servicesRegistry.has(name)) {
@@ -141,9 +152,12 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           ? logger.child({ plugin: plugin.name })
           : logger,
         controllers: pluginControllers,
+        events,
         registerService: sharedContext?.registerService || registerService,
         getService: sharedContext?.getService || getService,
         registerAgent: (agent: any) => agentRunner.registerAgent(agent),
+        registerCapability: sharedContext?.registerCapability || registerCapability,
+        hasCapability: sharedContext?.hasCapability || hasCapability,
       };
 
       const prefixedApp = createPrefixedApp(app, plugin.name);
@@ -166,6 +180,14 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       loadedPlugins.set(plugin.name, loaded);
 
       logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
+
+      if (!sharedContext && plugin.requiresCapabilities) {
+        for (const req of plugin.requiresCapabilities) {
+          if (!capabilitiesRegistry.has(req)) {
+            logger.error(`Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin.`);
+          }
+        }
+      }
 
       return loaded;
     } catch (err) {
@@ -271,14 +293,29 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       config: {},
       logger,
       controllers: pluginControllers,
+      events,
       registerService,
       getService,
       registerAgent: (agent: any) => agentRunner.registerAgent(agent),
+      registerCapability,
+      hasCapability,
     };
 
     for (const name of loadOrder) {
       const data = pluginData.get(name)!;
       await loadPlugin(data.plugin, app, data.options, sharedContext);
+    }
+
+    // Post-load capabilities check
+    for (const loaded of loadedPlugins.values()) {
+      const plugin = Array.from(pluginData.values()).find(d => d.plugin.name === loaded.name)?.plugin;
+      if (plugin && plugin.requiresCapabilities) {
+        for (const req of plugin.requiresCapabilities) {
+          if (!capabilitiesRegistry.has(req)) {
+            logger.error(`Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin.`);
+          }
+        }
+      }
     }
   }
 

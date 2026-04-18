@@ -1,11 +1,10 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import type { Plugin, PluginSchema, PluginContext } from '@agent-detective/types';
+import { StandardEvents, type Plugin, type PluginSchema, type PluginContext } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig, JiraWebhookBehavior } from './types.js';
 import { registerController } from '@agent-detective/core';
 import { JiraWebhookController } from './jira-webhook-controller.js';
-import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 
 const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';
@@ -44,10 +43,6 @@ const pluginSchema: PluginSchema = {
       type: 'string',
       description: 'Custom prompt template for repository analysis',
     },
-    discoveryPrompt: {
-      type: 'string',
-      description: 'Custom prompt template for repository discovery',
-    },
     webhookBehavior: {
       type: 'object',
       description: 'Configure behavior for each Jira webhook event type',
@@ -82,7 +77,8 @@ const jiraAdapterPlugin: Plugin = {
   version: PLUGIN_VERSION,
   schemaVersion: SCHEMA_VERSION,
   schema: pluginSchema,
-  dependsOn: ['@agent-detective/local-repos-plugin'],
+  dependsOn: [],
+  requiresCapabilities: ['code-analysis'],
 
   register(app, context) {
     const extContext = context;
@@ -90,20 +86,6 @@ const jiraAdapterPlugin: Plugin = {
 
     if (!cfg.enabled) {
       extContext.logger?.info(`Plugin ${PLUGIN_NAME} is disabled`);
-      return;
-    }
-
-    // Use type-safe service registry
-    const localReposService = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
-    const localRepos = localReposService.localRepos;
-
-    if (!extContext.agentRunner) {
-      extContext.logger?.error('Agent runner not available');
-      return;
-    }
-
-    if (!extContext.enqueue) {
-      extContext.logger?.error('Enqueue function not available - core plugin system not properly initialized');
       return;
     }
 
@@ -115,14 +97,20 @@ const jiraAdapterPlugin: Plugin = {
     const webhookHandler = createJiraWebhookHandler({
       jiraClient,
       config: cfg,
-      agentRunner: extContext.agentRunner,
-      enqueue: extContext.enqueue,
-      getAvailableRepos: () => {
-        const repos: any[] = localRepos.getAllRepos();
-        return repos.filter((r: any) => r.exists);
-      },
-      buildRepoContext: localReposService.buildRepoContext,
-      formatRepoContextForPrompt: localReposService.formatRepoContextForPrompt,
+      events: context.events,
+    });
+
+    // Listen for completed tasks and post back to Jira
+    context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: any, result: string }) => {
+      const { event, result } = payload;
+      if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
+        extContext.logger?.info(`Posting result back to Jira issue ${event.replyTo.id}`);
+        try {
+          await jiraClient.addComment(event.replyTo.id, result);
+        } catch (err) {
+          extContext.logger?.error(`Failed to post comment to Jira: ${(err as Error).message}`);
+        }
+      }
     });
 
     const webhookPath = cfg.webhookPath || '/plugins/agent-detective-jira-adapter/webhook/jira';

@@ -53,6 +53,17 @@
         "repoContext": {
           "gitLogMaxCommits": 50
         },
+        "discovery": {
+          "enabled": true,
+          "useAgentForDiscovery": true,
+          "directMatchOnly": false,
+          "fallbackOnNoMatch": "ask-agent"
+        },
+        "discoveryContext": {
+          "includeTechStack": true,
+          "includeSummary": true,
+          "maxReposShown": 10
+        },
         "summaryGeneration": {
           "enabled": true,
           "useAgent": true,
@@ -90,20 +101,6 @@
               "action": "acknowledge"
             }
           }
-        },
-        "discovery": {
-          "enabled": true,
-          "useAgentForDiscovery": true,
-          "directMatchOnly": false,
-          "fallbackOnNoMatch": "ask-agent"
-        },
-        "discoveryContext": {
-          "includeTechStack": true,
-          "includeSummary": true,
-          "maxReposShown": 10
-        },
-        "analysis": {
-          "maxCommits": 50
         }
       }
     }

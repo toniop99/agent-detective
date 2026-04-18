@@ -1,7 +1,7 @@
-import type { RepoInfo, JiraTaskInfo, DiscoveryConfig } from './types.js';
+import type { ValidatedRepo, TaskInfoForDiscovery, DiscoveryConfig } from './types.js';
 import { formatTemplate, getDefaultDiscoveryPrompt } from './types.js';
 
-export function findDirectMatch(labels: string[], repos: RepoInfo[]): RepoInfo | null {
+export function findDirectMatch(labels: string[], repos: ValidatedRepo[]): ValidatedRepo | null {
   for (const label of labels) {
     const normalizedLabel = label.toLowerCase();
     const match = repos.find(
@@ -15,7 +15,7 @@ export function findDirectMatch(labels: string[], repos: RepoInfo[]): RepoInfo |
 }
 
 export function buildReposListForDiscovery(
-  repos: RepoInfo[],
+  repos: ValidatedRepo[],
   context: { includeTechStack?: boolean; includeSummary?: boolean; maxReposShown?: number }
 ): string {
   const maxRepos = context.maxReposShown || repos.length;
@@ -34,8 +34,8 @@ export function buildReposListForDiscovery(
 }
 
 export function buildDiscoveryPrompt(
-  taskInfo: JiraTaskInfo,
-  repos: RepoInfo[],
+  taskInfo: TaskInfoForDiscovery,
+  repos: ValidatedRepo[],
   config: DiscoveryConfig,
   context: { includeTechStack?: boolean; includeSummary?: boolean }
 ): string {
@@ -44,7 +44,7 @@ export function buildDiscoveryPrompt(
   const reposList = buildReposListForDiscovery(repos, context);
 
   return formatTemplate(template, {
-    task_key: taskInfo.key,
+    task_id: taskInfo.id,
     task_summary: taskInfo.summary,
     task_description: taskInfo.description,
     task_labels: taskInfo.labels.join(', ') || '(no labels)',
@@ -52,7 +52,7 @@ export function buildDiscoveryPrompt(
   });
 }
 
-export function parseAgentDiscoveryResponse(response: string, availableRepos: RepoInfo[]): string | null {
+export function parseAgentDiscoveryResponse(response: string, availableRepos: ValidatedRepo[]): string | null {
   const trimmed = response.trim();
   const lowerResponse = trimmed.toLowerCase();
 
