@@ -19,7 +19,6 @@ import type {
   Agent,
 } from '@agent-detective/types';
 import type { Observability } from '@agent-detective/observability';
-import { listAgents, isAgentInstalled, isKnownAgent } from '../agents/index.js';
 
 export interface CoreApiControllerDeps {
   agentModels?: {
@@ -111,16 +110,8 @@ export class CoreApiController {
       },
     ],
   })
-  listAgents(_req: Request, res: Response) {
-    const agents = listAgents();
-    const agentList = agents.map((agent: Agent) => ({
-      id: agent.id,
-      label: agent.label,
-      defaultModel: this.agentModels?.[agent.id]?.defaultModel || agent.defaultModel,
-      available: isAgentInstalled(agent.id),
-      needsPty: agent.needsPty,
-      mergeStderr: agent.mergeStderr,
-    }));
+  async listAgents(_req: Request, res: Response) {
+    const agentList = await this.agentRunner.listAgents();
     res.json(agentList);
   }
 
@@ -191,18 +182,20 @@ export class CoreApiController {
       return;
     }
 
-    if (!isKnownAgent(agentId)) {
-      const availableAgents = listAgents().map((a: Agent) => a.id);
+    const agentList = await this.agentRunner.listAgents();
+    const agentInfo = agentList.find((a) => a.id === agentId);
+
+    if (!agentInfo) {
       res.status(404).json({
         error: `Unknown agent: ${agentId}`,
-        availableAgents,
+        availableAgents: agentList.map((a) => a.id),
       });
       return;
     }
 
-    if (!isAgentInstalled(agentId)) {
+    if (!agentInfo.available) {
       res.status(404).json({
-        error: `Agent '${agentId}' is not installed or not in PATH`,
+        error: `Agent '${agentId}' is not installed or not available on this system`,
         agentId,
       });
       return;

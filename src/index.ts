@@ -4,7 +4,7 @@ import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js'
 import { createAgentRunner } from './core/agent-runner.js';
 import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
-import { getAgent, getAgentLabel } from './agents/index.js';
+import { getAgent, getAgentLabel, listAgents } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
 import { generateSpecFromRoutes, getRegisteredRoutes, CORE_PLUGIN_TAG } from '@agent-detective/core';
 
@@ -24,9 +24,13 @@ const agentRunner = createAgentRunner({
   execLocal,
   execLocalStreaming,
   terminateChildProcess,
-  getAgent: (id: string) => getAgent(id || config.agent || 'opencode'),
   defaultModels: config.agents,
 });
+
+// Register built-in agents
+for (const agent of listAgents()) {
+  agentRunner.registerAgent(agent);
+}
 
 const queues = new Map<string, Promise<void>>();
 const enqueue = createEnqueue(queues);

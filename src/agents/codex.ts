@@ -1,4 +1,4 @@
-import { shellQuote, resolvePromptValue } from './utils.js';
+import { shellQuote, resolvePromptValue, isCommandAvailable } from './utils.js';
 import type { Agent, AgentOutput } from '../core/types.js';
 
 const CODEX_CMD = 'codex';
@@ -257,6 +257,7 @@ const codexAgent: Agent = {
   buildCommand,
   parseOutput,
   parseStreamingOutput,
+  checkAvailable: () => isCommandAvailable(CODEX_CMD),
 };
 
 export default codexAgent;

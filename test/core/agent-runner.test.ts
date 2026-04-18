@@ -18,12 +18,13 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => undefined,
       });
 
       assert.ok(runner);
       assert.ok(typeof runner.runAgentForChat === 'function');
       assert.ok(typeof runner.stopActiveRun === 'function');
+      assert.ok(typeof runner.registerAgent === 'function');
+      assert.ok(typeof runner.listAgents === 'function');
     });
 
     it('creates agent runner with custom options', () => {
@@ -31,7 +32,6 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => undefined,
         agentTimeoutMs: 60000,
         agentMaxBuffer: 5 * 1024 * 1024,
         postFinalGraceMs: 60000,
@@ -47,7 +47,6 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => undefined,
       });
 
       await assert.rejects(
@@ -64,8 +63,8 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent(),
       });
+      runner.registerAgent(createMockAgent({ id: 'opencode' }));
 
       await runner.runAgentForChat('task-1', 'test prompt');
       const result = await runner.stopActiveRun('task-1');
@@ -77,8 +76,8 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent({ parseOutput: () => ({ text: '', sawJson: false }) }),
       });
+      runner.registerAgent(createMockAgent({ id: 'opencode', parseOutput: () => ({ text: '', sawJson: false }) }));
 
       const result = await runner.runAgentForChat('task-1', 'test prompt');
       assert.equal(result, '');
@@ -93,8 +92,8 @@ describe('agent-runner', () => {
         execLocal: mockExecLocal as unknown as (...args: unknown[]) => Promise<string>,
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent(),
       });
+      runner.registerAgent(createMockAgent({ id: 'opencode' }));
 
       await runner.runAgentForChat('task-1', 'test prompt', { cwd: '/custom/path' });
       const stopResult = await runner.stopActiveRun('task-1');
@@ -109,13 +108,14 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent({
-          buildCommand: (opts: { model?: string }) => {
-            usedModel = opts.model;
-            return 'test-cmd';
-          },
-        }),
       });
+      runner.registerAgent(createMockAgent({
+        id: 'opencode',
+        buildCommand: (opts: { model?: string }) => {
+          usedModel = opts.model;
+          return 'test-cmd';
+        },
+      }));
 
       await runner.runAgentForChat('task-1', 'test prompt', {
         model: 'custom-model',
@@ -130,14 +130,15 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent({
-          defaultModel: 'default-model',
-          buildCommand: (opts: { model?: string }) => {
-            usedModel = opts.model;
-            return 'test-cmd';
-          },
-        }),
       });
+      runner.registerAgent(createMockAgent({
+        id: 'opencode',
+        defaultModel: 'default-model',
+        buildCommand: (opts: { model?: string }) => {
+          usedModel = opts.model;
+          return 'test-cmd';
+        },
+      }));
 
       await runner.runAgentForChat('task-1', 'test prompt');
 
@@ -151,7 +152,6 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => undefined,
       });
 
       const result = await runner.stopActiveRun('nonexistent-task');
@@ -163,8 +163,8 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent(),
       });
+      runner.registerAgent(createMockAgent({ id: 'opencode' }));
 
       await runner.runAgentForChat('task-1', 'test prompt');
       const result = await runner.stopActiveRun('task-1');
@@ -178,8 +178,8 @@ describe('agent-runner', () => {
         execLocal: async () => '',
         execLocalStreaming: async () => '',
         terminateChildProcess: () => {},
-        getAgent: () => createMockAgent(),
       });
+      runner.registerAgent(createMockAgent({ id: 'opencode' }));
 
       await runner.runAgentForChat('task-1', 'test prompt');
       const result = await runner.stopActiveRun('task-1');

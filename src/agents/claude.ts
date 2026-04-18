@@ -1,4 +1,4 @@
-import { shellQuote, resolvePromptValue } from './utils.js';
+import { shellQuote, resolvePromptValue, isCommandAvailable } from './utils.js';
 import type { Agent, AgentOutput } from '../core/types.js';
 
 const CLAUDE_CMD = 'claude';
@@ -121,6 +121,7 @@ const claudeAgent: Agent = {
   parseOutput,
   parseStreamingOutput,
   defaultModel: DEFAULT_MODEL,
+  checkAvailable: () => isCommandAvailable(CLAUDE_CMD),
 };
 
 export default claudeAgent;

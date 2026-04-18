@@ -1,4 +1,4 @@
-import { shellQuote, resolvePromptValue } from './utils.js';
+import { shellQuote, resolvePromptValue, isCommandAvailable } from './utils.js';
 import type { Agent, AgentOutput } from '../core/types.js';
 
 const OPENCODE_CMD = 'opencode';
@@ -99,6 +99,7 @@ const opencodeAgent: Agent = {
   listModelsCommand,
   parseModelList,
   defaultModel: DEFAULT_MODEL,
+  checkAvailable: () => isCommandAvailable(OPENCODE_CMD),
 };
 
 export default opencodeAgent;

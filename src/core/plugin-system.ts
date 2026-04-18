@@ -143,6 +143,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         controllers: pluginControllers,
         registerService: sharedContext?.registerService || registerService,
         getService: sharedContext?.getService || getService,
+        registerAgent: (agent: any) => agentRunner.registerAgent(agent),
       };
 
       const prefixedApp = createPrefixedApp(app, plugin.name);
@@ -272,6 +273,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       controllers: pluginControllers,
       registerService,
       getService,
+      registerAgent: (agent: any) => agentRunner.registerAgent(agent),
     };
 
     for (const name of loadOrder) {

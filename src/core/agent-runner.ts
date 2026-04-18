@@ -1,5 +1,5 @@
 import { shellQuote, wrapCommandWithPty } from './process.js';
-import type { RunAgentOptions, Agent, ChildProcess } from './types.js';
+import type { RunAgentOptions, Agent, ChildProcess, AgentInfo } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
@@ -10,7 +10,6 @@ interface CreateAgentRunnerOptions {
   execLocal: (cmd: string, args: string[], options?: Record<string, unknown>) => Promise<string>;
   execLocalStreaming: (cmd: string, args: string[], options?: Record<string, unknown>) => Promise<string>;
   terminateChildProcess: (child: ChildProcess | null, signal?: string) => void;
-  getAgent: (id: string) => Agent | undefined;
   defaultModels?: {
     [agentId: string]: {
       defaultModel?: string;
@@ -38,11 +37,11 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     execLocal,
     execLocalStreaming,
     terminateChildProcess,
-    getAgent,
     defaultModels,
     postFinalGraceMs = 30000,
   } = options;
 
+  const agents = new Map<string, Agent>();
   const activeRuns = new Map<string, ActiveRun>();
 
   function buildActiveRunKey(taskId: string, contextKey?: string): string {
@@ -61,9 +60,9 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     } = runOptions;
 
     const effectiveAgentId = overrideAgentId || 'opencode';
-    const agent = getAgent(effectiveAgentId);
+    const agent = agents.get(effectiveAgentId);
     if (!agent) {
-      throw new Error(`Unknown agent: ${effectiveAgentId}`);
+      throw new Error(`Unknown agent: ${effectiveAgentId}. Ensure it is registered.`);
     }
     const activeKey = buildActiveRunKey(taskId, contextKey);
 
@@ -272,6 +271,27 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       run.stopPending = true;
       terminateChildProcess?.(run.child, 'SIGTERM');
       return { status: 'stopping' };
+    },
+    registerAgent: (agent: Agent): void => {
+      if (agents.has(agent.id)) {
+        console.warn(`Agent ${agent.id} already registered, overwriting`);
+      }
+      agents.set(agent.id, agent);
+    },
+    listAgents: async (): Promise<AgentInfo[]> => {
+      const results: AgentInfo[] = [];
+      for (const agent of agents.values()) {
+        const available = agent.checkAvailable ? await agent.checkAvailable() : true;
+        results.push({
+          id: agent.id,
+          label: agent.label,
+          defaultModel: agent.defaultModel,
+          available,
+          needsPty: agent.needsPty,
+          mergeStderr: agent.mergeStderr,
+        });
+      }
+      return results;
     },
   };
 }

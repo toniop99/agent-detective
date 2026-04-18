@@ -102,6 +102,10 @@ export interface PluginContext {
    * Throws an error if the service is not found.
    */
   getService<T>(name: string): T;
+  /**
+   * Register an AI agent.
+   */
+  registerAgent(agent: Agent): void;
 }
 
 export interface RunAgentOptions {
@@ -121,6 +125,8 @@ export interface StopRunResult {
 export interface AgentRunner {
   runAgentForChat(taskId: string, prompt: string, options?: RunAgentOptions): Promise<string>;
   stopActiveRun(taskId: string, contextKey?: string): Promise<StopRunResult>;
+  registerAgent(agent: Agent): void;
+  listAgents(): Promise<AgentInfo[]>;
 }
 
 export interface ResolveRepoOptions {
@@ -182,6 +188,10 @@ export interface Agent {
   listSessionsCommand?(): string;
   parseSessionList?(output: string): string | undefined;
   defaultModel?: string;
+  /**
+   * Check if the agent's requirements (binaries, API keys) are met.
+   */
+  checkAvailable?(): boolean | Promise<boolean>;
 }
 
 export interface ExecLocalOptions {

@@ -101,6 +101,7 @@ register(app, context: PluginContext) {
 | `logger` | `Logger` | Logger with `.info()`, `.warn()`, `.error()` |
 | `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
 | `getService<T>(name)` | `function` | Get a registered service by name with type safety |
+| `registerAgent(agent)` | `function` | Register a new AI agent provider |
 | `enqueue` | `function` | Enqueue tasks to be executed sequentially per key |
 
 ### Type-Safe Service Registry

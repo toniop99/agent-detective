@@ -1,4 +1,4 @@
-import { resolvePromptValue } from './utils.js';
+import { resolvePromptValue, isCommandAvailable } from './utils.js';
 import type { Agent, AgentOutput } from '../core/types.js';
 
 const GEMINI_CMD = 'gemini';
@@ -85,6 +85,7 @@ const geminiAgent: Agent = {
   listSessionsCommand,
   parseSessionList,
   defaultModel: DEFAULT_MODEL,
+  checkAvailable: () => isCommandAvailable(GEMINI_CMD),
 };
 
 export default geminiAgent;
