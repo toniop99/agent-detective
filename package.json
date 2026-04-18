@@ -6,7 +6,7 @@
   "description": "AI-powered code analysis agent that responds to events from Jira, Telegram, Slack and more",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "turbo run build",
     "build:types": "pnpm --filter @agent-detective/types build",
     "typecheck": "turbo run typecheck",
