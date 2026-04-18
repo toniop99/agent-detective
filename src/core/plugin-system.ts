@@ -49,9 +49,6 @@ function createPrefixedApp(
 
 interface CreatePluginSystemOptions {
   agentRunner: PluginContext['agentRunner'];
-  repoMapping?: PluginContext['repoMapping'];
-  buildRepoContext?: PluginContext['buildRepoContext'];
-  formatRepoContextForPrompt?: PluginContext['formatRepoContextForPrompt'];
   enqueue?: PluginContext['enqueue'];
   logger?: PluginContext['logger'];
 }
@@ -61,9 +58,6 @@ type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<strin
 export function createPluginSystem(context: CreatePluginSystemOptions) {
   const {
     agentRunner,
-    repoMapping,
-    buildRepoContext,
-    formatRepoContextForPrompt,
     enqueue,
     logger = console,
   } = context;
@@ -126,9 +120,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       const pluginContext: PluginContext = {
         agentRunner,
-        repoMapping,
-        buildRepoContext,
-        formatRepoContextForPrompt,
         enqueue,
         config: mergedConfig,
         logger: 'child' in logger && typeof logger.child === 'function'
@@ -259,14 +250,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
     const sharedContext: PluginContext = {
       agentRunner,
-      repoMapping,
-      buildRepoContext,
-      formatRepoContextForPrompt,
       enqueue,
       config: {},
       logger,
       controllers: pluginControllers,
-      plugins: {},
+      plugins: pluginsRegistry,
     };
 
     for (const name of loadOrder) {

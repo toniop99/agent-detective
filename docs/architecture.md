@@ -56,13 +56,14 @@ const plugin: Plugin = {
     // app: Express app instance
     // context: {
     //   agentRunner: AgentRunner,
-    //   localRepos: LocalReposContext,     // from local-repos-plugin
-    //   buildRepoContext: function,        // from local-repos-plugin
-    //   formatRepoContextForPrompt: function,
     //   config: Record<string, unknown>,
-    //   logger: Logger
+    //   logger: Logger,
+    //   plugins: {
+    //      '@agent-detective/local-repos-plugin': { localRepos, buildRepoContext, ... }
+    //   }
     // }
   }
+
 };
 
 export default plugin;

@@ -132,9 +132,11 @@ const myPlugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, localRepos, buildRepoContext, formatRepoContextForPrompt, logger } = context;
-    
+    const { config, agentRunner, plugins, logger } = context;
+    const localReposPlugin = plugins['@agent-detective/local-repos-plugin'];
+
     app.post(config.webhookPath as string, async (req, res) => {
+
       const taskEvent = normalizePayload(req.body);
       // Process task...
     });

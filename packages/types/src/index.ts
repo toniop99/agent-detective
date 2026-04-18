@@ -89,9 +89,6 @@ export interface RepoContext {
 
 export interface PluginContext {
   agentRunner: AgentRunner;
-  repoMapping?: RepoMapping;
-  buildRepoContext?: (repoPath: string, options?: BuildRepoContextOptions) => Promise<RepoContext>;
-  formatRepoContextForPrompt?: (context: RepoContext) => string;
   enqueue?: EnqueueFn;
   config: Record<string, unknown>;
   logger: Logger;

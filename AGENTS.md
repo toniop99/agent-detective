@@ -63,9 +63,7 @@ interface Plugin {
 
 interface PluginContext {
   agentRunner: AgentRunner;       // Always available
-  localRepos?: LocalReposContext; // From local-repos-plugin
-  buildRepoContext?: (repo: string) => Promise<RepoContext>;
-  formatRepoContextForPrompt?: (repo: string) => Promise<string>;
+  plugins: Record<string, any>;   // Access other plugins
   enqueue?: EnqueueFn;
   config: object;                  // Validated config
   logger: Logger;                  // info/warn/error
@@ -98,7 +96,8 @@ Use `dependsOn` to ensure plugins load in order:
   name: '@agent-detective/my-adapter',
   dependsOn: ['@agent-detective/local-repos-plugin'],
   register(app, context) {
-    // localRepos, buildRepoContext available here
+    const localReposPlugin = context.plugins['@agent-detective/local-repos-plugin'];
+    // localReposPlugin.localRepos, localReposPlugin.buildRepoContext available here
   }
 }
 ```

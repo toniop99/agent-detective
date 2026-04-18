@@ -41,7 +41,6 @@ import type { Plugin, PluginContext } from '@agent-detective/types';
 - **RepoContext** - Repository context information
 - **RepoMapping** - Interface for resolving repository paths
 - **Commit** - Git commit information
-- **SearchResult** - File search result
 
 ### Process Interfaces
 

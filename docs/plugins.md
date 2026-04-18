@@ -77,13 +77,17 @@ The `register` function receives a `context` object with all core services:
 register(app, context: PluginContext) {
   const {
     agentRunner,              // run AI agents
-    localRepos,              // access to configured repositories
-    buildRepoContext,        // analyze repository (git log, error search)
-    formatRepoContextForPrompt, // format repo analysis for prompts
     config,                   // validated plugin config with defaults applied
     logger,                   // logger with plugin prefix
+    plugins,                  // access other plugins
   } = context;
-  // ...
+
+  // Accessing repository context from local-repos-plugin
+  const localReposPlugin = plugins['@agent-detective/local-repos-plugin'];
+  if (localReposPlugin) {
+    const localRepos = localReposPlugin.localRepos;
+    // ...
+  }
 }
 ```
 
@@ -92,11 +96,10 @@ register(app, context: PluginContext) {
 | Member | Type | Description |
 |--------|------|-------------|
 | `agentRunner` | `AgentRunner` | Executes AI agent prompts (see Section 10) |
-| `localRepos` | `LocalReposContext` | Access to configured repositories |
-| `buildRepoContext(repoPath, options)` | `function` | Builds repo analysis (git log, error search) |
-| `formatRepoContextForPrompt(context)` | `function` | Formats repo context as a markdown string for prompts |
 | `config` | `object` | Plugin config validated against schema, with defaults merged |
 | `logger` | `Logger` | Logger with `.info()`, `.warn()`, `.error()` |
+| `plugins` | `object` | Dictionary of loaded plugins and their exported APIs |
+| `enqueue` | `function` | Enqueue tasks to be executed sequentially per key |
 
 ### LocalReposContext
 
@@ -311,12 +314,16 @@ const plugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, repoMapping, buildRepoContext, formatRepoContextForPrompt, logger } = context;
+    const { config, agentRunner, plugins, logger } = context;
 
     if (!config.enabled) {
       logger.info(`Plugin is disabled`);
       return;
     }
+
+    const localReposPlugin = plugins['@agent-detective/local-repos-plugin'];
+    const buildRepoContext = localReposPlugin?.buildRepoContext as Function;
+    const formatRepoContextForPrompt = localReposPlugin?.formatRepoContextForPrompt as Function;
 
     const jiraClient = config.mockMode
       ? createMockJiraClient()
@@ -328,7 +335,8 @@ const plugin: Plugin = {
       try {
         const taskEvent = normalizePayload(req.body);
 
-        const repoPath = repoMapping.resolveRepoFromMapping({
+        const localRepos = localReposPlugin?.localRepos as any;
+        const repoPath = localRepos?.resolveRepoFromMapping({
           labels: (taskEvent.metadata.labels as string[]) || [],
           projectKey: (taskEvent.metadata.projectKey as string) || '',
         });

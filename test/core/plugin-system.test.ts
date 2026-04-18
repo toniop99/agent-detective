@@ -11,19 +11,6 @@ describe('Plugin System', () => {
     stopActiveRun: async () => ({ status: 'idle' }),
   });
 
-  const createMockRepoMapping = (): RepoMapping => ({
-    resolveRepoFromMapping: () => null,
-    resolveProjectFromName: () => null,
-  });
-
-  const createMockBuildRepoContext = async () => ({
-    repoName: 'test',
-    recentCommits: [],
-    searchResults: [],
-    stats: { commitCount: 0, errorMatchCount: 0 },
-    repoPath: '/test',
-  });
-
   const createMockLogger = () => ({
     info: mock.fn(),
     warn: mock.fn(),
@@ -33,9 +20,7 @@ describe('Plugin System', () => {
   beforeEach(() => {
     pluginSystem = createPluginSystem({
       agentRunner: createMockAgentRunner(),
-      repoMapping: createMockRepoMapping(),
-      buildRepoContext: createMockBuildRepoContext,
-      formatRepoContextForPrompt: () => 'Mock repo context',
+      enqueue: async () => {},
       logger: createMockLogger(),
     });
   });
@@ -190,10 +175,10 @@ describe('Plugin System', () => {
       assert.ok((contextReceived as { agentRunner?: unknown }).agentRunner);
     });
 
-    it('injects repoMapping when provided', async () => {
-      let contextReceived: unknown = null;
+    it('injects enqueue into register', async () => {
+      let contextReceived: any = null;
       const mockPlugin = {
-        name: 'repo-mapping-plugin',
+        name: 'enqueue-plugin',
         version: '1.0.0',
         register: (_app: unknown, context: unknown) => {
           contextReceived = context;
@@ -203,23 +188,7 @@ describe('Plugin System', () => {
       await pluginSystem.loadPlugin(mockPlugin as unknown as Plugin, {} as never, {});
 
       assert.ok(contextReceived);
-      assert.ok((contextReceived as { repoMapping?: unknown }).repoMapping);
-    });
-
-    it('injects buildRepoContext when provided', async () => {
-      let contextReceived: unknown = null;
-      const mockPlugin = {
-        name: 'build-context-plugin',
-        version: '1.0.0',
-        register: (_app: unknown, context: unknown) => {
-          contextReceived = context;
-        },
-      };
-
-      await pluginSystem.loadPlugin(mockPlugin as unknown as Plugin, {} as never, {});
-
-      assert.ok(contextReceived);
-      assert.ok((contextReceived as { buildRepoContext?: unknown }).buildRepoContext);
+      assert.ok(contextReceived.enqueue);
     });
   });
 
@@ -259,9 +228,6 @@ describe('Plugin System', () => {
       const mockLogger = createMockLogger();
       const testPluginSystem = createPluginSystem({
         agentRunner: createMockAgentRunner(),
-        repoMapping: createMockRepoMapping(),
-        buildRepoContext: createMockBuildRepoContext,
-        formatRepoContextForPrompt: () => 'Mock repo context',
         logger: mockLogger,
       });
 
