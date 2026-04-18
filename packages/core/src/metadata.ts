@@ -99,7 +99,7 @@ export function getControllerMetadata(
 export interface ControllerRoute {
   method: RouteMetadata['method'];
   path: string;
-  handler: (req: object, res: object, next?: () => void) => void;
+  handler: Function;
   operationMetadata?: OperationMetadata;
 }
 
@@ -124,9 +124,7 @@ export function getControllerRoutes(
     if (!routeMetadata) continue;
 
     const operationMetadata = getOperationMetadata(prototype, methodName);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const method = prototype[methodName] as any;
-    const handler = method.bind(prototype);
+    const handler = prototype[methodName].bind(prototype);
 
     routes.push({
       method: routeMetadata.method,

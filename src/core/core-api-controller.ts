@@ -9,8 +9,8 @@ import {
   Tags,
   Response as OpenApiResponse,
   RequestBody,
-} from './openapi/index.js';
-import { CORE_PLUGIN_TAG } from './openapi/constants.js';
+  CORE_PLUGIN_TAG,
+} from '@agent-detective/core';
 import type {
   AgentRunner,
   EnqueueFn,

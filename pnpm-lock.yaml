@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@agent-detective/core':
+        specifier: workspace:^
+        version: link:packages/core
       '@scalar/express-api-reference':
         specifier: ^0.9.8
         version: 0.9.8

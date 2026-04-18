@@ -6,8 +6,7 @@ import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgent, getAgentLabel } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
-import { generateSpecFromRoutes, getRegisteredRoutes } from './core/openapi/index.js';
-import { CORE_PLUGIN_TAG } from './core/openapi/constants.js';
+import { generateSpecFromRoutes, getRegisteredRoutes, CORE_PLUGIN_TAG } from '@agent-detective/core';
 
 const config = loadConfig();
 

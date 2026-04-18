@@ -37,14 +37,12 @@ function getControllerRoutesFromInstance(instance: object): ControllerRoute[] {
     const routeMeta = getRouteMetadata(proto, methodName);
     if (!routeMeta) continue;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const method = instance[methodName as keyof typeof instance] as any;
-    const handler = method.bind(instance);
+    const handler = (instance[methodName as keyof typeof instance] as Function).bind(instance);
 
     routes.push({
       method: routeMeta.method,
       path: routeMeta.path,
-      handler,
+      handler: handler as Function,
       operationMetadata: getOperationMetadata(proto, methodName),
     });
   }
@@ -52,9 +50,19 @@ function getControllerRoutesFromInstance(instance: object): ControllerRoute[] {
   return routes;
 }
 
-export function registerController(app: Application, controller: object): void {
-  const controllerClass = controller.constructor as new () => object;
-  const routes = getControllerRoutesFromInstance(controller);
+export function registerController(app: Application, controllerClassOrInstance: object | (new () => object)): void {
+  let controllerInstance: object;
+  let controllerClass: new () => object;
+
+  if (typeof controllerClassOrInstance === 'function') {
+    controllerClass = controllerClassOrInstance as new () => object;
+    controllerInstance = new controllerClass();
+  } else {
+    controllerInstance = controllerClassOrInstance;
+    controllerClass = controllerInstance.constructor as new () => object;
+  }
+
+  const routes = getControllerRoutesFromInstance(controllerInstance);
 
   for (const route of routes) {
     const ctrlMeta = getControllerMetadata(controllerClass);
@@ -70,17 +78,29 @@ export function registerControllers(app: Application, controllers: object[]): vo
   }
 }
 
-export function getRegisteredRoutes(controller: object): Array<{
+export function getRegisteredRoutes(controllerOrClass: object | (new () => object)): Array<{
   method: string;
   path: string;
-  handler: (req: object, res: object, next?: () => void) => void;
+  handler: Function;
+  operationMetadata?: import('./metadata.js').OperationMetadata;
 }> {
-  const controllerClass = controller.constructor as new () => object;
-  const routes = getControllerRoutesFromInstance(controller);
+  let controllerInstance: object;
+  let controllerClass: new () => object;
+
+  if (typeof controllerOrClass === 'function') {
+    controllerClass = controllerOrClass as new () => object;
+    controllerInstance = new controllerClass();
+  } else {
+    controllerInstance = controllerOrClass;
+    controllerClass = controllerInstance.constructor as new () => object;
+  }
+
+  const routes = getControllerRoutesFromInstance(controllerInstance);
   const ctrlMeta = getControllerMetadata(controllerClass);
   return routes.map(route => ({
     method: route.method,
     path: ctrlMeta ? `${ctrlMeta.prefix}${route.path}` : route.path,
     handler: route.handler,
+    operationMetadata: route.operationMetadata,
   }));
 }

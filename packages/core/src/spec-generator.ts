@@ -1,5 +1,5 @@
-import type { OperationMetadata, ResponseMetadata } from './metadata.js';
-import { getControllerMetadata, getControllerRoutes } from './metadata.js';
+import type { OperationMetadata, ResponseMetadata } from '@agent-detective/core';
+import { getControllerMetadata, getControllerRoutes } from '@agent-detective/core';
 import { CORE_PLUGIN_TAG, createTagDescription, SCALAR_TAG_GROUPS } from './constants.js';
 
 export interface OpenAPISpec {

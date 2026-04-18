@@ -13,7 +13,7 @@ import {
   registerController,
   generateSpecFromRoutes,
   getRegisteredRoutes,
-} from './core/openapi/index.js';
+} from '@agent-detective/core';
 import { CoreApiController, createCoreApiController } from './core/core-api-controller.js';
 import { sanitizePluginName } from './core/plugin-system.js';
 
@@ -167,7 +167,7 @@ export function setupDocs(
     path: string;
     prefixedPath: string;
     pluginName: string;
-    operationMetadata?: import('./core/openapi/index.js').OperationMetadata;
+    operationMetadata?: import('@agent-detective/core').OperationMetadata;
   }>,
   observability: Observability,
   config: Config
