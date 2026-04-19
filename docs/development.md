@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js 24+
-- pnpm 8.15.9+
+- pnpm 10.33+ (see `packageManager` in the repo root `package.json`; Corepack / `pnpm/action-setup` use this pin)
 - Access to repositories on local filesystem
 - (Optional) Jira Cloud account for real integration
 - (Optional) Docker — see [Docker & CI images](docker.md) for compose-based local dev
@@ -73,23 +73,34 @@ pnpm start
 pnpm run dev
 ```
 
+## Monorepo layout (pnpm + Turborepo)
+
+- **Root** [`package.json`](../package.json) is the **main Express app** (`src/`, `test/`). It is not a separate package under `packages/`, but it depends on workspace packages via `workspace:*`.
+- **Workspace packages** live under [`packages/*`](../packages/) and are listed in [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) (only `packages/*`; add `apps/*` later if you introduce an app package). Shared dependency versions use the **`catalog:`** protocol defined in that file.
+- **`pnpm run build`** runs **Turborepo** (`turbo run build`) and builds every workspace package’s `dist/`. It does **not** bundle the root server by itself.
+- **`pnpm run build:app`** runs **tsup** on the root entrypoint and writes **`dist/index.js`** for `pnpm start` / production images (the Dockerfile runs both workspace build and `build:app`).
+- **`pnpm run typecheck`** runs `turbo run typecheck` for packages **and** `tsc --noEmit` at the repo root for `src/` + `test/`.
+- **`pnpm test`** runs **`turbo run test`** (package tests, e.g. `@agent-detective/jira-adapter`, with `^build` deps) then **root** tests with **tsx** on `test/**/*.test.ts`.
+- **`pnpm run publish`** runs **Changesets** (`changeset publish`), not Turborepo.
+- **Turborepo cache**: stored under **`.turbo/`** at the repo root. To discard local task cache: `rm -rf .turbo` (or `pnpm exec turbo daemon clean` if you use the daemon). **`pnpm run clean`** runs each package’s `clean` script (typically `rm -rf dist`) via `turbo run clean`.
+
 ## Building
 
 ```bash
-# Build all packages (uses Turborepo for caching)
+# Build all workspace packages (Turborepo, cached)
 pnpm run build
 
-# TypeScript type checking
+# Bundle the root server to dist/ (production entrypoint)
+pnpm run build:app
+
+# TypeScript type checking (packages via Turbo + root tsc)
 pnpm run typecheck
 
-# ESLint check
+# ESLint (all packages that define a lint script)
 pnpm run lint
 
-# Clean dist/ folders
+# Remove dist/ in packages (turbo run clean)
 pnpm run clean
-
-# Clear Turborepo cache
-pnpm turbo clean
 ```
 
 ## Testing

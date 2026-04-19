@@ -15,8 +15,8 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "test": "tsx --test",
-    "test:watch": "tsx --test --watch",
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "test:watch": "tsx --test --watch \"test/**/*.test.ts\"",
     "clean": "rm -rf dist"
   },
   "files": [
@@ -30,14 +30,13 @@
   "license": "MIT",
   "dependencies": {
     "@agent-detective/core": "workspace:*",
-    "@agent-detective/local-repos-plugin": "workspace:^",
+    "@agent-detective/local-repos-plugin": "workspace:*",
     "@agent-detective/types": "workspace:*",
-    "zod": "^3.24.0",
-    "zod-to-json-schema": "^3.24.6"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   }
 }

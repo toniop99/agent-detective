@@ -26,7 +26,7 @@ const jiraEventConfigSchema = z.object({
 
 const jiraWebhookBehaviorSchema = z.object({
   defaults: jiraEventConfigSchema,
-  events: z.record(jiraWebhookEventTypeSchema, jiraEventConfigSchema.partial()).optional(),
+  events: z.partialRecord(jiraWebhookEventTypeSchema, jiraEventConfigSchema.partial()).optional(),
 });
 
 const DEFAULT_WEBHOOK_PATH = '/plugins/agent-detective-jira-adapter/webhook/jira';

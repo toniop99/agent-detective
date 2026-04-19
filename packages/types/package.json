@@ -16,11 +16,10 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "test": "tsx --test",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "typescript": "catalog:"
   },
   "keywords": ["agent-detective", "types"],
   "license": "MIT"

@@ -21,8 +21,8 @@
   "keywords": ["agent-detective", "process"],
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   }
 }

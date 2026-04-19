@@ -13,19 +13,20 @@ Anchor: `jira-adapter`
 
 ```json
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "enabled": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "webhookPath": {
-      "type": "string",
-      "default": "/plugins/agent-detective-jira-adapter/webhook/jira"
+      "default": "/plugins/agent-detective-jira-adapter/webhook/jira",
+      "type": "string"
     },
     "mockMode": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "baseUrl": {
       "type": "string"
@@ -40,6 +41,20 @@ Anchor: `jira-adapter`
       "type": "string"
     },
     "webhookBehavior": {
+      "default": {
+        "defaults": {
+          "action": "ignore",
+          "acknowledgmentMessage": "Thanks for the update! I will review this issue and provide feedback shortly."
+        },
+        "events": {
+          "jira:issue_created": {
+            "action": "analyze"
+          },
+          "jira:issue_updated": {
+            "action": "acknowledge"
+          }
+        }
+      },
       "type": "object",
       "properties": {
         "defaults": {
@@ -67,6 +82,14 @@ Anchor: `jira-adapter`
         },
         "events": {
           "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "jira:issue_created",
+              "jira:issue_updated",
+              "jira:issue_deleted"
+            ]
+          },
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -86,38 +109,22 @@ Anchor: `jira-adapter`
               }
             },
             "additionalProperties": false
-          },
-          "propertyNames": {
-            "enum": [
-              "jira:issue_created",
-              "jira:issue_updated",
-              "jira:issue_deleted"
-            ]
           }
         }
       },
       "required": [
         "defaults"
       ],
-      "additionalProperties": false,
-      "default": {
-        "defaults": {
-          "action": "ignore",
-          "acknowledgmentMessage": "Thanks for the update! I will review this issue and provide feedback shortly."
-        },
-        "events": {
-          "jira:issue_created": {
-            "action": "analyze"
-          },
-          "jira:issue_updated": {
-            "action": "acknowledge"
-          }
-        }
-      }
+      "additionalProperties": false
     }
   },
-  "additionalProperties": false,
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "required": [
+    "enabled",
+    "webhookPath",
+    "mockMode",
+    "webhookBehavior"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -127,6 +134,7 @@ Anchor: `local-repos-plugin`
 
 ```json
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "repos": {
@@ -159,14 +167,23 @@ Anchor: `local-repos-plugin`
     },
     "techStackDetection": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {}
     },
     "summaryGeneration": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {}
     },
     "validation": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {}
     },
     "repoContext": {
@@ -180,18 +197,23 @@ Anchor: `local-repos-plugin`
     },
     "discovery": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {}
     },
     "discoveryContext": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {}
     }
   },
   "required": [
     "repos"
   ],
-  "additionalProperties": false,
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "additionalProperties": false
 }
 ```
 

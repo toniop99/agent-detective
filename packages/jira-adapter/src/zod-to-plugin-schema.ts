@@ -1,5 +1,4 @@
-import type { ZodTypeAny } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import * as z from 'zod';
 import type { PluginSchema, PluginSchemaProperty } from '@agent-detective/types';
 
 function coerceProperty(raw: Record<string, unknown>): PluginSchemaProperty {
@@ -20,8 +19,8 @@ function coerceProperty(raw: Record<string, unknown>): PluginSchemaProperty {
 }
 
 /** Convert a Zod object schema to the simplified `PluginSchema` shape used by the core validator. */
-export function zodToPluginSchema(z: ZodTypeAny): PluginSchema {
-  const j = zodToJsonSchema(z, { $refStrategy: 'none', target: 'jsonSchema7' }) as {
+export function zodToPluginSchema(schema: z.ZodType): PluginSchema {
+  const j = z.toJSONSchema(schema, { target: 'draft-7' }) as {
     properties?: Record<string, Record<string, unknown>>;
     required?: string[];
   };

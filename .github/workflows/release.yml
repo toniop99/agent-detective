@@ -42,7 +42,7 @@ jobs:
         run: pnpm test
 
       - name: Build
-        run: pnpm run build
+        run: pnpm run build && pnpm run build:app
 
       - id: ci-result
         run: echo "pass=true" >> $GITHUB_OUTPUT

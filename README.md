@@ -21,9 +21,11 @@ pnpm install
 # Run in development
 pnpm dev
 
-# Build for production
-pnpm build
+# Build workspace packages (Turbo) + bundle the server (tsup)
+pnpm build && pnpm run build:app
 ```
+
+For day-to-day development you usually only need `pnpm dev`. CI and release images run `pnpm build` (packages) and `pnpm run build:app` (root `dist/`). See [Development Guide](docs/development.md#monorepo-layout-pnpm--turborepo).
 
 ## Packages
 

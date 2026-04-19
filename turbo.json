@@ -14,14 +14,13 @@
       "outputs": [],
       "cache": true
     },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": ["coverage/**"],
-      "cache": true,
-      "inputs": ["test/**/*.ts", "src/**/*.ts", "packages/types/src/**/*.ts"]
-    },
     "clean": {
       "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": true
     }
   }
 }

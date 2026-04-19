@@ -2,7 +2,7 @@
 
 ## Project
 
-TypeScript monorepo (pnpm workspaces) - Express server that processes events via AI agents using a plugin system.
+TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main Express app). **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development.md` (Monorepo layout).
 
 **Packages:**
 - `@agent-detective/types` - Shared types (SINGLE SOURCE OF TRUTH)
@@ -19,7 +19,7 @@ Runtime config: `config/default.json` + optional `config/local.json` (deep merge
 - Import shared types from `@agent-detective/types`
 - Use `.ts` for source files, `.test.ts` for tests
 - Use ESM with `.js` extension in imports (e.g., `from './foo.js'`)
-- Build packages before publishing: `pnpm run build`
+- Build packages before publishing: `pnpm run build` (and `pnpm run build:app` for the root `dist/` bundle used by `pnpm start` / Docker production)
 
 ### DON'T
 - Edit `dist/` files (generated output)

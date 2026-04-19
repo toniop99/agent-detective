@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { deepMerge } from './deep-merge.js';
+import * as z from 'zod';
 import { appConfigSchema, type AppConfig } from './schema.js';
 import {
   applyCoreEnvWhitelist,
@@ -47,8 +48,7 @@ export function loadConfig(options?: LoadConfigOptions): AppConfig {
 
   const parsed = appConfigSchema.safeParse(merged);
   if (!parsed.success) {
-    const msg = parsed.error.flatten();
-    throw new Error(`Invalid application config: ${JSON.stringify(msg.fieldErrors)} ${JSON.stringify(msg.formErrors)}`);
+    throw new Error(`Invalid application config: ${JSON.stringify(z.treeifyError(parsed.error))}`);
   }
   return parsed.data;
 }

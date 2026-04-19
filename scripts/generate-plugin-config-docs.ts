@@ -5,22 +5,21 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from '../packages/jira-adapter/src/options-schema.js';
 import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/src/options-schema.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outPath = join(__dirname, '..', 'docs', 'generated', 'plugin-options.md');
 
-function block(title: string, id: string, schema: ReturnType<typeof zodToJsonSchema>): string {
+function block(title: string, id: string, schema: Record<string, unknown>): string {
   return `### ${title}\n\nAnchor: \`${id}\`\n\n\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\`\n\n`;
 }
 
-const jira = zodToJsonSchema(jiraAdapterOptionsSchema, { $refStrategy: 'none', target: 'jsonSchema7' });
-const localRepos = zodToJsonSchema(localReposPluginOptionsSchema, {
-  $refStrategy: 'none',
-  target: 'jsonSchema7',
-});
+const jira = z.toJSONSchema(jiraAdapterOptionsSchema, { target: 'draft-7' }) as Record<string, unknown>;
+const localRepos = z.toJSONSchema(localReposPluginOptionsSchema, {
+  target: 'draft-7',
+}) as Record<string, unknown>;
 
 const body = `# Generated plugin option schemas
 

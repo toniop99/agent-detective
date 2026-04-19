@@ -7,6 +7,8 @@ Run **agent-detective** in containers for local development or production-style 
 - Docker Engine 24+ with BuildKit (default on Docker Desktop)
 - Optional: Docker Compose v2
 
+The image copies **`pnpm-workspace.yaml`** (workspace is **`packages/*`** plus the root app), **`pnpm-lock.yaml`**, and runs **`pnpm install --frozen-lockfile`** so the lockfile in git must match the Docker build context.
+
 ## Image targets (`Dockerfile`)
 
 | Target | Purpose |
@@ -97,5 +99,5 @@ wget -qO- http://127.0.0.1:3001/api/health
 ## Troubleshooting
 
 - **Plugins not loading in the image:** Ensure `config/*.json` lists plugins that exist in the image (`node_modules` or mounted `./packages`). Built plugins are loaded from **`packages/<name>/dist/index.js`** when the bare package import is unavailable.
-- **`pnpm install` fails in Docker:** The dev and builder stages use **`pnpm@8.15.9`** via Corepack to match `package.json` / lockfile.
+- **`pnpm install` fails in Docker:** The dev and builder stages use the **same pnpm major** as `package.json` `packageManager` via Corepack; keep them in sync when upgrading.
 - **Permission errors on mounted volumes (Linux):** Adjust host directory ownership or run dev compose with a user override matching your UID.

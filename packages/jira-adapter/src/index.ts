@@ -5,6 +5,7 @@ import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig } from './types.js';
 import { registerController } from '@agent-detective/core';
 import { JiraWebhookController } from './jira-webhook-controller.js';
+import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './options-schema.js';
 import { zodToPluginSchema } from './zod-to-plugin-schema.js';
 
@@ -44,7 +45,7 @@ const jiraAdapterPlugin: Plugin = {
 
     const parsed = jiraAdapterOptionsSchema.safeParse(context.config ?? {});
     if (!parsed.success) {
-      extContext.logger?.error(`Invalid Jira adapter config: ${parsed.error.flatten().fieldErrors}`);
+      extContext.logger?.error(`Invalid Jira adapter config: ${JSON.stringify(z.treeifyError(parsed.error))}`);
       return;
     }
     const cfg = parsed.data as JiraAdapterConfig;

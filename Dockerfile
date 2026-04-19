@@ -7,7 +7,7 @@ FROM node:24-bookworm AS builder
 WORKDIR /app
 ENV CI=1
 
-RUN corepack enable && corepack prepare pnpm@8.15.9 --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json tsup.config.ts ./
 COPY packages/ ./packages/
@@ -89,7 +89,7 @@ ENV CI=1
 ENV NODE_ENV=development
 ENV PORT=3001
 
-RUN corepack enable && corepack prepare pnpm@8.15.9 --activate \
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate \
   && apt-get update && apt-get install -y --no-install-recommends wget git \
   && rm -rf /var/lib/apt/lists/*
 

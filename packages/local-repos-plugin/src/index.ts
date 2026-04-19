@@ -15,6 +15,7 @@ import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/ind
 import { registerController } from '@agent-detective/core';
 import { ReposController } from './repos-controller.js';
 import { createRepoAnalyzer } from './analyzer.js';
+import * as z from 'zod';
 import { localReposPluginOptionsSchema } from './options-schema.js';
 import { zodToPluginSchema } from './zod-to-plugin-schema.js';
 
@@ -82,7 +83,7 @@ const localReposPlugin: Plugin = {
 
     const parsed = localReposPluginOptionsSchema.safeParse(context.config ?? {});
     if (!parsed.success) {
-      extContext.logger?.error(`Invalid local-repos-plugin config: ${parsed.error.flatten().fieldErrors}`);
+      extContext.logger?.error(`Invalid local-repos-plugin config: ${JSON.stringify(z.treeifyError(parsed.error))}`);
       return;
     }
     const options = parsed.data as LocalReposPluginOptions;
