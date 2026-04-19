@@ -62,6 +62,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Generated plugin docs match Zod
+        run: pnpm docs:plugins:check
+
   build:
     runs-on: ubuntu-latest
     steps:

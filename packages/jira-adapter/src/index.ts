@@ -1,55 +1,20 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import { StandardEvents, type Plugin, type PluginSchema, type PluginContext } from '@agent-detective/types';
+import { StandardEvents, type Plugin } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
-import type { JiraAdapterConfig, JiraWebhookBehavior } from './types.js';
+import type { JiraAdapterConfig } from './types.js';
 import { registerController } from '@agent-detective/core';
 import { JiraWebhookController } from './jira-webhook-controller.js';
+import { jiraAdapterOptionsSchema } from './options-schema.js';
+import { zodToPluginSchema } from './zod-to-plugin-schema.js';
+
+export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './options-schema.js';
 
 const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';
 const SCHEMA_VERSION = '1.0';
 
-export const DEFAULT_WEBHOOK_BEHAVIOR: JiraWebhookBehavior = {
-  defaults: {
-    action: 'ignore',
-    acknowledgmentMessage: 'Thanks for the update! I will review this issue and provide feedback shortly.',
-  },
-  events: {
-    'jira:issue_created': { action: 'analyze' },
-    'jira:issue_updated': { action: 'acknowledge' },
-  },
-};
-
-const pluginSchema: PluginSchema = {
-  type: 'object',
-  properties: {
-    enabled: {
-      type: 'boolean',
-      default: true,
-      description: 'Enable or disable the Jira adapter',
-    },
-    webhookPath: {
-      type: 'string',
-      default: '/plugins/agent-detective-jira-adapter/webhook/jira',
-      description: 'Webhook endpoint path',
-    },
-    mockMode: {
-      type: 'boolean',
-      default: true,
-      description: 'Use mock Jira client for testing',
-    },
-    analysisPrompt: {
-      type: 'string',
-      description: 'Custom prompt template for repository analysis',
-    },
-    webhookBehavior: {
-      type: 'object',
-      description: 'Configure behavior for each Jira webhook event type',
-    },
-  },
-  required: [],
-};
+const pluginSchema = zodToPluginSchema(jiraAdapterOptionsSchema);
 
 function createRealJiraClient(_config: JiraAdapterConfig): MockJiraClient {
   // TODO: Implement real Jira client
@@ -66,12 +31,6 @@ function createRealJiraClient(_config: JiraAdapterConfig): MockJiraClient {
   );
 }
 
-// Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
-// The plugin schema validation ensures the config matches JiraAdapterConfig at runtime.
-function asJiraAdapterConfig(context: PluginContext): JiraAdapterConfig {
-  return context.config as unknown as JiraAdapterConfig;
-}
-
 const jiraAdapterPlugin: Plugin = {
   name: PLUGIN_NAME,
   version: PLUGIN_VERSION,
@@ -82,7 +41,13 @@ const jiraAdapterPlugin: Plugin = {
 
   register(app, context) {
     const extContext = context;
-    const cfg = asJiraAdapterConfig(context);
+
+    const parsed = jiraAdapterOptionsSchema.safeParse(context.config ?? {});
+    if (!parsed.success) {
+      extContext.logger?.error(`Invalid Jira adapter config: ${parsed.error.flatten().fieldErrors}`);
+      return;
+    }
+    const cfg = parsed.data as JiraAdapterConfig;
 
     if (!cfg.enabled) {
       extContext.logger?.info(`Plugin ${PLUGIN_NAME} is disabled`);
@@ -113,7 +78,7 @@ const jiraAdapterPlugin: Plugin = {
       }
     });
 
-    const webhookPath = cfg.webhookPath || '/plugins/agent-detective-jira-adapter/webhook/jira';
+    const webhookPath = cfg.webhookPath;
 
     const webhookController = new JiraWebhookController();
     webhookController.setWebhookHandler(webhookHandler);

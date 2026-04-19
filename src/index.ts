@@ -5,10 +5,12 @@ import { createServer, loadConfig, setupDocs } from './server.js';
 import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
-import { getAgent, getAgentLabel, listAgents } from './agents/index.js';
+import { getAgentLabel, listAgents } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
 import { generateSpecFromRoutes, getRegisteredRoutes, CORE_PLUGIN_TAG } from '@agent-detective/core';
+import { applyLogLevelAliasForObservability } from './config/env-whitelist.js';
 
+applyLogLevelAliasForObservability();
 const config = loadConfig();
 
 const observability = createObservability(config.observability || {});

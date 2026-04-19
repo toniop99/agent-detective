@@ -9,6 +9,10 @@ TypeScript monorepo (pnpm workspaces) - Express server that processes events via
 - `@agent-detective/local-repos-plugin` - Repository management
 - `@agent-detective/jira-adapter` - Jira integration
 
+## Configuration
+
+Runtime config: `config/default.json` + optional `config/local.json` (deep merge), then an explicit env whitelist — see `docs/configuration.md`. Plugin option Zod schemas live in `packages/*/src/options-schema.ts`; generated reference: `docs/generated/plugin-options.md`.
+
 ## Golden Rules
 
 ### DO

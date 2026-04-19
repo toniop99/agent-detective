@@ -17,6 +17,8 @@ pnpm install
 
 ## Configuration
 
+See **[configuration.md](configuration.md)** for `default.json` / `local.json` merge rules, supported environment variables, and generated plugin option schemas.
+
 ### Edit `config/default.json`
 
 ```json

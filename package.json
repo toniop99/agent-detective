@@ -14,6 +14,8 @@
     "lint": "turbo run lint",
     "test": "tsx --test 'test/**/*.test.ts'",
     "test:watch": "tsx --test --watch 'test/**/*.test.ts'",
+    "docs:plugins": "tsx scripts/generate-plugin-config-docs.ts",
+    "docs:plugins:check": "pnpm docs:plugins && git diff --exit-code docs/generated/plugin-options.md",
     "clean": "turbo run clean",
     "changeset": "changeset",
     "version": "changeset version",
@@ -29,6 +31,7 @@
   "dependencies": {
     "@agent-detective/core": "workspace:^",
     "@agent-detective/observability": "workspace:^",
+    "zod": "^3.24.0",
     "@scalar/express-api-reference": "^0.9.8",
     "@scalar/openapi-types": "^0.7.0",
     "express": "^5.0.1",
@@ -44,6 +47,7 @@
     "tmp": "^0.2.5",
     "tsup": "^8.5.1",
     "tsx": "^4.19.0",
+    "zod-to-json-schema": "^3.24.6",
     "turbo": "^2.9.6",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.58.1"

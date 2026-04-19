@@ -1,4 +1,4 @@
-import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext, PluginSchema, Logger } from '@agent-detective/types';
+import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext, Logger } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -14,49 +14,14 @@ import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/ind
 import { registerController } from '@agent-detective/core';
 import { ReposController } from './repos-controller.js';
 import { createRepoAnalyzer } from './analyzer.js';
+import { localReposPluginOptionsSchema } from './options-schema.js';
+import { zodToPluginSchema } from './zod-to-plugin-schema.js';
 
-const localReposPluginSchema: PluginSchema = {
-  type: 'object',
-  properties: {
-    repos: {
-      type: 'array',
-      description: 'Array of repository configurations (each with name, path, description, techStack)',
-    },
-    techStackDetection: {
-      type: 'object',
-      description: 'Configuration for technology stack detection (enabled, patterns)',
-    },
-    summaryGeneration: {
-      type: 'object',
-      description: 'Configuration for repository summary generation (enabled, source, maxReadmeLines, commitCount, useAgent, agentId, model, summaryPrompt)',
-    },
-    validation: {
-      type: 'object',
-      description: 'Configuration for repository validation (validateOnStartup, failOnMissing)',
-    },
-    repoContext: {
-      type: 'object',
-      description: 'Configuration for repository context generation (gitLogMaxCommits)',
-    },
-    discovery: {
-      type: 'object',
-      description: 'Configuration for repository discovery',
-    },
-    discoveryContext: {
-      type: 'object',
-      description: 'Context settings for discovery prompts',
-    },
-  },
-  required: ['repos'],
-};
+export { localReposPluginOptionsSchema } from './options-schema.js';
+
+const localReposPluginSchema = zodToPluginSchema(localReposPluginOptionsSchema);
 
 type LocalReposPluginContext = PluginContext;
-
-// Config is cast through unknown since PluginContext.config is generic (Record<string, unknown>).
-// The plugin schema validation ensures the config matches LocalReposPluginOptions at runtime.
-function asLocalReposConfig(context: PluginContext): LocalReposPluginOptions {
-  return context.config as unknown as LocalReposPluginOptions;
-}
 
 async function processRepos(options: LocalReposPluginOptions, agentRunner?: AgentRunner, logger?: Logger): Promise<ValidatedRepo[]> {
   const { repos, techStackDetection, summaryGeneration, validation, repoContext } = options;
@@ -119,7 +84,13 @@ const localReposPlugin: Plugin = {
 
   async register(app, context) {
     const extContext = context as LocalReposPluginContext;
-    const options = asLocalReposConfig(context);
+
+    const parsed = localReposPluginOptionsSchema.safeParse(context.config ?? {});
+    if (!parsed.success) {
+      extContext.logger?.error(`Invalid local-repos-plugin config: ${parsed.error.flatten().fieldErrors}`);
+      return;
+    }
+    const options = parsed.data as LocalReposPluginOptions;
 
     if (!options.repos || !Array.isArray(options.repos)) {
       extContext.logger?.warn('local-repos-plugin: No repos configured');

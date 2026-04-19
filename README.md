@@ -36,7 +36,9 @@ pnpm build
 
 ## Configuration
 
-Configure via `config/default.json`:
+See **[docs/configuration.md](docs/configuration.md)** for file precedence, env whitelist, and generated plugin schemas.
+
+Configure via `config/default.json` (and optional `config/local.json`):
 
 ```json
 {
@@ -48,6 +50,7 @@ Configure via `config/default.json`:
 
 ## Documentation
 
+- [Configuration](docs/configuration.md)
 - [Architecture](docs/architecture.md)
 - [Plugin Development](docs/plugins.md)
 - [Development Guide](docs/development.md)

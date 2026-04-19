@@ -1,119 +1,22 @@
 import 'reflect-metadata';
 import express, { type Application, type Request, type Response } from 'express';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type {
   AgentRunner,
   EnqueueFn,
 } from '@agent-detective/types';
-import { createRequestLogger, type Observability, type ObservabilityConfig } from '@agent-detective/observability';
+import { createRequestLogger, type Observability } from '@agent-detective/observability';
 import { apiReference } from '@scalar/express-api-reference';
 import {
   registerController,
   generateSpecFromRoutes,
-  getRegisteredRoutes,
 } from '@agent-detective/core';
 import { CoreApiController, createCoreApiController } from './core/core-api-controller.js';
-import { sanitizePluginName } from './core/plugin-system.js';
+import { loadConfig as loadAppConfig, type AppConfig } from './config/load.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+/** Application config shape (files + env whitelist); alias for callers importing from `server`. */
+export type Config = AppConfig;
 
-export interface Config {
-  port?: number;
-  agent?: string;
-  model?: string;
-  agents?: {
-    [agentId: string]: {
-      defaultModel?: string;
-    };
-  };
-  plugins?: Array<{ package?: string; options?: Record<string, unknown> }>;
-  adapters?: Record<string, unknown>;
-  observability?: Partial<ObservabilityConfig>;
-  docsAuthRequired?: boolean;
-  docsApiKey?: string;
-}
-
-function deepMerge<T extends object>(target: T, source: Partial<T>): T {
-  const result = { ...target };
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = target[key as keyof T];
-    if (
-      sourceValue !== undefined &&
-      typeof sourceValue === 'object' &&
-      !Array.isArray(sourceValue) &&
-      typeof targetValue === 'object' &&
-      targetValue !== null &&
-      !Array.isArray(targetValue)
-    ) {
-      (result as Record<string, unknown>)[key as string] = deepMerge(
-        targetValue as Record<string, unknown>,
-        sourceValue as Record<string, unknown>
-      );
-    } else if (sourceValue !== undefined) {
-      (result as Record<string, unknown>)[key as string] = sourceValue;
-    }
-  }
-  return result;
-}
-
-export function loadConfig(): Config {
-  const baseDir = resolve(__dirname, '..');
-
-  let config: Config = {};
-
-  const defaultConfigPath = resolve(baseDir, 'config', 'default.json');
-  if (existsSync(defaultConfigPath)) {
-    try {
-      config = JSON.parse(readFileSync(defaultConfigPath, 'utf8')) as Config;
-    } catch (err) {
-      console.warn('Failed to load config/default.json, using defaults:', (err as Error).message);
-    }
-  }
-
-  const localConfigPath = resolve(baseDir, 'config', 'local.json');
-  if (existsSync(localConfigPath)) {
-    try {
-      const localConfig = JSON.parse(readFileSync(localConfigPath, 'utf8')) as Config;
-      config = deepMerge(config, localConfig);
-    } catch (err) {
-      console.warn('Failed to load config/local.json:', (err as Error).message);
-    }
-  }
-
-  if (process.env.PORT) {
-    config.port = parseInt(process.env.PORT, 10);
-  }
-  if (process.env.AGENT) {
-    config.agent = process.env.AGENT;
-  }
-  if (process.env.MODEL) {
-    config.model = process.env.MODEL;
-  }
-
-  const agentModelEnvVars = [
-    'AGENTS_OPENCODE_MODEL',
-    'AGENTS_CLAUDE_MODEL',
-    'AGENTS_GEMINI_MODEL',
-  ];
-
-  for (const envVar of agentModelEnvVars) {
-    if (process.env[envVar]) {
-      const agentId = envVar.replace('AGENTS_', '').replace('_MODEL', '').toLowerCase();
-      if (!config.agents) {
-        config.agents = {};
-      }
-      if (!config.agents[agentId]) {
-        config.agents[agentId] = {};
-      }
-      config.agents[agentId].defaultModel = process.env[envVar];
-    }
-  }
-
-  return config;
-}
+export const loadConfig = loadAppConfig;
 
 export function createServer(
   config: Config,
