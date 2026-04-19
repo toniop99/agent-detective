@@ -6,6 +6,7 @@
 - pnpm 8.15.9+
 - Access to repositories on local filesystem
 - (Optional) Jira Cloud account for real integration
+- (Optional) Docker — see [Docker & CI images](docker.md) for compose-based local dev
 
 ## Installation
 

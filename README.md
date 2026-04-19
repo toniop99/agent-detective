@@ -51,6 +51,7 @@ Configure via `config/default.json`:
 - [Architecture](docs/architecture.md)
 - [Plugin Development](docs/plugins.md)
 - [Development Guide](docs/development.md)
+- [Docker & CI images](docs/docker.md)
 
 ## License
 

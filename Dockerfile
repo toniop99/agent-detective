@@ -1,41 +1,51 @@
-# ================================================================
-# Stage 1: Builder
-# ================================================================
-# Compiles the application
+# syntax=docker/dockerfile:1
+# =============================================================================
+# Builder — workspace install, package builds, bundled app entrypoint
+# =============================================================================
 FROM node:24-bookworm AS builder
 
 WORKDIR /app
+ENV CI=1
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+RUN corepack enable && corepack prepare pnpm@8.15.9 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json tsup.config.ts ./
 COPY packages/ ./packages/
 COPY src/ ./src/
 COPY config/ ./config/
-RUN corepack enable && pnpm install
 
-# Build packages (exclude root to avoid recursive turbo invocation)
-RUN pnpm exec turbo run build --filter=./packages/**
+RUN pnpm install --frozen-lockfile
 
-# Build main app using tsup
-RUN pnpm exec tsup src/index.ts --outDir dist --format esm --target es2022 --external express --external ./src/**/*.js
+RUN pnpm exec turbo run build --filter='./packages/**'
 
-# ================================================================
-# Stage 2: Production
-# ================================================================
-# Production runtime with selected agents
-# Build with: docker build --target production --build-arg AGENTS="opencode,claude,gemini" -t agent-detective:latest .
-# Supports multi-platform: linux/amd64, linux/arm64
+RUN pnpm run build:app
+
+# Production node_modules (drop devDependencies; keep workspace links valid)
+RUN pnpm prune --prod
+
+# =============================================================================
+# Production — runtime image (no compile; uses pruned node_modules from builder)
+# =============================================================================
+# Build: docker build --target production --build-arg AGENTS=opencode,claude -t agent-detective:latest .
 FROM node:24-bookworm AS production
 
 ARG AGENTS="opencode"
 ENV AGENTS=${AGENTS}
 
 WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3001
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --production
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
 
+# Optional CLI agents inside the image (comma-separated AGENTS build-arg)
 RUN install_agent() { \
     case "$1" in \
         opencode) \
@@ -59,53 +69,43 @@ RUN install_agent() { \
         install_agent "$agent"; \
     done
 
-RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup -s /bin/bash appuser
-
-RUN mkdir -p /app/plugins && chown -R appuser:appgroup /app
-RUN touch /app/plugins/.gitkeep && chown appuser:appgroup /app/plugins/.gitkeep
-
-ENV NODE_ENV=production
-ENV PORT=3001
-
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup -s /bin/bash appuser \
+  && mkdir -p /app/plugins \
+  && chown -R appuser:appgroup /app
 
 USER appuser
 
 EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3001/api/health | grep -q '"status"' || exit 1
 
 CMD ["node", "dist/index.js"]
 
-# ================================================================
-# Stage 3: Development
-# ================================================================
-# Hot reload enabled via volume mounts. Agents run on host.
-FROM node:24-slim AS dev
+FROM node:24-bookworm AS dev
 
 WORKDIR /app
-
-RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
-
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-
-COPY package.json pnpm-lock.yaml ./
-RUN chown -R appuser:appgroup /app
-
-RUN npm install -g pnpm
-
-USER appuser
-RUN pnpm install
-
+ENV CI=1
 ENV NODE_ENV=development
 ENV PORT=3001
 
+RUN corepack enable && corepack prepare pnpm@8.15.9 --activate \
+  && apt-get update && apt-get install -y --no-install-recommends wget git \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json tsup.config.ts ./
+COPY packages ./packages
+COPY src ./src
+COPY config ./config
+
+RUN pnpm install --frozen-lockfile
+
 EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3001/api/health | grep -q '"status"' || exit 1
 
 CMD ["pnpm", "run", "dev"]
 
-# ================================================================
-# Default target
-# ================================================================
+# Default image target for `docker build` with no --target
 FROM dev AS default

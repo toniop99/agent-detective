@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "turbo run build",
+    "build:app": "tsup --config tsup.config.ts",
     "build:types": "pnpm --filter @agent-detective/types build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
@@ -27,6 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "@agent-detective/core": "workspace:^",
+    "@agent-detective/observability": "workspace:^",
     "@scalar/express-api-reference": "^0.9.8",
     "@scalar/openapi-types": "^0.7.0",
     "express": "^5.0.1",

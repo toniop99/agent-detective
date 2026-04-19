@@ -127,6 +127,10 @@ packages/
 test/                         # *.test.ts files (tsx --test)
 ```
 
+## Docker
+
+See [docs/docker.md](docs/docker.md): `docker compose` for local **dev** (bind mounts), `docker-compose.prod.yml` for **production** image, and GitHub Actions workflows for GHCR.
+
 ## Essential Commands
 
 ```bash

@@ -1,11 +1,29 @@
 import { validatePluginSchema, validatePluginConfig } from './schema-validator.js';
-import { fileURLToPath } from 'node:url';
-import { resolve, dirname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Plugin, PluginContext, LoadedPlugin, TaskQueue, EnqueueFn } from './types.js';
 import { createMemoryTaskQueue } from './queue.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = resolve(__dirname, '../..');
+/** Repository root for resolving local plugin paths (packages/...). Uses process.cwd() so bundled dist/index.js matches Docker WORKDIR and local pnpm dev. */
+const ROOT_DIR = process.cwd();
+
+/** Load a plugin package: bare specifier, then monorepo packages (dist for production, src for dev). */
+async function importPluginModuleFromSpecifier(spec: string): Promise<{ default?: Plugin } & Record<string, unknown>> {
+  if (spec.startsWith('./') || spec.startsWith('../') || spec.startsWith('/')) {
+    return import(pathToFileURL(resolve(ROOT_DIR, spec)).href);
+  }
+  try {
+    return await import(spec);
+  } catch {
+    const short = spec.replace('@agent-detective/', '');
+    const base = resolve(ROOT_DIR, 'packages', short);
+    const distJs = resolve(base, 'dist/index.js');
+    const srcJs = resolve(base, 'src/index.js');
+    const filePath = existsSync(distJs) ? distJs : srcJs;
+    return import(pathToFileURL(filePath).href);
+  }
+}
 
 export function sanitizePluginName(name: string): string {
   return name
@@ -128,20 +146,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     } else {
       const packageName = packageNameOrPlugin;
       try {
-        if (packageName.startsWith('./') || packageName.startsWith('../') || packageName.startsWith('/')) {
-          const resolvedPath = resolve(ROOT_DIR, packageName);
-          const pluginModule = await import(resolvedPath);
-          plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-        } else {
-          try {
-            const pluginModule = await import(packageName);
-            plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-          } catch {
-            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@agent-detective/', ''), 'src', 'index.js');
-            const pluginModule = await import(localPath);
-            plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-          }
-        }
+        const pluginModule = await importPluginModuleFromSpecifier(packageName);
+        plugin = ((pluginModule as { default?: Plugin }).default ?? pluginModule) as unknown as Plugin;
       } catch (err) {
         logger.warn(`Failed to load plugin ${packageName}: ${(err as Error).message}. Continuing...`);
         return null;
@@ -236,20 +242,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       let plugin: Plugin;
       try {
-        if (packageName.startsWith('./') || packageName.startsWith('../') || packageName.startsWith('/')) {
-          const resolvedPath = resolve(ROOT_DIR, packageName);
-          const pluginModule = await import(resolvedPath);
-          plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-        } else {
-          try {
-            const pluginModule = await import(packageName);
-            plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-          } catch {
-            const localPath = resolve(ROOT_DIR, 'packages', packageName.replace('@agent-detective/', ''), 'src', 'index.js');
-            const pluginModule = await import(localPath);
-            plugin = (pluginModule as { default?: Plugin }).default || pluginModule as Plugin;
-          }
-        }
+        const pluginModule = await importPluginModuleFromSpecifier(packageName);
+        plugin = ((pluginModule as { default?: Plugin }).default ?? pluginModule) as unknown as Plugin;
       } catch (err) {
         logger.warn(`Failed to load plugin metadata for ${packageName}: ${(err as Error).message}`);
         continue;

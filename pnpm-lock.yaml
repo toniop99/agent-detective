@@ -11,6 +11,9 @@ importers:
       '@agent-detective/core':
         specifier: workspace:^
         version: link:packages/core
+      '@agent-detective/observability':
+        specifier: workspace:^
+        version: link:packages/observability
       '@scalar/express-api-reference':
         specifier: ^0.9.8
         version: 0.9.8

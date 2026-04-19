@@ -54,6 +54,7 @@ tmp/
 temp/
 *.tmp
 plans
+deploy/
 
 # Local config (overrides default.json)
 config/local.json
