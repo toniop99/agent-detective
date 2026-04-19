@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -22,9 +21,8 @@
     "noEmit": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
       "@agent-detective/types": ["./packages/types/src/index.ts"],
       "@agent-detective/observability": ["./packages/observability/src/index.ts"],
       "@agent-detective/local-repos-plugin": ["./packages/local-repos-plugin/src/index.ts"],

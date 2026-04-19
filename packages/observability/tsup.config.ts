@@ -10,7 +10,7 @@ export default defineConfig({
     health: 'src/health.ts',
   },
   format: 'esm',
-  dts: true,
+  dts: { compilerOptions: { ignoreDeprecations: '6.0' } },
   splitting: false,
   sourcemap: true,
   clean: true,
