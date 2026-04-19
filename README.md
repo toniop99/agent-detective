@@ -73,6 +73,7 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 - [Plugin Development](docs/plugins.md)
 - [Development Guide](docs/development.md)
 - [Docker & CI images](docs/docker.md)
+- [Jira manual E2E (webhook + tunnel)](docs/jira-manual-e2e.md)
 
 ## License
 

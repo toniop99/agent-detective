@@ -20,7 +20,8 @@
     "changeset": "changeset",
     "version": "changeset version",
     "publish": "changeset publish",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "jira:webhook-smoke": "node scripts/jira-webhook-smoke.mjs"
   },
   "keywords": [
     "ai",

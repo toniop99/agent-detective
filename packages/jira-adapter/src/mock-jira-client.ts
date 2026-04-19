@@ -1,9 +1,9 @@
-interface MockComment {
+export interface MockComment {
   text: string;
   createdAt: string;
 }
 
-interface MockIssue {
+export interface MockIssue {
   key: string;
   fields: Record<string, unknown>;
 }

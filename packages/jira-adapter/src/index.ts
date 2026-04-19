@@ -1,7 +1,7 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
+import { createRealJiraClient } from './real-jira-client.js';
 import { StandardEvents, type Plugin, type TaskEvent } from '@agent-detective/types';
-import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig } from './types.js';
 import { registerController } from '@agent-detective/core';
 import { JiraWebhookController } from './jira-webhook-controller.js';
@@ -16,21 +16,6 @@ const PLUGIN_VERSION = '0.1.0';
 const SCHEMA_VERSION = '1.0';
 
 const pluginSchema = zodToPluginSchema(jiraAdapterOptionsSchema);
-
-function createRealJiraClient(_config: JiraAdapterConfig): MockJiraClient {
-  // TODO: Implement real Jira client
-  // Requirements:
-  // - Use @life-itself/jira or similar Jira REST API client
-  // - Support Jira Cloud and Server/DC authentication (API tokens, OAuth)
-  // - Implement webhook signature verification for incoming webhooks
-  // - Handle rate limiting and retries
-  // - Support: addComment, getIssue, updateIssue, getComments
-  throw new Error(
-    'Real Jira client not yet implemented. ' +
-    'Set mockMode: true in config to use mock client. ' +
-    'To implement real Jira support, see TODO in src/index.ts'
-  );
-}
 
 const jiraAdapterPlugin: Plugin = {
   name: PLUGIN_NAME,

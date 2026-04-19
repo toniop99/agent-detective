@@ -50,13 +50,7 @@ See **[configuration.md](configuration.md)** for `default.json` / `local.json` m
       "options": {
         "enabled": true,
         "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
-        "mockMode": true,
-        "discovery": {
-          "enabled": true,
-          "useAgentForDiscovery": true,
-          "directMatchOnly": false,
-          "fallbackOnNoMatch": "ask-agent"
-        }
+        "mockMode": true
       }
     }
   ]
@@ -72,6 +66,8 @@ pnpm start
 # Development (with auto-reload using tsx)
 pnpm run dev
 ```
+
+End-to-end Jira webhook testing (tunnel, labels, smoke script): [jira-manual-e2e.md](jira-manual-e2e.md).
 
 ## Monorepo layout (pnpm + Turborepo)
 
@@ -170,15 +166,15 @@ cd packages/jira-adapter
 pnpm test
 ```
 
-## Testing Jira Adapter with Mock Mode
+## Testing Jira Adapter (mock vs real)
 
-When `mockMode: true` in plugin config, the adapter uses `mock-jira-client.ts` which stores comments in memory:
+When `mockMode: true`, the adapter uses `mock-jira-client.ts` and logs `[MOCK] Added comment...` instead of calling Jira.
+
+When `mockMode: false`, set `baseUrl`, `email`, and `apiToken` (or `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`) so comments are posted via Jira REST ([real-jira-client.ts](../packages/jira-adapter/src/real-jira-client.ts)).
 
 ```bash
-# Test webhook locally
-curl -X POST http://localhost:3001/plugins/agent-detective-jira-adapter/webhook/jira \
-  -H "Content-Type: application/json" \
-  -d @packages/jira-adapter/test/fixtures/issue-created.json
+# From repo root (server must be running on PORT)
+pnpm run jira:webhook-smoke
 ```
 
 ## Debugging

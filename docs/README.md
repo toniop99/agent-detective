@@ -100,12 +100,7 @@ Plugins are configured in `config/default.json`:
       "options": {
         "enabled": true,
         "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
-        "mockMode": true,
-        "discovery": {
-          "enabled": true,
-          "useAgentForDiscovery": true,
-          "fallbackOnNoMatch": "ask-agent"
-        }
+        "mockMode": true
       }
     }
   ]
@@ -172,6 +167,10 @@ All plugins produce a normalized `TaskEvent`:
   metadata: Record<string, unknown>  // Source-specific data
 }
 ```
+
+## Jira webhook (local E2E)
+
+See [jira-manual-e2e.md](jira-manual-e2e.md) for tunnels, `config/local.json`, and `pnpm run jira:webhook-smoke`.
 
 ## Development
 

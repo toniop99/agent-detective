@@ -32,15 +32,29 @@ const jiraWebhookBehaviorSchema = z.object({
 const DEFAULT_WEBHOOK_PATH = '/plugins/agent-detective-jira-adapter/webhook/jira';
 
 /** Zod schema for Jira adapter plugin options (single source of truth for validation and docs). */
-export const jiraAdapterOptionsSchema = z.object({
-  enabled: z.boolean().default(true),
-  webhookPath: z.string().default(DEFAULT_WEBHOOK_PATH),
-  mockMode: z.boolean().default(true),
-  baseUrl: z.string().optional(),
-  email: z.string().optional(),
-  apiToken: z.string().optional(),
-  analysisPrompt: z.string().optional(),
-  webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
-});
+export const jiraAdapterOptionsSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    webhookPath: z.string().default(DEFAULT_WEBHOOK_PATH),
+    mockMode: z.boolean().default(true),
+    baseUrl: z.string().optional(),
+    email: z.string().optional(),
+    apiToken: z.string().optional(),
+    analysisPrompt: z.string().optional(),
+    webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mockMode !== false) return;
+    const missing: string[] = [];
+    if (!data.baseUrl?.trim()) missing.push('baseUrl');
+    if (!data.email?.trim()) missing.push('email');
+    if (!data.apiToken?.trim()) missing.push('apiToken');
+    if (missing.length === 0) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `When mockMode is false, Jira Cloud REST requires: ${missing.join(', ')} (set in config or JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN).`,
+      path: ['mockMode'],
+    });
+  });
 
 export type JiraAdapterOptions = z.infer<typeof jiraAdapterOptionsSchema>;

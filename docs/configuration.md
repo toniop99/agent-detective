@@ -38,6 +38,8 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL` | Options for `@agent-detective/jira-adapter` (`apiToken`, `email`, `baseUrl`). |
 | `REPO_CONTEXT_GIT_LOG_MAX_COMMITS` | Positive integer merged into `@agent-detective/local-repos-plugin` at `options.repoContext.gitLogMaxCommits`. |
 
+For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-manual-e2e.md](jira-manual-e2e.md).
+
 ## Validation
 
 After merge and env application, the top-level config is validated with **Zod** (`src/config/schema.ts`). Invalid shapes cause startup to fail with an error message.

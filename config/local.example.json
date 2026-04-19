@@ -1,32 +1,52 @@
 {
+  "_comment": "Copy to config/local.json (gitignored). Merge overrides default.json — see docs/configuration.md",
   "port": 3001,
   "agent": "opencode",
-  "agents": {
-    "opencode": {
-      "defaultModel": "minimax/MiniMax-M2.7"
-    }
-  },
   "plugins": [
     {
       "package": "@agent-detective/local-repos-plugin",
       "options": {
         "repos": [
           {
-            "name": "my-repo",
-            "path": "/path/to/your/repo",
-            "description": "My project description"
+            "name": "my-test-repo",
+            "path": "/absolute/path/to/your/git/checkout",
+            "description": "Repo used when Jira issue has label my-test-repo"
           }
-        ]
+        ],
+        "validation": {
+          "validateOnStartup": true,
+          "failOnMissing": true
+        },
+        "discovery": {
+          "enabled": true,
+          "useAgentForDiscovery": true,
+          "directMatchOnly": false,
+          "fallbackOnNoMatch": "ask-agent"
+        }
       }
     },
     {
       "package": "@agent-detective/jira-adapter",
       "options": {
-        "mockMode": false,
-        "discovery": {
-          "useAgentForDiscovery": true
+        "enabled": true,
+        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
+        "mockMode": true,
+        "webhookBehavior": {
+          "defaults": {
+            "action": "ignore",
+            "acknowledgmentMessage": "Thanks — we are reviewing this issue."
+          },
+          "events": {
+            "jira:issue_created": {
+              "action": "analyze"
+            },
+            "jira:issue_updated": {
+              "action": "acknowledge"
+            }
+          }
         }
       }
     }
-  ]
+  ],
+  "_real_jira_comment": "To post real comments: set jira mockMode false plus baseUrl, email, apiToken (or env JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN). See docs/jira-manual-e2e.md"
 }
