@@ -1,5 +1,5 @@
 import type { Application, Router } from 'express';
-import type { ControllerMetadata, ControllerRoute } from './metadata.js';
+import type { ControllerMetadata, ControllerRoute, ControllerRouteHandler } from './metadata.js';
 import {
   getControllerMetadata,
   getRouteMetadata,
@@ -37,12 +37,14 @@ function getControllerRoutesFromInstance(instance: object): ControllerRoute[] {
     const routeMeta = getRouteMetadata(proto, methodName);
     if (!routeMeta) continue;
 
-    const handler = (instance[methodName as keyof typeof instance] as Function).bind(instance);
+    const handler = (instance[methodName as keyof typeof instance] as (...args: unknown[]) => unknown).bind(
+      instance
+    );
 
     routes.push({
       method: routeMeta.method,
       path: routeMeta.path,
-      handler: handler as Function,
+      handler: handler as ControllerRouteHandler,
       operationMetadata: getOperationMetadata(proto, methodName),
     });
   }
@@ -81,7 +83,7 @@ export function registerControllers(app: Application, controllers: object[]): vo
 export function getRegisteredRoutes(controllerOrClass: object | (new () => object)): Array<{
   method: string;
   path: string;
-  handler: Function;
+  handler: ControllerRouteHandler;
   operationMetadata?: import('./metadata.js').OperationMetadata;
 }> {
   let controllerInstance: object;

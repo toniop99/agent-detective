@@ -96,10 +96,13 @@ export function getControllerMetadata(
   return Reflect.getMetadata(CONTROLLER_METADATA_KEY, target);
 }
 
+/** Bound controller method passed to Express. */
+export type ControllerRouteHandler = (...args: unknown[]) => unknown;
+
 export interface ControllerRoute {
   method: RouteMetadata['method'];
   path: string;
-  handler: Function;
+  handler: ControllerRouteHandler;
   operationMetadata?: OperationMetadata;
 }
 

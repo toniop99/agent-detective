@@ -16,7 +16,6 @@ import type {
   EnqueueFn,
   AgentRunRequest,
   AgentProgressEvent,
-  Agent,
 } from '@agent-detective/types';
 import type { Observability } from '@agent-detective/observability';
 
@@ -111,7 +110,20 @@ export class CoreApiController {
     ],
   })
   async listAgents(_req: Request, res: Response) {
+    if (!this.agentRunner) {
+      res.status(503).json({ error: 'Agent runner not available' });
+      return;
+    }
     const agentList = await this.agentRunner.listAgents();
+    if (this.agentModels) {
+      res.json(
+        agentList.map((a) => ({
+          ...a,
+          defaultModel: this.agentModels![a.id]?.defaultModel ?? a.defaultModel,
+        }))
+      );
+      return;
+    }
     res.json(agentList);
   }
 

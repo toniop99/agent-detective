@@ -84,7 +84,7 @@ describe('agent-runner', () => {
     });
 
     it('passes cwd option to execLocal', async () => {
-      const mockExecLocal = async (cmd: string, args: string[], opts: Record<string, unknown>) => {
+      const mockExecLocal = async (_cmd: string, _args: string[], opts: Record<string, unknown>) => {
         return opts?.cwd as string || '';
       };
 

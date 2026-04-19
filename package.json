@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "build:app": "tsup --config tsup.config.ts",
     "build:types": "pnpm --filter @agent-detective/types build",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "turbo run typecheck && tsc --noEmit",
     "lint": "turbo run lint",
     "test": "tsx --test 'test/**/*.test.ts'",
     "test:watch": "tsx --test --watch 'test/**/*.test.ts'",

@@ -1,6 +1,6 @@
 import { createJiraWebhookHandler } from './webhook-handler.js';
 import { createMockJiraClient } from './mock-jira-client.js';
-import { StandardEvents, type Plugin } from '@agent-detective/types';
+import { StandardEvents, type Plugin, type TaskEvent } from '@agent-detective/types';
 import type { MockJiraClient } from './mock-jira-client.js';
 import type { JiraAdapterConfig } from './types.js';
 import { registerController } from '@agent-detective/core';
@@ -66,7 +66,7 @@ const jiraAdapterPlugin: Plugin = {
     });
 
     // Listen for completed tasks and post back to Jira
-    context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: any, result: string }) => {
+    context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: TaskEvent; result: string }) => {
       const { event, result } = payload;
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
         extContext.logger?.info(`Posting result back to Jira issue ${event.replyTo.id}`);

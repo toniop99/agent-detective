@@ -61,10 +61,13 @@ export interface LoadedPlugin {
 }
 
 export interface Logger {
+  debug?(message: string, ...args: unknown[]): void;
   info(message: string, ...args: unknown[]): void;
   warn(message: string, ...args: unknown[]): void;
   error(message: string, ...args: unknown[]): void;
-  child?(metadata: Record<string, unknown>): Logger;
+  /** Matches @agent-detective/observability child naming (string or key/value map). */
+  child?(component: string | Record<string, string>): Logger;
+  setLevel?(level: string): void;
 }
 
 export interface BuildRepoContextOptions {
@@ -248,11 +251,18 @@ export interface ProcessUtils {
   execLocalStreaming(cmd: string, args: string[], options?: ExecLocalStreamingOptions): Promise<string>;
 }
 
+/**
+ * Listener for `on` / `off`; may be sync or async for `invokeAsync` collectors.
+ * Intentionally permissive so plugins can register `(task: TaskEvent) => ...` without wrappers.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type EventBusHandler = (...args: any[]) => any;
+
 export interface EventBus {
-  on(event: string, handler: (...args: any[]) => any): void;
-  off(event: string, handler: (...args: any[]) => any): void;
-  emit(event: string, ...args: any[]): void;
-  invokeAsync<T>(event: string, ...args: any[]): Promise<T[]>;
+  on(event: string, handler: EventBusHandler): void;
+  off(event: string, handler: EventBusHandler): void;
+  emit(event: string, ...args: unknown[]): void;
+  invokeAsync<T>(event: string, ...args: unknown[]): Promise<T[]>;
 }
 
 export const StandardEvents = {

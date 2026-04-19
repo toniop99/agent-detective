@@ -3,6 +3,7 @@ import type {
   LocalReposPluginOptions,
   ValidatedRepo,
   LocalReposContext,
+  LocalReposService,
   TechStackDetectionConfig,
   SummaryGenerationConfig,
 } from './types.js';
@@ -67,12 +68,6 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
   }
 
   return results;
-}
-
-export interface LocalReposService {
-  localRepos: LocalReposContext;
-  buildRepoContext: (repoPath: string, options?: any) => Promise<unknown>;
-  formatRepoContextForPrompt: (context: unknown) => string;
 }
 
 const localReposPlugin: Plugin = {
@@ -155,6 +150,7 @@ export type {
   LocalReposPluginOptions,
   ValidatedRepo,
   LocalReposContext,
+  LocalReposService,
   TechStackDetectionConfig,
   SummaryGenerationConfig,
 };

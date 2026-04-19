@@ -1,4 +1,4 @@
-import { describe, it, mock, beforeEach } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 import cp from 'node:child_process';
 import { shellQuote, wrapCommandWithPty, terminateChildProcess, execLocal, execLocalStreaming } from '../../src/core/process.js';
@@ -54,14 +54,15 @@ describe('process', () => {
     });
 
     it('calls kill on child process', () => {
+      const killFn = mock.fn();
       const mockChild = {
-        kill: mock.fn(),
+        kill: killFn,
         pid: 12345,
       } as unknown as cp.ChildProcess;
 
       terminateChildProcess(mockChild, 'SIGTERM');
-      assert.equal(mockChild.kill.mock.callCount(), 1);
-      assert.equal(mockChild.kill.mock.calls[0].arguments[0], 'SIGTERM');
+      assert.equal(killFn.mock.callCount(), 1);
+      assert.equal(killFn.mock.calls[0].arguments[0], 'SIGTERM');
     });
 
     it('sends negative PID kill on unix for process group', () => {
@@ -76,15 +77,16 @@ describe('process', () => {
     });
 
     it('handles kill errors gracefully', () => {
+      const killFn = mock.fn(() => {
+        throw new Error('Process already dead');
+      });
       const mockChild = {
-        kill: mock.fn(() => {
-          throw new Error('Process already dead');
-        }),
+        kill: killFn,
         pid: 12345,
       } as unknown as cp.ChildProcess;
 
       terminateChildProcess(mockChild, 'SIGTERM');
-      assert.equal(mockChild.kill.mock.callCount(), 1);
+      assert.equal(killFn.mock.callCount(), 1);
     });
   });
 
@@ -155,7 +157,7 @@ describe('process', () => {
   describe('execLocalStreaming', () => {
     it('calls onStdout callback with stdout data', async () => {
       const stdoutChunks: string[] = [];
-      const result = await execLocalStreaming('echo', ['hello world'], {
+      await execLocalStreaming('echo', ['hello world'], {
         onStdout: (chunk) => stdoutChunks.push(chunk),
       });
       assert.ok(stdoutChunks.length > 0);
@@ -187,7 +189,7 @@ describe('process', () => {
             timeout: 100,
             onStdout: () => {},
           }),
-        (err: Error) => {
+        (_err: Error) => {
           const elapsed = Date.now() - start;
           assert.ok(elapsed >= 100, `Expected elapsed >= 100, got ${elapsed}`);
           assert.ok(elapsed < 7000, `Expected elapsed < 7000, got ${elapsed}`);
@@ -204,7 +206,8 @@ describe('process', () => {
             onStdout: () => {},
           }),
         (err: Error) => {
-          assert.ok(err.message.includes('maxBuffer') || err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER');
+          const code = 'code' in err ? (err as NodeJS.ErrnoException).code : undefined;
+          assert.ok(err.message.includes('maxBuffer') || code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER');
           return true;
         }
       );
@@ -229,7 +232,12 @@ describe('process', () => {
       await assert.rejects(
         () => execLocalStreaming('bash', ['-c', 'exit 1']),
         (err: Error) => {
-          assert.ok(err.message.includes('exit code 1') || err.code === 1);
+          const withCode = err as Error & { code?: string | number };
+          assert.ok(
+            err.message.includes('exit code 1') ||
+              withCode.code === 1 ||
+              withCode.code === '1'
+          );
           return true;
         }
       );

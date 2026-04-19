@@ -1,10 +1,12 @@
-export class AsyncEventBus {
-  private handlers = new Map<string, Array<(...args: any[]) => any>>();
+import type { EventBus, EventBusHandler } from '@agent-detective/types';
+
+export class AsyncEventBus implements EventBus {
+  private handlers = new Map<string, EventBusHandler[]>();
 
   /**
    * Register a listener for an event.
    */
-  on(event: string, handler: (...args: any[]) => any): void {
+  on(event: string, handler: EventBusHandler): void {
     const list = this.handlers.get(event) || [];
     list.push(handler);
     this.handlers.set(event, list);
@@ -13,7 +15,7 @@ export class AsyncEventBus {
   /**
    * Unregister a listener for an event.
    */
-  off(event: string, handler: (...args: any[]) => any): void {
+  off(event: string, handler: EventBusHandler): void {
     const list = this.handlers.get(event) || [];
     const index = list.indexOf(handler);
     if (index !== -1) {
@@ -29,11 +31,11 @@ export class AsyncEventBus {
   /**
    * Emit an event without waiting for responses (fire-and-forget).
    */
-  emit(event: string, ...args: any[]): void {
+  emit(event: string, ...args: unknown[]): void {
     const list = this.handlers.get(event) || [];
     for (const handler of list) {
       try {
-        handler(...args);
+        void handler(...args);
       } catch (err) {
         console.error(`Error in event handler for ${event}:`, err);
       }
@@ -44,7 +46,7 @@ export class AsyncEventBus {
    * Invoke all handlers asynchronously and gather their return values.
    * Useful for hook-like behavior where handlers provide data.
    */
-  async invokeAsync<T>(event: string, ...args: any[]): Promise<T[]> {
+  async invokeAsync<T>(event: string, ...args: unknown[]): Promise<T[]> {
     const list = this.handlers.get(event) || [];
     const promises = list.map(async (handler) => {
       try {
@@ -59,6 +61,6 @@ export class AsyncEventBus {
   }
 }
 
-export function createEventBus(): AsyncEventBus {
+export function createEventBus(): EventBus {
   return new AsyncEventBus();
 }

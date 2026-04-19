@@ -1,6 +1,12 @@
-import type { PluginContext, TaskEvent, TaskInfoForDiscovery } from '@agent-detective/types';
+import type { PluginContext, TaskEvent } from '@agent-detective/types';
 import { StandardEvents } from '@agent-detective/types';
-import type { LocalReposContext, LocalReposPluginOptions, ValidatedRepo, LocalReposService } from './types.js';
+import type {
+  LocalReposContext,
+  LocalReposPluginOptions,
+  ValidatedRepo,
+  LocalReposService,
+  TaskInfoForDiscovery,
+} from './types.js';
 import { findDirectMatch, buildDiscoveryPrompt, parseAgentDiscoveryResponse } from './discovery.js';
 import { formatTemplate, getDefaultAnalysisPrompt } from './types.js';
 

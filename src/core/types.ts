@@ -23,6 +23,7 @@ export type {
   AgentOutput,
   StreamingOutput,
   Agent,
+  AgentInfo,
   ExecLocalOptions,
   ExecLocalStreamingOptions,
   ProcessUtils,

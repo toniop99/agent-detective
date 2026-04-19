@@ -33,7 +33,7 @@ function getEventConfig(
 }
 
 export async function routeToHandler(
-  payload: unknown,
+  _payload: unknown,
   taskInfo: JiraTaskInfo,
   webhookEvent: string,
   context: HandlerContext

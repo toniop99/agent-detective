@@ -1,4 +1,4 @@
-import type { Commit } from '@agent-detective/types';
+import type { Commit, BuildRepoContextOptions } from '@agent-detective/types';
 
 export interface RepoConfig {
   name: string;
@@ -81,6 +81,12 @@ export interface LocalReposContext {
   repos: ValidatedRepo[];
   getRepo(name: string): ValidatedRepo | null;
   getAllRepos(): ValidatedRepo[];
+}
+
+export interface LocalReposService {
+  localRepos: LocalReposContext;
+  buildRepoContext: (repoPath: string, options?: BuildRepoContextOptions) => Promise<unknown>;
+  formatRepoContextForPrompt: (context: unknown) => string;
 }
 
 const DEFAULT_TECH_STACK_PATTERNS: Record<string, string[]> = {
