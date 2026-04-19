@@ -1,4 +1,4 @@
-import type { EnqueueFn } from './types.js';
+import type { EnqueueFn, TaskQueue } from './types.js';
 
 /**
  * Task queue that ensures tasks with the same key are executed serially.
@@ -30,4 +30,10 @@ export function createEnqueue(queues: Map<string, Promise<void>>): EnqueueFn {
 
     return next;
   };
+}
+
+/** In-memory {@link TaskQueue} (one chain per `queueKey`). */
+export function createMemoryTaskQueue(): TaskQueue {
+  const queues = new Map<string, Promise<void>>();
+  return { enqueue: createEnqueue(queues) };
 }

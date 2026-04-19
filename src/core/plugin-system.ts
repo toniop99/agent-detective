@@ -1,7 +1,8 @@
 import { validatePluginSchema, validatePluginConfig } from './schema-validator.js';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
-import type { Plugin, PluginContext, LoadedPlugin } from './types.js';
+import type { Plugin, PluginContext, LoadedPlugin, TaskQueue, EnqueueFn } from './types.js';
+import { createMemoryTaskQueue } from './queue.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = resolve(__dirname, '../..');
@@ -47,9 +48,10 @@ function createPrefixedApp(
   });
 }
 
-interface CreatePluginSystemOptions {
+export interface CreatePluginSystemOptions {
   agentRunner: PluginContext['agentRunner'];
-  enqueue?: PluginContext['enqueue'];
+  /** Initial queue; defaults to in-memory per-key serialization. */
+  taskQueue?: TaskQueue;
   logger?: PluginContext['logger'];
   events: PluginContext['events'];
 }
@@ -59,10 +61,31 @@ type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<strin
 export function createPluginSystem(context: CreatePluginSystemOptions) {
   const {
     agentRunner,
-    enqueue,
+    taskQueue: initialTaskQueue,
     logger = console,
     events,
   } = context;
+
+  const defaultQueue: TaskQueue = initialTaskQueue ?? createMemoryTaskQueue();
+
+  let activeQueue: TaskQueue = defaultQueue;
+
+  const enqueueDelegate: EnqueueFn = (queueKey, fn) => activeQueue.enqueue(queueKey, fn);
+
+  function registerTaskQueue(queue: TaskQueue): void {
+    const previous = activeQueue;
+    activeQueue = queue;
+    try {
+      const shutdownResult = previous.shutdown?.();
+      if (shutdownResult !== undefined && typeof (shutdownResult as Promise<void>).then === 'function') {
+        (shutdownResult as Promise<void>).catch((err: unknown) =>
+          logger.warn(`Previous task queue shutdown failed: ${(err as Error).message}`)
+        );
+      }
+    } catch (err) {
+      logger.warn(`Previous task queue shutdown failed: ${(err as Error).message}`);
+    }
+  }
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
   const pluginControllers: object[] = [];
@@ -146,7 +169,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       const pluginContext: PluginContext = {
         agentRunner,
-        enqueue,
+        enqueue: enqueueDelegate,
         config: mergedConfig,
         logger: 'child' in logger && typeof logger.child === 'function'
           ? logger.child({ plugin: plugin.name })
@@ -158,6 +181,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         registerAgent: (agent: any) => agentRunner.registerAgent(agent),
         registerCapability: sharedContext?.registerCapability || registerCapability,
         hasCapability: sharedContext?.hasCapability || hasCapability,
+        registerTaskQueue: sharedContext?.registerTaskQueue || registerTaskQueue,
       };
 
       const prefixedApp = createPrefixedApp(app, plugin.name);
@@ -289,7 +313,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
     const sharedContext: PluginContext = {
       agentRunner,
-      enqueue,
+      enqueue: enqueueDelegate,
       config: {},
       logger,
       controllers: pluginControllers,
@@ -299,6 +323,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       registerAgent: (agent: any) => agentRunner.registerAgent(agent),
       registerCapability,
       hasCapability,
+      registerTaskQueue,
     };
 
     for (const name of loadOrder) {
@@ -332,5 +357,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     loadAll,
     getLoadedPlugins,
     getControllers,
+    enqueue: enqueueDelegate,
   };
 }

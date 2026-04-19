@@ -90,9 +90,22 @@ export interface RepoContext {
 
 export type EnqueueFn = (queueKey: string, fn: () => Promise<void>) => Promise<void>;
 
+/**
+ * Pluggable task execution backend. The default implementation serializes work
+ * per `queueKey` in memory; plugins may register alternatives (e.g. Redis-backed workers).
+ */
+export interface TaskQueue {
+  enqueue: EnqueueFn;
+  /**
+   * Called when another queue replaces this one. Use to close connections or drain workers.
+   */
+  shutdown?: () => void | Promise<void>;
+}
+
 export interface PluginContext {
   agentRunner: AgentRunner;
-  enqueue?: EnqueueFn;
+  /** Stable delegate; calls the active {@link TaskQueue} (memory by default, or set via `registerTaskQueue`). */
+  enqueue: EnqueueFn;
   config: Record<string, unknown>;
   logger: Logger;
   controllers: object[];
@@ -121,6 +134,11 @@ export interface PluginContext {
    * Check if a capability has been registered by any loaded plugin.
    */
   hasCapability(capability: string): boolean;
+  /**
+   * Replace the process-wide task queue. The orchestrator and core API use the same
+   * `context.enqueue` delegate, so switching the backend affects all task execution.
+   */
+  registerTaskQueue(queue: TaskQueue): void;
 }
 
 export interface RunAgentOptions {

@@ -4,7 +4,6 @@ import { createOrchestrator } from './core/orchestrator.js';
 import { createServer, loadConfig, setupDocs } from './server.js';
 import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
-import { createEnqueue } from './core/queue.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgent, getAgentLabel, listAgents } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
@@ -34,24 +33,20 @@ for (const agent of listAgents()) {
   agentRunner.registerAgent(agent);
 }
 
-const queues = new Map<string, Promise<void>>();
-
-const enqueue = createEnqueue(queues);
-
 const eventBus = createEventBus();
 
+const pluginSystem = createPluginSystem({
+  agentRunner,
+  events: eventBus,
+  logger: logger.child('plugin-system'),
+});
+
+const enqueue = pluginSystem.enqueue;
 
 const orchestrator = createOrchestrator({ eventBus, agentRunner, enqueue });
 orchestrator.start();
 
 const { app, coreController } = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
-
-const pluginSystem = createPluginSystem({
-  agentRunner,
-  enqueue,
-  events: eventBus,
-  logger: logger.child('plugin-system'),
-});
 
 const PORT = config.port || 3001;
 

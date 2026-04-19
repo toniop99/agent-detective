@@ -27,4 +27,5 @@ export type {
   ExecLocalStreamingOptions,
   ProcessUtils,
   EnqueueFn,
+  TaskQueue,
 } from '@agent-detective/types';

@@ -1,7 +1,17 @@
 import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert';
 import { createPluginSystem } from '../../src/core/plugin-system.js';
-import type { AgentRunner, RepoMapping, Plugin } from '../../src/core/types.js';
+import type { AgentRunner, Plugin, TaskQueue } from '../../src/core/types.js';
+import type { EventBus } from '@agent-detective/types';
+
+function createNoopEventBus(): EventBus {
+  return {
+    on: () => {},
+    off: () => {},
+    emit: () => {},
+    invokeAsync: async () => [],
+  };
+}
 
 describe('Plugin System', () => {
   let pluginSystem: ReturnType<typeof createPluginSystem>;
@@ -9,6 +19,8 @@ describe('Plugin System', () => {
   const createMockAgentRunner = (): AgentRunner => ({
     runAgentForChat: async () => '',
     stopActiveRun: async () => ({ status: 'idle' }),
+    registerAgent: mock.fn(),
+    listAgents: async () => [],
   });
 
   const createMockLogger = () => ({
@@ -20,7 +32,7 @@ describe('Plugin System', () => {
   beforeEach(() => {
     pluginSystem = createPluginSystem({
       agentRunner: createMockAgentRunner(),
-      enqueue: async () => {},
+      events: createNoopEventBus(),
       logger: createMockLogger(),
     });
   });
@@ -175,7 +187,7 @@ describe('Plugin System', () => {
       assert.ok((contextReceived as { agentRunner?: unknown }).agentRunner);
     });
 
-    it('injects enqueue into register', async () => {
+    it('injects enqueue and registerTaskQueue into register', async () => {
       let contextReceived: any = null;
       const mockPlugin = {
         name: 'enqueue-plugin',
@@ -188,7 +200,8 @@ describe('Plugin System', () => {
       await pluginSystem.loadPlugin(mockPlugin as unknown as Plugin, {} as never, {});
 
       assert.ok(contextReceived);
-      assert.ok(contextReceived.enqueue);
+      assert.equal(typeof contextReceived.enqueue, 'function');
+      assert.equal(typeof contextReceived.registerTaskQueue, 'function');
     });
   });
 
@@ -228,6 +241,7 @@ describe('Plugin System', () => {
       const mockLogger = createMockLogger();
       const testPluginSystem = createPluginSystem({
         agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
         logger: mockLogger,
       });
 
@@ -295,9 +309,9 @@ describe('Plugin System', () => {
 
       assert.ok(loaded);
     });
-    });
+  });
 
-    describe('Service Registry', () => {
+  describe('Service Registry', () => {
     it('allows a plugin to register and another to get a service', async () => {
       const serviceObj = { doSomething: () => 'done' };
 
@@ -343,6 +357,7 @@ describe('Plugin System', () => {
       const mockLogger = createMockLogger();
       const systemWithMockLogger = createPluginSystem({
         agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
         logger: mockLogger as any,
       });
 
@@ -360,9 +375,9 @@ describe('Plugin System', () => {
       assert.ok(mockLogger.warn.mock.calls.length > 0);
       assert.match(mockLogger.warn.mock.calls[0].arguments[0], /Service dup already registered/);
     });
-    });
+  });
 
-    describe('Capabilities Registry', () => {
+  describe('Capabilities Registry', () => {
     it('allows plugins to register and check capabilities', async () => {
       let hasCap = false;
       const capabilityPlugin = {
@@ -383,6 +398,7 @@ describe('Plugin System', () => {
       const mockLogger = createMockLogger();
       const systemWithMockLogger = createPluginSystem({
         agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
         logger: mockLogger as any,
       });
 
@@ -397,6 +413,49 @@ describe('Plugin System', () => {
 
       assert.ok(mockLogger.error.mock.calls.length > 0);
       assert.match(mockLogger.error.mock.calls[0].arguments[0], /requires capability 'code-analysis' which is not provided/);
+    });
+  });
+
+  describe('Task queue integration', () => {
+    it('defaults to in-memory queue: returned enqueue serializes same key', async () => {
+      const ps = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
+        logger: createMockLogger(),
       });
+      const order: string[] = [];
+      await ps.enqueue('k', async () => {
+        order.push('a-start');
+        await delay(25);
+        order.push('a-end');
       });
+      await ps.enqueue('k', async () => {
+        order.push('b');
       });
+      await delay(60);
+      assert.deepEqual(order, ['a-start', 'a-end', 'b']);
+    });
+
+    it('uses taskQueue option when provided', async () => {
+      let usedCustom = false;
+      const custom: TaskQueue = {
+        enqueue: async (_key, fn) => {
+          usedCustom = true;
+          await fn();
+        },
+      };
+      const ps = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
+        taskQueue: custom,
+        logger: createMockLogger(),
+      });
+      await ps.enqueue('x', async () => {});
+      assert.ok(usedCustom);
+    });
+  });
+});
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

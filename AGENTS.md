@@ -63,11 +63,12 @@ interface Plugin {
 
 interface PluginContext {
   agentRunner: AgentRunner;       // Always available
+  enqueue: EnqueueFn;              // Stable delegate to active TaskQueue
+  registerTaskQueue(queue: TaskQueue): void;
   registerService<T>(name: string, service: T): void;
   getService<T>(name: string): T;
   registerCapability(capability: string): void;
   hasCapability(capability: string): boolean;
-  enqueue?: EnqueueFn;
   config: object;                  // Validated config
   logger: Logger;                  // info/warn/error
 }
@@ -159,7 +160,7 @@ pnpm turbo clean  # Clear build cache if odd issues occur
 | File | Purpose |
 |------|---------|
 | `packages/types/src/index.ts` | All shared type definitions |
-| `src/core/plugin-system.ts` | Plugin loading + route prefixing |
+| `src/core/plugin-system.ts` | Plugin loading; `createPluginSystem({ agentRunner, events, taskQueue? })` returns `.enqueue` |
 | `src/core/agent-runner.ts` | Agent execution |
 | `docs/plugins.md` | Full plugin development guide |
 | `docs/publishing.md` | Package publishing workflow |

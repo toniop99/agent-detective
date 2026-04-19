@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { createEnqueue } from '../../src/core/queue.js';
+import { createEnqueue, createMemoryTaskQueue } from '../../src/core/queue.js';
 
 describe('Queue', () => {
   let queues: Map<string, Promise<void>>;
@@ -68,6 +68,15 @@ describe('Queue', () => {
     await enqueue('task-1', async () => {});
 
     assert.equal(queues.size, 0);
+  });
+
+  it('createMemoryTaskQueue matches createEnqueue behavior', async () => {
+    const { enqueue } = createMemoryTaskQueue();
+    let executed = false;
+    await enqueue('k', async () => {
+      executed = true;
+    });
+    assert.ok(executed);
   });
 
   it('handles errors without crashing', async () => {

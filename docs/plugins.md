@@ -6,6 +6,7 @@ Plugins extend agent-detective to connect any event source (Jira, Telegram, Slac
 
 1. [Plugin Anatomy](#1-plugin-anatomy)
 2. [Core Context Reference](#2-core-context-reference)
+2b. [Task queue (`TaskQueue`)](#task-queue-taskqueue)
 3. [Schema System](#3-schema-system)
 4. [TaskEvent Interface](#4-taskevent-interface)
 5. [Example: Jira-Style Webhook Plugin](#5-example-jira-style-webhook-plugin)
@@ -104,7 +105,18 @@ register(app, context: PluginContext) {
 | `registerCapability(name)` | `function` | Register a capability provided by this plugin |
 | `hasCapability(name)` | `function` | Check if a capability is registered |
 | `registerAgent(agent)` | `function` | Register a new AI agent provider |
-| `enqueue` | `function` | Enqueue tasks to be executed sequentially per key |
+| `registerTaskQueue(queue)` | `function` | Replace the global `TaskQueue` backend (same contract as `enqueue`; use for Redis/SQLite workers) |
+| `enqueue` | `function` | Enqueue tasks to be executed sequentially per key (delegates to the active queue) |
+
+### Task queue (`TaskQueue`)
+
+The host builds the plugin system **before** the orchestrator and HTTP API, and passes **`createPluginSystem(...).enqueue`** into those components so every code path shares one queue.
+
+- **`createPluginSystem({ agentRunner, events, logger?, taskQueue? })`**: if `taskQueue` is omitted, the core uses an in-memory `TaskQueue` (same behavior as before). Pass `taskQueue` from tests or from a custom bootstrap if you need a specific initial backend.
+- **Plugins** call `context.registerTaskQueue(queue)` to replace the backend at runtime (for example a Redis-backed package loaded via `config.plugins`). The previous queue’s optional `shutdown()` is invoked (async errors are logged).
+- **`EnqueueFn` is still in-process**: `enqueue(key, fn)` runs the given `fn` in this Node process. Surviving process restarts requires a plugin that persists **serialized** work and replays it (a different design than only swapping `TaskQueue`).
+
+There is **no** `enqueue` option on `createPluginSystem`; use `taskQueue` or the default memory queue.
 
 ### Type-Safe Service Registry
 
@@ -952,6 +964,10 @@ enqueueTask(taskId, async () => {
 ---
 
 ## 12. Testing Patterns
+
+### `createPluginSystem` in unit tests
+
+`createPluginSystem` requires **`events`** (an `EventBus`). Pass a no-op bus and a minimal `AgentRunner` (`registerAgent`, `listAgents`, `runAgentForChat`, `stopActiveRun`). Omit **`taskQueue`** to use the default in-memory queue, or pass a stub `{ enqueue }` to assert queue behavior. Use the **`enqueue`** property on the return value to run work the same way the production app does.
 
 ### Mock Clients
 
