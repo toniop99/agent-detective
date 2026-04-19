@@ -26,7 +26,10 @@ RUN pnpm prune --prod
 # =============================================================================
 # Production — runtime image (no compile; uses pruned node_modules from builder)
 # =============================================================================
-# Build: docker build --target production --build-arg AGENTS=opencode,claude -t agent-detective:latest .
+# Build: docker build --target production --build-arg AGENTS=opencode,claude,gemini -t agent-detective:latest .
+# AGENTS=opencode → npm opencode-ai (binary: opencode). https://opencode.ai/docs
+# AGENTS=claude   → npm @anthropic-ai/claude-code (binary: claude). https://www.npmjs.com/package/@anthropic-ai/claude-code
+# AGENTS=gemini   → npm @google/gemini-cli (binary: gemini). https://www.npmjs.com/package/@google/gemini-cli
 FROM node:24-bookworm AS production
 
 ARG AGENTS="opencode"
@@ -45,33 +48,47 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 
-# Optional CLI agents inside the image (comma-separated AGENTS build-arg)
-RUN install_agent() { \
-    case "$1" in \
-        opencode) \
-            echo "Installing opencode..." && \
-            npm install -g opencode 2>/dev/null || echo "opencode install skipped" \
-            ;; \
-        claude) \
-            echo "Installing claude..." && \
-            npm install -g @anthropic-ai/claude 2>/dev/null || echo "claude install skipped" \
-            ;; \
-        gemini) \
-            echo "Installing gemini..." && \
-            npm install -g gemini-cli 2>/dev/null || echo "gemini install skipped" \
-            ;; \
-        *) \
-            echo "Unknown agent: $1, skipping" \
-            ;; \
-    esac; \
-    } && \
+# Optional CLI agents inside the image (comma-separated AGENTS build-arg).
+# OpenCode CLI: official npm package is opencode-ai (https://opencode.ai/docs).
+RUN set -eu; \
+    install_agent() { \
+        case "$1" in \
+            opencode) \
+                echo "Installing OpenCode CLI (npm: opencode-ai)..."; \
+                npm install -g opencode-ai; \
+                ;; \
+            claude) \
+                echo "Installing Claude Code CLI (npm: @anthropic-ai/claude-code)..."; \
+                npm install -g @anthropic-ai/claude-code; \
+                ;; \
+            gemini) \
+                echo "Installing Gemini CLI (npm: @google/gemini-cli)..."; \
+                npm install -g @google/gemini-cli; \
+                ;; \
+            *) \
+                echo "Unknown agent: $1, skipping"; \
+                ;; \
+        esac; \
+    }; \
     for agent in $(echo "$AGENTS" | tr ',' ' '); do \
+        [ -n "${agent:-}" ] || continue; \
         install_agent "$agent"; \
     done
 
-RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup -s /bin/bash appuser \
+RUN groupadd -g 1001 appgroup && useradd -m -u 1001 -g appgroup -s /bin/bash appuser \
   && mkdir -p /app/plugins \
   && chown -R appuser:appgroup /app
+
+# Fail build if requested agent CLIs are not on PATH for the runtime user.
+RUN if echo ",${AGENTS}," | grep -q ',opencode,'; then \
+        su -s /bin/bash appuser -c 'command -v opencode && opencode --version'; \
+    fi \
+    && if echo ",${AGENTS}," | grep -q ',claude,'; then \
+        su -s /bin/bash appuser -c 'command -v claude'; \
+    fi \
+    && if echo ",${AGENTS}," | grep -q ',gemini,'; then \
+        su -s /bin/bash appuser -c 'command -v gemini'; \
+    fi
 
 USER appuser
 

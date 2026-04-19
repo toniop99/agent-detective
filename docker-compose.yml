@@ -17,9 +17,9 @@ services:
       - NODE_ENV=development
       - PORT=3001
       - LOG_LEVEL=info
-    # Agents (opencode, claude, etc.) must be installed on HOST machine
-    # They are invoked via host PATH when container spawns node process
-    # The container sees the host's PATH via the shell that spawns the agent
+    # Dev image (Dockerfile target dev) does not bundle CLI agents. Install OpenCode on the host
+    # (npm install -g opencode-ai; see https://opencode.ai/docs) so `opencode` is on PATH inside this container.
+    # For agents baked into the image, use docker-compose.ghcr.yml or docker-compose.prod.yml instead.
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/api/health | grep -q '\"status\"' || exit 1"]

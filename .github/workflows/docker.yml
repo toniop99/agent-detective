@@ -202,6 +202,15 @@ jobs:
         run: |
           docker exec agent-detective-test wget -qO- http://127.0.0.1:3001/api/agent/list | grep -q '\[' || exit 1
 
+      - name: Check OpenCode CLI on PATH for runtime user
+        run: |
+          docker exec -u appuser agent-detective-test bash -lc 'command -v opencode'
+
+      - name: Check opencode agent available via API
+        run: |
+          docker exec agent-detective-test wget -qO- http://127.0.0.1:3001/api/agent/list \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);const o=j.find(x=>x.id==='opencode');process.exit(o&&o.available===true?0:1);})"
+
       - name: Cleanup
         if: always()
         run: |

@@ -50,6 +50,22 @@ Configure via `config/default.json` (and optional `config/local.json`):
 }
 ```
 
+## Run from GitHub Container Registry
+
+Use the production image when you do not need a local clone for development:
+
+```bash
+docker pull ghcr.io/toniop99/agent-detective:latest
+docker run -d -p 3001:3001 \
+  -v "$(pwd)/config:/app/config:ro" \
+  -e NODE_ENV=production \
+  ghcr.io/toniop99/agent-detective:latest
+```
+
+Then check `http://localhost:3001/api/health`. The production image bundles the OpenCode CLI as `opencode` (installed from the npm package **`opencode-ai`** per [OpenCode’s install guide](https://opencode.ai/docs)). Configure providers and API keys per OpenCode; any `-e` variables you pass into the container are visible to that CLI.
+
+For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.ghcr.yml). Full detail: [docs/docker.md](docs/docker.md#published-image-ghcr).
+
 ## Documentation
 
 - [Configuration](docs/configuration.md)

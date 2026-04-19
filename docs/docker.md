@@ -14,7 +14,7 @@ The image copies **`pnpm-workspace.yaml`** (workspace is **`packages/*`** plus t
 | Target | Purpose |
 |--------|---------|
 | **`dev`** (default) | Installs the monorepo with pnpm; use with **bind mounts** for `src/` and `packages/` so `pnpm dev` hot-reloads. |
-| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents (opencode, claude, gemini) via build-arg **`AGENTS`**. |
+| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents via build-arg **`AGENTS`**: **`opencode`** from **`opencode-ai`** ([OpenCode docs](https://opencode.ai/docs)), **`claude`** from [**`@anthropic-ai/claude-code`**](https://www.npmjs.com/package/@anthropic-ai/claude-code), **`gemini`** from [**`@google/gemini-cli`**](https://www.npmjs.com/package/@google/gemini-cli). |
 
 ### Health checks
 
@@ -84,6 +84,52 @@ The process **`cwd`** must be the app root (`WORKDIR /app` in the image) so work
 | **`release.yml`** | Tag `v*.*.*` | CI, multi-arch push to GHCR, Trivy scan, GitHub Release. |
 
 Image: **`ghcr.io/<owner>/<repo>`** (repository name lowercased by the registry).
+
+## Published image (GHCR)
+
+Images are published to **`ghcr.io/<owner>/<repo>`** (for this upstream repo: **`ghcr.io/toniop99/agent-detective`**). Pushes to **`main`** produce **`latest`** (multi-arch **linux/amd64** and **linux/arm64**) with **`AGENTS=opencode`** baked in. Version tags (for example **`stable`**, **`1.x.x`**) come from the release workflow and may include additional CLIs; see [.github/workflows/release.yml](../.github/workflows/release.yml).
+
+### Pull and run (Docker CLI)
+
+```bash
+docker pull ghcr.io/toniop99/agent-detective:latest
+docker run -d --name agent-detective -p 3001:3001 \
+  -v "$(pwd)/config:/app/config:ro" \
+  -e NODE_ENV=production \
+  ghcr.io/toniop99/agent-detective:latest
+```
+
+Optional: mount custom plugins and pass Jira or model overrides (same variables as [docker-compose.prod.yml](../docker-compose.prod.yml)).
+
+### Pull and run (Compose, no build)
+
+From a directory that contains **`config/`** (copy [`config/default.json`](../config/default.json) from the repo or your own files) and optionally **`plugins/`**:
+
+```bash
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+Override the image (for example a fork or a release tag):
+
+```bash
+export GHCR_IMAGE=ghcr.io/toniop99/agent-detective:stable
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+### OpenCode providers and secrets
+
+agent-detective shells out to **`opencode`**; it does not store provider API keys in `config/default.json`. Pass the environment variables your provider needs via **`docker run -e`** / Compose **`environment`**, or follow [OpenCode configuration](https://opencode.ai/docs) for interactive setup (for example OpenCode Zen). The Node process inherits the container environment, so those variables reach the CLI.
+
+### Quick verification
+
+```bash
+docker run --rm ghcr.io/toniop99/agent-detective:latest bash -lc 'command -v opencode && opencode --version'
+wget -qO- http://127.0.0.1:3001/api/health
+wget -qO- http://127.0.0.1:3001/api/agent/list
+```
+
+Expect **`opencode`** in the agent list with **`available": true`** after a successful install.
 
 ## Verifying the image locally
 

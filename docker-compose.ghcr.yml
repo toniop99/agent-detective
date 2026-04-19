@@ -1,20 +1,17 @@
+# Run the pre-built image from GitHub Container Registry (no local build).
 # Usage:
-#   docker compose -f docker-compose.prod.yml up --build
+#   docker compose -f docker-compose.ghcr.yml pull
+#   docker compose -f docker-compose.ghcr.yml up -d
 #
-# To run a pre-built image from GHCR without building locally, use docker-compose.ghcr.yml.
+# Copy config from the repo (e.g. config/default.json) next to this file, or mount your own.
+# Override image: export GHCR_IMAGE=ghcr.io/<owner>/<repo>:stable
 #
-# Jira and other secrets: use environment variables (see docs/docker.md) or a
-# compose override file; this file does not require Docker "secrets" files.
+# OpenCode CLI is bundled on main as `opencode` (installed from npm package opencode-ai).
+# Configure LLM providers per https://opencode.ai/docs (env vars or OpenCode config under the container user's home).
 
 services:
   agent-detective:
-    build:
-      context: .
-      target: production
-      args:
-        # Comma-separated CLI agents to pre-install in the image (opencode, claude, gemini)
-        AGENTS: ${AGENTS:-opencode}
-    image: ${IMAGE_NAME:-agent-detective:latest}
+    image: ${GHCR_IMAGE:-ghcr.io/toniop99/agent-detective:latest}
     container_name: agent-detective
     ports:
       - "${PORT:-3001}:3001"
@@ -46,14 +43,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 2G
-        reservations:
-          cpus: "0.5"
-          memory: 512M
 
 networks:
   default:

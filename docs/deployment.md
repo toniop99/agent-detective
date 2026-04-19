@@ -30,12 +30,13 @@ docker-compose up
 
 ```
 agent-detective/
-├── Dockerfile              # Multi-stage: dev + production
-├── docker-compose.yml     # Development environment
-├── docker-compose.prod.yml # Production deployment
+├── Dockerfile               # Multi-stage: dev + production
+├── docker-compose.yml       # Development environment
+├── docker-compose.prod.yml  # Production build from source + run
+├── docker-compose.ghcr.yml  # Production run from pre-built GHCR image (no build)
 ├── .dockerignore
 └── config/
-    └── default.json       # Configuration
+    └── default.json        # Configuration
 ```
 
 ---
@@ -69,26 +70,26 @@ docker-compose down
 |---------|-----|
 | Hot reload | Volumes mount `./src` and `./packages` into container |
 | Config | Mounted read-only from `./config` |
-| Agents | Run on **host machine**, not in container |
+| Agents | **Dev** image does not bundle CLI agents — install OpenCode (etc.) on the **host** so the container `PATH` can resolve them, or use a **production / GHCR** image where agents are installed at image build time |
 | Ports | `localhost:3001` → container port `3001` |
 | Repos | Optional: mount repos directory |
 
-### Agent Setup (Host)
+### Agent setup (host, dev compose only)
 
-Agents run on the host machine. Install them on your host:
+`docker-compose.yml` uses the **`dev`** Dockerfile target: it does **not** run `npm install -g` for OpenCode or other CLIs. Install tools on the machine where you run Compose so the dev container sees them on `PATH`:
 
 ```bash
-# opencode (recommended)
-npm install -g opencode
+# OpenCode CLI (recommended) — official npm package per https://opencode.ai/docs
+npm install -g opencode-ai
 
-# claude (optional)
-npm install -g @anthropic-ai/claude
+# Claude Code CLI (optional) — https://www.npmjs.com/package/@anthropic-ai/claude-code
+npm install -g @anthropic-ai/claude-code
 
-# gemini (optional)
-npm install -g gemini-cli
+# Gemini CLI (optional) — https://www.npmjs.com/package/@google/gemini-cli
+npm install -g @google/gemini-cli
 ```
 
-Agents are invoked via the host's PATH when the container spawns the Node.js process.
+For **production** or the **pre-built GHCR** image, OpenCode is installed **inside the image** during `docker build` (package **`opencode-ai`**, binary **`opencode`**). Use [docker-compose.ghcr.yml](../docker-compose.ghcr.yml) or see [docs/docker.md](docker.md#published-image-ghcr).
 
 ### Mounting Repos Directory
 
@@ -235,6 +236,12 @@ docker run -e AGENT=claude -e AGENTS_CLAUDE_MODEL=claude-opus-4 ...
 
 The recommended way to run agent-detective in production is to pull the official Docker image from GitHub Container Registry.
 
+Pushes to **`main`** publish **`latest`** with **`AGENTS=opencode`** (OpenCode CLI only). **Release** tags may bundle additional agents (for example Claude and Gemini); see [.github/workflows/release.yml](../.github/workflows/release.yml) for the current build arguments.
+
+### OpenCode in container images
+
+The server runs agents by spawning the **`opencode`** CLI ([`src/agents/opencode.ts`](../src/agents/opencode.ts)). agent-detective does **not** embed LLM API keys in JSON config; child processes inherit the container environment. Configure providers using [OpenCode’s documentation](https://opencode.ai/docs) (for example API keys via `-e` / Compose `environment`, OpenCode Zen, or mounted config under the runtime user’s home directory).
+
 ### Pulling the Image
 
 ```bash
@@ -283,7 +290,14 @@ docker run -d \
 
 ### Production Run with docker-compose
 
-Create `docker-compose.yml`:
+Use the repository’s [docker-compose.ghcr.yml](../docker-compose.ghcr.yml) (pull only, no local build):
+
+```bash
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+Minimal equivalent:
 
 ```yaml
 services:
@@ -729,21 +743,20 @@ pnpm run lint
 
 ### Agent Not Responding
 
-1. Verify agent is installed: `which opencode` (or codex, claude, etc.)
-2. Check agent availability: `curl http://localhost:3001/agent/list`
-3. Check agent logs for errors
+1. Verify the CLI is installed: `which opencode` (or claude, gemini, etc.) **inside the same environment that runs the server** (dev container vs production image).
+2. Check agent availability: `curl http://localhost:3001/api/agent/list` and confirm `"available": true` for your agent.
+3. Check agent logs for errors.
 
 ### Docker Dev: Agent Not Found
 
-For development with Docker, agents must be installed on the **host machine**, not in the container. The container runs agents via the host's PATH.
+With **`docker-compose.yml`** (dev target), CLI agents are **not** baked into the image. Install them on the **host** (or extend the Dockerfile) so `opencode` is on `PATH` inside the dev container.
 
 ```bash
-# Verify agents are installed on host
-which opencode
-which claude
+# Verify agents are available inside the running dev container
+docker compose exec agent-detective which opencode
 
-# If not found, install on host
-npm install -g opencode
+# On the host, install OpenCode (official npm package name)
+npm install -g opencode-ai
 ```
 
 ### High Memory Usage
