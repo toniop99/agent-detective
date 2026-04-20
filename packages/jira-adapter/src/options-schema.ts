@@ -8,7 +8,10 @@ export const DEFAULT_WEBHOOK_BEHAVIOR: JiraWebhookBehavior = {
   },
   events: {
     'jira:issue_created': { action: 'analyze' },
-    'jira:issue_updated': { action: 'acknowledge' },
+    // `analyze` retries the deterministic label-match when a label is added
+    // via the changelog; see handlers/index.ts. `acknowledge` remains available
+    // for users who want the old comment-on-every-update behavior.
+    'jira:issue_updated': { action: 'analyze' },
   },
 };
 
@@ -42,6 +45,12 @@ export const jiraAdapterOptionsSchema = z
     apiToken: z.string().optional(),
     analysisPrompt: z.string().optional(),
     analysisReadOnly: z.boolean().default(true),
+    /**
+     * Markdown template posted to Jira when an `issue_created` event arrives
+     * but none of the labels match a configured repo. See
+     * `handlers/missing-labels-handler.ts` for supported placeholders.
+     */
+    missingLabelsMessage: z.string().optional(),
     webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
   })
   .superRefine((data, ctx) => {

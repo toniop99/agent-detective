@@ -32,38 +32,12 @@ export interface RepoContextConfig {
   gitLogMaxCommits?: number;
 }
 
-export interface DiscoveryConfig {
-  enabled?: boolean;
-  useAgentForDiscovery?: boolean;
-  discoveryAgentId?: string;
-  discoveryModel?: string;
-  discoveryPrompt?: string;
-  directMatchOnly?: boolean;
-  fallbackOnNoMatch?: 'none' | 'ask-agent';
-}
-
-export interface DiscoveryContextConfig {
-  includeTechStack?: boolean;
-  includeSummary?: boolean;
-  maxReposShown?: number;
-}
-
 export interface LocalReposPluginOptions {
   repos: RepoConfig[];
   techStackDetection?: TechStackDetectionConfig;
   summaryGeneration?: SummaryGenerationConfig;
   validation?: ValidationConfig;
   repoContext?: RepoContextConfig;
-  discovery?: DiscoveryConfig;
-  discoveryContext?: DiscoveryContextConfig;
-}
-
-export interface TaskInfoForDiscovery {
-  id: string;
-  summary: string;
-  description: string;
-  labels: string[];
-  metadata?: Record<string, unknown>;
 }
 
 export interface ValidatedRepo {
@@ -177,25 +151,8 @@ Recent Commits: {repo_commits}
 
 Return ONLY the Markdown report as your final message — no preamble, no meta commentary, no "I will now…" narration. Do not attempt to implement the fix.`;
 
-const DEFAULT_DISCOVERY_PROMPT = `Given this task:
-- Task ID: {task_id}
-- Summary: {task_summary}
-- Description: {task_description}
-- Labels: {task_labels}
-
-Which of these repositories is most likely the source of this issue?
-
-Available Repositories:
-{repos_list}
-
-Respond with ONLY the repository name that best matches. If no repository seems related, respond with "none".`;
-
 export function getDefaultAnalysisPrompt(): string {
   return DEFAULT_ANALYSIS_PROMPT;
-}
-
-export function getDefaultDiscoveryPrompt(): string {
-  return DEFAULT_DISCOVERY_PROMPT;
 }
 
 export function formatTemplate(template: string, variables: Record<string, string>): string {

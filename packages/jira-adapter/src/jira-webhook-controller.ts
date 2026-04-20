@@ -201,6 +201,7 @@ export type WebhookEventSource =
   | 'body.issue_event_type_name'
   | 'body.eventTypeName'
   | 'query.webhookEvent'
+  | 'payload.shape'
   | 'fallback';
 
 export interface ResolvedWebhookEvent {
@@ -252,6 +253,36 @@ export function normalizeWebhookEventName(raw: string): string {
 }
 
 /**
+ * Last-resort inference from the payload shape itself, used when none of the
+ * explicit event sources (body.webhookEvent, issue_event_type_name,
+ * eventTypeName, query.webhookEvent) is populated. This is the common case
+ * for Jira Automation's "Send web request" action in "Automation format"
+ * when the user didn't add `?webhookEvent=…` to the URL.
+ *
+ * Heuristics (only when the payload clearly represents an issue event):
+ *   - a `changelog` (with items) is present         → `jira:issue_updated`
+ *   - otherwise, but the payload looks like an issue → `jira:issue_created`
+ *
+ * Returns `null` when the payload isn't recognizable as either shape, so the
+ * caller can keep falling through to the final `unknown` fallback.
+ */
+function inferEventFromPayloadShape(body: Record<string, unknown>): string | null {
+  const changelog = body.changelog as Record<string, unknown> | undefined;
+  const hasChangelogItems =
+    !!changelog &&
+    typeof changelog === 'object' &&
+    Array.isArray(changelog.items) &&
+    (changelog.items as unknown[]).length > 0;
+
+  const isEnvelope = !!body.issue && typeof body.issue === 'object';
+  const isBareIssue =
+    typeof body.key === 'string' && !!body.fields && typeof body.fields === 'object';
+
+  if (!isEnvelope && !isBareIssue) return null;
+  return hasChangelogItems ? 'jira:issue_updated' : 'jira:issue_created';
+}
+
+/**
  * The classic Jira Cloud webhook (System → WebHooks) sends `webhookEvent` in
  * the request body. Automation for Jira's "Send web request" action sends
  * either "Jira format" (no event in body — event must come from the URL) or
@@ -263,7 +294,9 @@ export function normalizeWebhookEventName(raw: string): string {
  *   2. body.issue_event_type_name (Automation "Automation format")
  *   3. body.eventTypeName         (alt casing sometimes used in templates)
  *   4. query.webhookEvent         (URL override, e.g. `?webhookEvent=jira:issue_created`)
- *   5. 'unknown'                  (router falls back to `webhookBehavior.defaults`)
+ *   5. payload.shape              (inferred from `changelog` presence — best-effort
+ *                                  safety net for misconfigured Automation rules)
+ *   6. 'unknown'                  (router falls back to `webhookBehavior.defaults`)
  *
  * Whatever value wins is then passed through `normalizeWebhookEventName` so
  * downstream routing always sees a canonical `jira:*` name.
@@ -291,6 +324,9 @@ export function resolveWebhookEvent(req: Request): ResolvedWebhookEvent {
 
   const queryEvent = typeof query.webhookEvent === 'string' ? query.webhookEvent : undefined;
   if (queryEvent) return pick(queryEvent, 'query.webhookEvent');
+
+  const inferred = inferEventFromPayloadShape(body);
+  if (inferred) return pick(inferred, 'payload.shape');
 
   return { event: 'unknown', rawEvent: '', source: 'fallback' };
 }

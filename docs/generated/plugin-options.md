@@ -44,6 +44,9 @@ Anchor: `jira-adapter`
       "default": true,
       "type": "boolean"
     },
+    "missingLabelsMessage": {
+      "type": "string"
+    },
     "webhookBehavior": {
       "default": {
         "defaults": {
@@ -55,7 +58,7 @@ Anchor: `jira-adapter`
             "action": "analyze"
           },
           "jira:issue_updated": {
-            "action": "acknowledge"
+            "action": "analyze"
           }
         }
       },
@@ -199,20 +202,6 @@ Anchor: `local-repos-plugin`
         }
       },
       "additionalProperties": false
-    },
-    "discovery": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {}
-    },
-    "discoveryContext": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {}
     }
   },
   "required": [

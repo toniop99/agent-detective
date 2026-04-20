@@ -426,9 +426,9 @@ All configuration is in `config/default.json`:
         "enabled": true,
         "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
-        "discovery": {...},
-        "discoveryContext": {...},
-        "analysis": {...}
+        "webhookBehavior": {...},
+        "analysisReadOnly": true,
+        "missingLabelsMessage": "..."
       }
     }
   ]
@@ -508,20 +508,12 @@ Settings for repository analysis:
   "webhookBehavior": {
     "defaults": { "action": "ignore" },
     "events": {
-      "jira.issue.created": { "action": "analyze" },
-      "jira.issue.updated": { "action": "analyze" },
-      "jira.issue.acknowledged": { "action": "acknowledge", "acknowledgmentMessage": "Our team is investigating this issue." }
+      "jira:issue_created": { "action": "analyze" },
+      "jira:issue_updated": { "action": "analyze" }
     }
   },
-  "discovery": {
-    "enabled": true,
-    "useAgentForDiscovery": true,
-    "directMatchOnly": false,
-    "fallbackOnNoMatch": "ask-agent"
-  },
-  "analysis": {
-    "maxCommits": 50
-  }
+  "analysisReadOnly": true,
+  "missingLabelsMessage": "## I can't link this ticket to a repository yet\n\nPlease add one of: {available_labels}"
 }
 ```
 
@@ -529,15 +521,12 @@ Settings for repository analysis:
 |---------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable the plugin |
 | `webhookPath` | string | `"/plugins/agent-detective-jira-adapter/webhook/jira"` | Webhook endpoint path |
-| `mockMode` | boolean | `false` | Use mock Jira client |
+| `mockMode` | boolean | `true` | Use mock Jira client |
 | `webhookBehavior.defaults.action` | string | `"ignore"` | Default action for unconfigured events |
 | `webhookBehavior.events.*.action` | string | - | Per-event action: `"analyze"`, `"acknowledge"`, `"ignore"` |
 | `webhookBehavior.events.*.acknowledgmentMessage` | string | - | Message for `acknowledge` action |
-| `discovery.enabled` | boolean | `true` | Enable repo discovery |
-| `discovery.useAgentForDiscovery` | boolean | `true` | Use AI for discovery |
-| `discovery.directMatchOnly` | boolean | `false` | Skip agent discovery |
-| `discovery.fallbackOnNoMatch` | string | `"ask-agent"` | Fallback strategy |
-| `analysis.maxCommits` | number | `50` | Max commits for analysis |
+| `analysisReadOnly` | boolean | `true` | Run analyze tasks with mutating tools denied |
+| `missingLabelsMessage` | string | built-in | Markdown template for the reminder comment on an unmatched `issue_created`; supports `{available_labels}` and `{issue_key}` |
 
 ## Process Management
 

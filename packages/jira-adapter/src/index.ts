@@ -50,6 +50,16 @@ const jiraAdapterPlugin: Plugin = {
       config: cfg,
       events: context.events,
       logger: extContext.logger,
+      // Soft service lookup: `PluginContext.getService` throws when a service
+      // isn't registered, but handlers treat "no matcher" as "skip analysis".
+      // Wrap it so handlers can stay declarative.
+      getService: <T>(name: string): T | null => {
+        try {
+          return context.getService<T>(name);
+        } catch {
+          return null;
+        }
+      },
     });
 
     // Listen for completed tasks and post back to Jira

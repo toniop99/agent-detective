@@ -137,17 +137,18 @@ agent-detective/
 │   │   └── dist/                     # Built output for npm
 │   ├── local-repos-plugin/          # Repository management plugin
 │   │   ├── src/
-│   │   │   ├── index.ts              # Plugin entry
+│   │   │   ├── index.ts              # Plugin entry + RepoMatcher registration
 │   │   │   ├── types.ts              # LocalReposConfig, ValidatedRepo interfaces
 │   │   │   ├── validate.ts           # Path validation
+│   │   │   ├── repo-matcher.ts       # Deterministic label → repo match
 │   │   │   ├── tech-stack-detector.ts # Auto-detect tech stack
 │   │   │   └── repo-context/        # Git log + file search
 │   │   └── dist/
 │   └── jira-adapter/                 # Official Jira plugin
 │       ├── src/
 │       │   ├── index.ts              # Plugin entry
-│       │   ├── types.ts              # JiraAdapterConfig, discovery prompts
-│       │   ├── discovery.ts          # Repo discovery logic
+│       │   ├── types.ts              # JiraAdapterConfig & DTOs
+│       │   ├── changelog.ts          # Added-labels extractor
 │       │   ├── webhook-handler.ts   # Webhook processing
 │       │   ├── normalizer.ts        # Jira payload → TaskEvent
 │       │   └── mock-jira-client.ts # In-memory Jira client

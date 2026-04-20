@@ -1,4 +1,12 @@
-import type { Plugin, BuildRepoContextOptions, AgentRunner, PluginContext, Logger } from '@agent-detective/types';
+import type {
+  Plugin,
+  BuildRepoContextOptions,
+  AgentRunner,
+  PluginContext,
+  Logger,
+  RepoMatcher,
+} from '@agent-detective/types';
+import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -7,6 +15,7 @@ import type {
   TechStackDetectionConfig,
   SummaryGenerationConfig,
 } from './types.js';
+import { matchRepoByLabels } from './repo-matcher.js';
 import { validateRepos, hasValidationErrors } from './validate.js';
 import { detectTechStack } from './tech-stack-detector.js';
 import { generateSummary } from './summary-generator.js';
@@ -127,6 +136,18 @@ const localReposPlugin: Plugin = {
     };
 
     context.registerService<LocalReposService>('@agent-detective/local-repos-plugin', localReposService);
+
+    const repoMatcher: RepoMatcher = {
+      matchByLabels(labels) {
+        const match = matchRepoByLabels(labels, validatedRepos);
+        return match ? { name: match.name, path: match.path } : null;
+      },
+      listConfiguredLabels() {
+        return validatedRepos.map((r) => r.name);
+      },
+    };
+    context.registerService<RepoMatcher>(REPO_MATCHER_SERVICE, repoMatcher);
+
     context.registerCapability('code-analysis');
 
     const analyzer = createRepoAnalyzer(context, localRepos, localReposService);

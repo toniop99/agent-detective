@@ -31,6 +31,13 @@ export interface JiraAdapterConfig {
    * agent to be able to apply fixes in response to Jira tickets.
    */
   analysisReadOnly?: boolean;
+
+  /**
+   * Markdown template posted to Jira on `issue_created` when no label matches
+   * a configured repo. Supports `{available_labels}` and `{issue_key}`
+   * placeholders. Leave unset to use the built-in default.
+   */
+  missingLabelsMessage?: string;
 }
 
 export interface JiraTaskInfo {

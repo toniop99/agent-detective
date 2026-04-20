@@ -42,7 +42,7 @@ This is a **pnpm monorepo** with the following packages:
 |---------|-------------|
 | `agent-detective` | Main application |
 | `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/local-repos-plugin` | Local repository configuration and discovery |
+| `@agent-detective/local-repos-plugin` | Local repository configuration and label-based matching |
 | `@agent-detective/jira-adapter` | Jira webhook adapter |
 
 ### @agent-detective/types

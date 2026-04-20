@@ -166,9 +166,10 @@ export default plugin;
    })
 ```
 
-## Repo Discovery Logic
+## Repo Matching Logic
 
-Repository discovery is handled by `local-repos-plugin` and `jira-adapter`:
+Repository matching is **deterministic and label-only**. There is no
+agent-driven discovery path.
 
 ### local-repos-plugin
 
@@ -177,19 +178,27 @@ Manages repository configuration with:
 - Automatic validation of repository paths on startup
 - Tech stack detection from file patterns (package.json, requirements.txt, etc.)
 - Summary generation from README files or recent commits
+- Exposes a **`RepoMatcher`** service under the `REPO_MATCHER_SERVICE` key
+  (`@agent-detective/types`) with two methods:
+  - `matchByLabels(labels)` — case-insensitive first-match against repo names.
+  - `listConfiguredLabels()` — repo names to show users when no label matches.
 
-### jira-adapter Discovery Flow
+### jira-adapter Matching Flow
 
-For Jira incidents, the adapter attempts to find the relevant repository:
+For Jira incidents, the adapter is a thin orchestrator on top of `RepoMatcher`:
 
-1. **Direct Match**: Check if any Jira label matches a configured repo name
-2. **Agent-Assisted Discovery**: If no direct match and `discovery.useAgentForDiscovery: true`:
-   - Build context with all configured repos (tech stack + summary)
-   - Ask the agent to determine which repo is most relevant
-3. **Fallback**: Based on `discovery.fallbackOnNoMatch`:
-   - `ask-agent`: Present all repos to agent for selection
-   - `use-first`: Use the first configured repo
-   - `skip-analysis`: Process without repo context
+1. **On `jira:issue_created`**: call `matchByLabels(issue.fields.labels)`.
+   - Match → emit `TASK_CREATED` with `context.repoPath` and
+     `metadata.matchedRepo` already set. The downstream analyzer only builds
+     repo context; it never has to pick a repo.
+   - No match → post a single Markdown comment listing
+     `listConfiguredLabels()` via the missing-labels handler, then stop. No
+     task is emitted.
+2. **On `jira:issue_updated`**: the adapter parses `changelog.items[]` to find
+   labels that were *added* in this update.
+   - A matching label was added → run the same analysis path as on create.
+   - Otherwise → stay silent (no comment, no task). This prevents noise on
+     unrelated field edits.
 
 Configuration in `config/default.json`:
 ```json
@@ -206,11 +215,12 @@ Configuration in `config/default.json`:
     {
       "package": "@agent-detective/jira-adapter",
       "options": {
-        "discovery": {
-          "enabled": true,
-          "useAgentForDiscovery": true,
-          "directMatchOnly": false,
-          "fallbackOnNoMatch": "ask-agent"
+        "webhookBehavior": {
+          "defaults": { "action": "ignore" },
+          "events": {
+            "jira:issue_created": { "action": "analyze" },
+            "jira:issue_updated": { "action": "analyze" }
+          }
         }
       }
     }
@@ -251,16 +261,16 @@ packages/
 │
 ├── jira-adapter/               # Official Jira plugin
 │   ├── src/
-│   │   ├── index.ts            # Plugin entry point
-│   │   ├── types.ts            # Config interfaces & types
-│   │   ├── normalizer.ts       # Jira payload → TaskEvent
-│   │   ├── webhook-handler.ts  # Main webhook router
-│   │   ├── handlers/           # Modular action handlers
-│   │   │   ├── index.ts       # Handler router
-│   │   │   ├── analyze-handler.ts
+│   │   ├── index.ts                 # Plugin entry point
+│   │   ├── types.ts                 # Config interfaces & types
+│   │   ├── normalizer.ts            # Jira payload → TaskEvent
+│   │   ├── webhook-handler.ts       # Main webhook router
+│   │   ├── changelog.ts             # Added-labels extractor for issue_updated
+│   │   ├── handlers/                # Modular action handlers
+│   │   │   ├── index.ts             # Handler router (label-match orchestration)
 │   │   │   ├── acknowledge-handler.ts
+│   │   │   ├── missing-labels-handler.ts
 │   │   │   └── ignore-handler.ts
-│   │   ├── discovery.ts        # Repo discovery logic
 │   │   └── mock-jira-client.ts
 │   └── package.json
 │

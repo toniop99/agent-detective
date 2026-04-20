@@ -16,12 +16,6 @@
         "validation": {
           "validateOnStartup": true,
           "failOnMissing": true
-        },
-        "discovery": {
-          "enabled": true,
-          "useAgentForDiscovery": true,
-          "directMatchOnly": false,
-          "fallbackOnNoMatch": "ask-agent"
         }
       }
     },
@@ -41,7 +35,7 @@
               "action": "analyze"
             },
             "jira:issue_updated": {
-              "action": "acknowledge"
+              "action": "analyze"
             }
           }
         }

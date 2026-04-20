@@ -1142,7 +1142,8 @@ Manages local repository configuration with validation, tech stack detection, an
 
 ### jira-adapter
 
-Handles Jira webhooks with intelligent repository discovery and configurable webhook behavior.
+Handles Jira webhooks and dispatches deterministic, label-based analysis via
+the `RepoMatcher` service exposed by `local-repos-plugin`.
 
 **Package:** `@agent-detective/jira-adapter`
 
@@ -1184,8 +1185,8 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 
 | Action | Description |
 |--------|-------------|
-| `analyze` | Run full repository discovery and analysis, post results as a comment |
-| `acknowledge` | Post an acknowledgment comment only (no repository discovery) |
+| `analyze` | Match the issue's labels against configured repos; if matched, run analysis and post the report. On `issue_created` without a match, post a single "please add a matching label" comment. On `issue_updated`, only retry when a *new* label is added via the changelog. |
+| `acknowledge` | Post a fixed acknowledgment comment (no matching, no analysis) |
 | `ignore` | Log the event and skip processing |
 
 ##### Configuration Options
@@ -1197,28 +1198,28 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 | `webhookBehavior.events.{eventType}.action` | Action for a specific event type |
 | `webhookBehavior.events.{eventType}.acknowledgmentMessage` | Override message for a specific event |
 | `webhookBehavior.events.{eventType}.analysisPrompt` | Custom analysis prompt template |
-| `webhookBehavior.events.{eventType}.discoveryPrompt` | Custom discovery prompt template |
+| `analysisReadOnly` | When `true` (default), `analyze` tasks run with write/edit/shell tools denied |
+| `missingLabelsMessage` | Markdown template posted when no label matches on `issue_created`. Supports `{available_labels}` and `{issue_key}` placeholders. |
 
 ##### Supported Event Types
 
 | Event Type | Default Action |
 |-----------|---------------|
 | `jira:issue_created` | `analyze` |
-| `jira:issue_updated` | `acknowledge` |
+| `jira:issue_updated` | `analyze` (retries only when a new label is added via the changelog) |
 | `jira:issue_deleted` | `ignore` (falls to default) |
 
-#### Discovery Configuration
+#### Repository matching
 
-```json
-{
-  "discovery": {
-    "enabled": true,
-    "useAgentForDiscovery": true,
-    "directMatchOnly": false,
-    "fallbackOnNoMatch": "ask-agent"
-  }
-}
-```
+Matching is **label-only** and **deterministic**. The Jira adapter consumes
+the `RepoMatcher` service (`REPO_MATCHER_SERVICE` from
+`@agent-detective/types`) which `local-repos-plugin` registers. The matcher
+compares an issue's labels (case-insensitively) to configured repo names and
+returns the first match, or `null`.
+
+On a match, the adapter emits `TASK_CREATED` with `context.repoPath`,
+`context.cwd`, and `metadata.matchedRepo` pre-set so the downstream analyzer
+has no selection work to do. There is no agent-driven discovery fallback.
 
 #### Analysis Configuration
 

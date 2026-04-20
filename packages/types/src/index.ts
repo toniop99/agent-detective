@@ -197,6 +197,35 @@ export interface RepoMappingConfig {
   };
 }
 
+/** A single repository known to the matcher, identified by display name and on-disk path. */
+export interface MatchedRepo {
+  name: string;
+  path: string;
+}
+
+/**
+ * Minimal, source-agnostic interface for resolving an issue's labels to a
+ * configured repository. Implemented today by the local-repos plugin; any
+ * future source (remote git host, service catalog, etc.) can register an
+ * alternate implementation under the same service name.
+ */
+export interface RepoMatcher {
+  /**
+   * Case-insensitive match of incoming labels against configured repos.
+   * Returns the first configured repo whose `name` matches any label, or
+   * `null` if none match.
+   */
+  matchByLabels(labels: string[]): MatchedRepo | null;
+  /**
+   * Repo names the user can add as labels to resolve an unmatched issue,
+   * ordered for user-facing display.
+   */
+  listConfiguredLabels(): string[];
+}
+
+/** Service-registry key under which a `RepoMatcher` is registered. */
+export const REPO_MATCHER_SERVICE = 'repo-matcher';
+
 export interface BuildCommandOptions {
   prompt: string;
   promptExpression: string;

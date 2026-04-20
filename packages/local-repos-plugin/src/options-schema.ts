@@ -18,8 +18,6 @@ export const localReposPluginOptionsSchema = z.object({
       gitLogMaxCommits: z.number().optional(),
     })
     .optional(),
-  discovery: z.record(z.string(), z.unknown()).optional(),
-  discoveryContext: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type LocalReposPluginOptionsInferred = z.infer<typeof localReposPluginOptionsSchema>;

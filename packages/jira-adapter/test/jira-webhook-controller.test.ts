@@ -97,10 +97,55 @@ describe('resolveWebhookEvent precedence', () => {
     assert.equal(r.rawEvent, 'issue_created');
   });
 
-  it('falls back to "unknown" when no source provides an event', () => {
+  it('infers jira:issue_updated from payload shape when changelog has items (Automation-format fallback)', () => {
     const r = resolveWebhookEvent(
-      mkReq({ body: { issue: { key: 'KAN-1' } } })
+      mkReq({
+        body: {
+          // Bare-issue shape as Automation emits it, no explicit event fields,
+          // no URL query string.
+          key: 'KAN-11',
+          fields: { summary: 's' },
+          changelog: {
+            items: [{ field: 'labels', fromString: '', toString: 'api' }],
+          },
+        },
+      })
     );
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.rawEvent, 'jira:issue_updated');
+    assert.equal(r.event, 'jira:issue_updated');
+  });
+
+  it('infers jira:issue_created from envelope shape when no changelog is present', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          issue: { key: 'KAN-2', fields: { summary: 's' } },
+        },
+      })
+    );
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.event, 'jira:issue_created');
+  });
+
+  it('does not infer when changelog.items is empty (no real update happened)', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          key: 'KAN-3',
+          fields: { summary: 's' },
+          changelog: { items: [] },
+        },
+      })
+    );
+    // Empty items → treat as create-like rather than update; either way this
+    // tests that we fall through to the 'created' branch, not 'updated'.
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.event, 'jira:issue_created');
+  });
+
+  it('falls back to "unknown" only when the payload is not an issue shape at all', () => {
+    const r = resolveWebhookEvent(mkReq({ body: { hello: 'world' } }));
     assert.equal(r.source, 'fallback');
     assert.equal(r.event, 'unknown');
   });
