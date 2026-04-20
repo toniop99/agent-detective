@@ -1,8 +1,8 @@
-import type { MockJiraClient } from '../mock-jira-client.js';
+import type { JiraClient } from '../jira-client.js';
 import type { JiraAdapterConfig, JiraTaskInfo } from '../types.js';
 
 export interface AcknowledgeHandlerDeps {
-  jiraClient: MockJiraClient;
+  jiraClient: JiraClient;
   config: JiraAdapterConfig;
 }
 

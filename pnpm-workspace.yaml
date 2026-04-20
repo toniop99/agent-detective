@@ -10,3 +10,4 @@ catalog:
   turbo: ^2.9.6
   typescript-eslint: ^8.58.2
   tsup: ^8.5.1
+  jira.js: ^5.3.1

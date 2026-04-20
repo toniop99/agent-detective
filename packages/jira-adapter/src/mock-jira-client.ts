@@ -1,30 +1,26 @@
-export interface MockComment {
-  text: string;
-  createdAt: string;
-}
+import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
-export interface MockIssue {
-  key: string;
-  fields: Record<string, unknown>;
-}
+export type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+
+/** @deprecated Use {@link JiraClient}. Retained for backwards compatibility. */
+export type MockJiraClient = JiraClient;
+/** @deprecated Use {@link JiraCommentRecord}. Retained for backwards compatibility. */
+export type MockComment = JiraCommentRecord;
+/** @deprecated Use {@link JiraIssueRecord}. Retained for backwards compatibility. */
+export type MockIssue = JiraIssueRecord;
 
 /**
  * Mock Jira client for testing.
  * Stores comments in memory instead of making real API calls.
  */
-export interface MockJiraClient {
-  comments: Map<string, MockComment[]>;
-  issues: Map<string, MockIssue>;
-  addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
-  getIssue(issueKey: string): Promise<MockIssue | null>;
-  updateIssue(issueKey: string, updates: Record<string, unknown>): Promise<{ success: boolean }>;
-  getComments(issueKey: string): Promise<MockComment[]>;
-  clear(): void;
+export interface MockJiraClientWithStore extends JiraClient {
+  comments: Map<string, JiraCommentRecord[]>;
+  issues: Map<string, JiraIssueRecord>;
 }
 
-export function createMockJiraClient(): MockJiraClient {
-  const comments = new Map<string, MockComment[]>();
-  const issues = new Map<string, MockIssue>();
+export function createMockJiraClient(): MockJiraClientWithStore {
+  const comments = new Map<string, JiraCommentRecord[]>();
+  const issues = new Map<string, JiraIssueRecord>();
 
   return {
     comments,
@@ -42,7 +38,7 @@ export function createMockJiraClient(): MockJiraClient {
       return { success: true, issueKey };
     },
 
-    async getIssue(issueKey: string): Promise<MockIssue | null> {
+    async getIssue(issueKey: string): Promise<JiraIssueRecord | null> {
       return issues.get(issueKey) || null;
     },
 
@@ -53,7 +49,7 @@ export function createMockJiraClient(): MockJiraClient {
       return { success: true };
     },
 
-    async getComments(issueKey: string): Promise<MockComment[]> {
+    async getComments(issueKey: string): Promise<JiraCommentRecord[]> {
       return comments.get(issueKey) || [];
     },
 

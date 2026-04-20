@@ -1,5 +1,7 @@
+import { Version3Client } from 'jira.js';
+import { HttpException } from 'jira.js';
 import type { JiraAdapterConfig } from './types.js';
-import type { MockComment, MockIssue, MockJiraClient } from './mock-jira-client.js';
+import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
 function normalizeBaseUrl(url: string): string {
   return String(url || '')
@@ -7,13 +9,11 @@ function normalizeBaseUrl(url: string): string {
     .replace(/\/+$/, '');
 }
 
-function buildAuthHeader(email: string, apiToken: string): string {
-  const token = Buffer.from(`${email}:${apiToken}`, 'utf8').toString('base64');
-  return `Basic ${token}`;
-}
+/** Minimal jira.js Version3Client surface used by this adapter. Enables test stubs. */
+export type Version3ClientSurface = Pick<Version3Client, 'issues' | 'issueComments'>;
 
 /** Atlassian Document Format (ADF) — minimal doc with one or more paragraphs. */
-export function plainTextToAdfDoc(plainText: string): { type: string; version: number; content: unknown[] } {
+export function plainTextToAdfDoc(plainText: string): { type: 'doc'; version: 1; content: Array<{ type: 'paragraph'; content: Array<{ type: 'text'; text: string }> }> } {
   const text = String(plainText ?? '').replace(/\r\n/g, '\n');
   if (!text.trim()) {
     return {
@@ -24,100 +24,119 @@ export function plainTextToAdfDoc(plainText: string): { type: string; version: n
   }
   const chunks = text.split(/\n{2,}/);
   const content = chunks.map((chunk) => ({
-    type: 'paragraph',
-    content: [{ type: 'text', text: chunk.replace(/\n+/g, ' ').trim() || ' ' }],
+    type: 'paragraph' as const,
+    content: [{ type: 'text' as const, text: chunk.replace(/\n+/g, ' ').trim() || ' ' }],
   }));
   return { type: 'doc', version: 1, content };
 }
 
-export function createRealJiraClient(config: JiraAdapterConfig): MockJiraClient {
+export interface RealJiraClientOverrides {
+  /** Inject a Version3Client (or compatible stub) to bypass the real HTTP stack in tests. */
+  client?: Version3ClientSurface;
+}
+
+/**
+ * Create a production Jira client backed by the maintained `jira.js` SDK
+ * (Version3Client). Keeps the existing JiraClient interface so callers and
+ * tests do not need to change.
+ */
+export function createRealJiraClient(
+  config: JiraAdapterConfig,
+  overrides?: RealJiraClientOverrides
+): JiraClient {
   const baseUrl = normalizeBaseUrl(config.baseUrl || '');
   const email = config.email?.trim() || '';
   const apiToken = config.apiToken?.trim() || '';
 
-  if (!baseUrl || !email || !apiToken) {
+  if (!overrides?.client && (!baseUrl || !email || !apiToken)) {
     throw new Error(
       'Jira adapter: mockMode is false but baseUrl, email, or apiToken is missing. Set them in config or via JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN.'
     );
   }
 
-  const auth = buildAuthHeader(email, apiToken);
-  const headers = {
-    Authorization: auth,
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  } as const;
-
-  async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-    const url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
-    return fetch(url, { ...init, headers: { ...headers, ...init?.headers } });
-  }
+  const client: Version3ClientSurface =
+    overrides?.client ??
+    new Version3Client({
+      host: baseUrl,
+      authentication: {
+        basic: { email, apiToken },
+      },
+    });
 
   return {
-    comments: new Map(),
-    issues: new Map(),
-
-    async addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }> {
-      const path = `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`;
-      const res = await apiFetch(path, {
-        method: 'POST',
-        body: JSON.stringify({
-          body: plainTextToAdfDoc(commentText),
-        }),
-      });
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        throw new Error(`Jira addComment failed: ${res.status} ${res.statusText} ${errBody.slice(0, 500)}`);
+    async addComment(issueKey, commentText): Promise<{ success: boolean; issueKey: string }> {
+      try {
+        await client.issueComments.addComment({
+          issueIdOrKey: issueKey,
+          comment: plainTextToAdfDoc(commentText),
+        });
+        return { success: true, issueKey };
+      } catch (err) {
+        throw wrapJiraError('addComment', err);
       }
-      return { success: true, issueKey };
     },
 
-    async getIssue(issueKey: string): Promise<MockIssue | null> {
-      const res = await apiFetch(`/rest/api/3/issue/${encodeURIComponent(issueKey)}`);
-      if (res.status === 404) return null;
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        throw new Error(`Jira getIssue failed: ${res.status} ${errBody.slice(0, 300)}`);
+    async getIssue(issueKey): Promise<JiraIssueRecord | null> {
+      try {
+        const data = await client.issues.getIssue({ issueIdOrKey: issueKey });
+        return {
+          key: data.key ?? issueKey,
+          fields: (data.fields ?? {}) as unknown as Record<string, unknown>,
+        };
+      } catch (err) {
+        if (isHttpStatus(err, 404)) return null;
+        throw wrapJiraError('getIssue', err);
       }
-      const data = (await res.json()) as { key?: string; fields?: Record<string, unknown> };
-      return { key: data.key || issueKey, fields: data.fields || {} };
     },
 
-    async updateIssue(issueKey: string, updates: Record<string, unknown>): Promise<{ success: boolean }> {
-      const res = await apiFetch(`/rest/api/3/issue/${encodeURIComponent(issueKey)}`, {
-        method: 'PUT',
-        body: JSON.stringify({ fields: updates }),
-      });
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        throw new Error(`Jira updateIssue failed: ${res.status} ${errBody.slice(0, 300)}`);
+    async updateIssue(issueKey, updates): Promise<{ success: boolean }> {
+      try {
+        await client.issues.editIssue({
+          issueIdOrKey: issueKey,
+          fields: updates,
+        });
+        return { success: true };
+      } catch (err) {
+        throw wrapJiraError('updateIssue', err);
       }
-      return { success: true };
     },
 
-    async getComments(issueKey: string): Promise<MockComment[]> {
-      const res = await apiFetch(`/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`);
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        throw new Error(`Jira getComments failed: ${res.status} ${errBody.slice(0, 300)}`);
+    async getComments(issueKey): Promise<JiraCommentRecord[]> {
+      try {
+        const page = await client.issueComments.getComments({ issueIdOrKey: issueKey });
+        const list = page.comments ?? [];
+        return list.map((c) => ({
+          text:
+            typeof c.renderedBody === 'string' && c.renderedBody
+              ? c.renderedBody
+              : c.body
+                ? JSON.stringify(c.body)
+                : '',
+          createdAt: c.created || new Date().toISOString(),
+        }));
+      } catch (err) {
+        throw wrapJiraError('getComments', err);
       }
-      const data = (await res.json()) as {
-        comments?: Array<{ body?: unknown; created?: string; renderedBody?: string }>;
-      };
-      const list = data.comments || [];
-      return list.map((c) => ({
-        text:
-          typeof c.renderedBody === 'string' && c.renderedBody
-            ? c.renderedBody
-            : typeof c.body === 'string'
-              ? c.body
-              : JSON.stringify(c.body ?? ''),
-        createdAt: c.created || new Date().toISOString(),
-      }));
     },
 
     clear(): void {
       /* no-op for REST client */
     },
   };
+}
+
+function isHttpStatus(err: unknown, status: number): boolean {
+  return err instanceof HttpException && err.status === status;
+}
+
+function wrapJiraError(op: string, err: unknown): Error {
+  if (err instanceof HttpException) {
+    const body =
+      typeof err.response === 'string'
+        ? err.response
+        : JSON.stringify(err.response).slice(0, 500);
+    return new Error(`Jira ${op} failed: ${err.status} ${err.statusText ?? ''} ${body}`.trim());
+  }
+  if (err instanceof Error) return err;
+  return new Error(`Jira ${op} failed: ${String(err)}`);
 }

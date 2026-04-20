@@ -10,6 +10,7 @@ import {
 } from '@agent-detective/core';
 import type { JiraWebhookResponse } from './webhook-types.js';
 import type { Logger } from '@agent-detective/types';
+import { JiraWebhookPayloadError } from './webhook-handler.js';
 
 type JiraWebhookHandler = ReturnType<typeof import('./webhook-handler.js').createJiraWebhookHandler>;
 
@@ -173,6 +174,11 @@ export class JiraWebhookController {
       const result = await this.webhookHandler.handleWebhook(req.body, webhookEvent);
       res.json(result);
     } catch (err) {
+      if (err instanceof JiraWebhookPayloadError) {
+        this.logger?.warn(`Jira webhook rejected (malformed payload): ${err.message}`);
+        res.status(400).json({ status: 'error', message: err.message } as JiraWebhookResponse);
+        return;
+      }
       this.logger?.error(`Jira webhook error: ${(err as Error).message}`);
       res.status(500).json({ status: 'error', message: (err as Error).message } as JiraWebhookResponse);
     }

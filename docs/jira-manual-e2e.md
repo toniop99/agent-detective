@@ -38,7 +38,7 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 - **`webhookPath`:** default `/plugins/agent-detective-jira-adapter/webhook/jira` matches the registered route.
 - **`webhookBehavior`:** default maps **`jira:issue_created`** → **`analyze`** ([default.json](../config/default.json)).
 - **`mockMode: true`:** analysis runs; “comments” are logged as **`[MOCK] Added comment...`** ([mock-jira-client.ts](../packages/jira-adapter/src/mock-jira-client.ts)).
-- **`mockMode: false`:** posts real comments via **Jira REST API v3** ([real-jira-client.ts](../packages/jira-adapter/src/real-jira-client.ts)). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../src/config/env-whitelist.ts)).
+- **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../packages/jira-adapter/src/real-jira-client.ts). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../src/config/env-whitelist.ts)).
 
 Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the model toward root-cause analysis.
 

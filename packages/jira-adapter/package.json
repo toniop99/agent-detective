@@ -32,6 +32,7 @@
     "@agent-detective/core": "workspace:*",
     "@agent-detective/local-repos-plugin": "workspace:*",
     "@agent-detective/types": "workspace:*",
+    "jira.js": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

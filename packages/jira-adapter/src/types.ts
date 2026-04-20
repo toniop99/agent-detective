@@ -41,6 +41,10 @@ export interface JiraTaskInfo {
   created?: string;
 }
 
+import type { Version3Models } from 'jira.js';
+type JiraSdkUser = Version3Models.User;
+type JiraSdkProject = Version3Models.Project;
+
 export interface JiraDescription {
   content?: Array<{
     content?: Array<{ text?: string }>;
@@ -48,37 +52,19 @@ export interface JiraDescription {
   }>;
 }
 
-export interface JiraUser {
-  self?: string;
-  name?: string | null;
-  key?: string | null;
-  accountId?: string;
-  emailAddress?: string | null;
-  avatarUrls?: Record<string, string>;
-  displayName?: string;
-  active?: boolean;
-  timeZone?: string | null;
-  groups?: unknown;
-  locale?: string | null;
-  accountType?: string;
-}
+/**
+ * Webhook user shape — structurally aligned with `jira.js/version3/models/User`
+ * but every field is optional because Jira webhooks omit fields depending on
+ * account privacy settings and event type.
+ */
+export type JiraUser = Partial<JiraSdkUser>;
 
-export interface JiraProject {
-  self?: string;
-  id?: string;
-  key?: string;
-  name?: string;
-  description?: string | null;
-  avatarUrls?: Record<string, string>;
-  issuetypes?: unknown;
-  projectCategory?: unknown;
-  email?: string | null;
-  lead?: unknown;
-  components?: unknown;
-  versions?: unknown;
-  projectTypeKey?: string;
-  simplified?: boolean;
-}
+/**
+ * Webhook project shape — structurally aligned with `jira.js/version3/models/Project`
+ * with all fields optional. Webhooks send a minimal subset compared to the full
+ * REST project resource.
+ */
+export type JiraProject = Partial<JiraSdkProject>;
 
 export interface JiraIssue {
   self?: string;
