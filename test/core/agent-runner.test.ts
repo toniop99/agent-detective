@@ -187,4 +187,154 @@ describe('agent-runner', () => {
       assert.equal(result.status, 'idle');
     });
   });
+
+  describe('singleInstance agents', () => {
+    // The runner always takes the streaming path (`canStream` is always true
+    // because emitProgress is always a function in runAgentForChat), so our
+    // stub must wrap `execLocalStreaming`, not `execLocal`.
+    function makeGatedStreamingExec(): {
+      exec: (cmd: string, args: string[], opts: Record<string, unknown>) => Promise<string>;
+      starts: string[];
+      releaseNext: () => void;
+    } {
+      const starts: string[] = [];
+      const pending: Array<() => void> = [];
+      const exec = async (cmd: string, _args: string[], _opts: Record<string, unknown>) => {
+        starts.push(cmd);
+        await new Promise<void>((resolve) => {
+          pending.push(resolve);
+        });
+        return '';
+      };
+      const releaseNext = (): void => {
+        const resolve = pending.shift();
+        if (resolve) resolve();
+      };
+      return { exec, starts, releaseNext };
+    }
+
+    // A couple of microtasks is not enough — the runner does several awaits
+    // between runAgentForChat() and execLocalStreaming(). `setImmediate`
+    // clears the current task queue, so a few of them reliably let every
+    // pending `await` in the runner progress to the spawn point.
+    async function settle(times = 5): Promise<void> {
+      for (let i = 0; i < times; i += 1) {
+        await new Promise((r) => setImmediate(r));
+      }
+    }
+
+    it('serializes concurrent runs of a singleInstance agent (opencode-style)', async () => {
+      const { exec, starts, releaseNext } = makeGatedStreamingExec();
+      const runner = createAgentRunner({
+        execLocal: async () => '',
+        execLocalStreaming: exec as unknown as (...args: unknown[]) => Promise<string>,
+        terminateChildProcess: () => {},
+      });
+      runner.registerAgent(
+        createMockAgent({
+          id: 'opencode',
+          singleInstance: true,
+          buildCommand: () => 'opencode-cmd',
+        })
+      );
+
+      const first = runner.runAgentForChat('task-a', 'p1');
+      const second = runner.runAgentForChat('task-b', 'p2');
+
+      await settle();
+      assert.equal(starts.length, 1, 'second run must not start until the first releases its slot');
+
+      releaseNext();
+      await first;
+      await settle();
+      assert.equal(starts.length, 2, 'second run should start once the first has finished');
+
+      releaseNext();
+      await second;
+    });
+
+    it('does NOT serialize runs across different agents', async () => {
+      const { exec, starts, releaseNext } = makeGatedStreamingExec();
+      const runner = createAgentRunner({
+        execLocal: async () => '',
+        execLocalStreaming: exec as unknown as (...args: unknown[]) => Promise<string>,
+        terminateChildProcess: () => {},
+      });
+      runner.registerAgent(
+        createMockAgent({
+          id: 'opencode',
+          singleInstance: true,
+          buildCommand: () => 'opencode-cmd',
+        })
+      );
+      runner.registerAgent(
+        createMockAgent({
+          id: 'other-agent',
+          singleInstance: true,
+          buildCommand: () => 'other-cmd',
+        })
+      );
+
+      const first = runner.runAgentForChat('task-a', 'p1', { agentId: 'opencode' });
+      const second = runner.runAgentForChat('task-b', 'p2', { agentId: 'other-agent' });
+
+      await settle();
+      assert.equal(starts.length, 2, 'different agents have independent serialization chains');
+
+      releaseNext();
+      releaseNext();
+      await Promise.all([first, second]);
+    });
+
+    it('runs without singleInstance flag go in parallel (no serialization)', async () => {
+      const { exec, starts, releaseNext } = makeGatedStreamingExec();
+      const runner = createAgentRunner({
+        execLocal: async () => '',
+        execLocalStreaming: exec as unknown as (...args: unknown[]) => Promise<string>,
+        terminateChildProcess: () => {},
+      });
+      runner.registerAgent(
+        createMockAgent({
+          id: 'opencode',
+          buildCommand: () => 'opencode-cmd',
+        })
+      );
+
+      const first = runner.runAgentForChat('task-a', 'p1');
+      const second = runner.runAgentForChat('task-b', 'p2');
+
+      await settle();
+      assert.equal(starts.length, 2, 'without singleInstance, both runs should spawn immediately');
+
+      releaseNext();
+      releaseNext();
+      await Promise.all([first, second]);
+    });
+
+    it('releases the slot even if the run throws, letting the next waiter proceed', async () => {
+      let spawns = 0;
+      const runner = createAgentRunner({
+        execLocal: async () => '',
+        execLocalStreaming: async () => {
+          spawns += 1;
+          if (spawns === 1) {
+            throw new Error('boom');
+          }
+          return '';
+        },
+        terminateChildProcess: () => {},
+      });
+      runner.registerAgent(
+        createMockAgent({
+          id: 'opencode',
+          singleInstance: true,
+          buildCommand: () => 'opencode-cmd',
+        })
+      );
+
+      await assert.rejects(() => runner.runAgentForChat('task-a', 'p1'), /boom/);
+      await runner.runAgentForChat('task-b', 'p2');
+      assert.equal(spawns, 2);
+    });
+  });
 });

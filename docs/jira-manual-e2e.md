@@ -69,41 +69,80 @@ The adapter uses **labels only** — no AI-driven guessing, no fallbacks — to
 decide which repo a ticket belongs to. The rules:
 
 - **On `jira:issue_created`**, the adapter looks at `issue.fields.labels` and
-  asks the `RepoMatcher` service for a case-insensitive match against
-  configured repo names.
-  - **Match →** a `TASK_CREATED` event is emitted with `context.repoPath` and
-    `context.cwd` pre-set to the matched repo, and `metadata.matchedRepo` set
-    to its name. The agent never has to pick a repo itself.
+  asks the `RepoMatcher` service for a case-insensitive match against every
+  configured repo name.
+  - **One or more matches →** the adapter emits a `TASK_CREATED` event **per
+    matched repo**, with `context.repoPath` / `context.cwd` pre-set to that
+    repo and `metadata.matchedRepo` set to its name. See "Multiple repos per
+    issue" below.
   - **No match →** the adapter posts a single Markdown comment asking the
     reporter to add one of the configured labels, then exits. No task is
     created, so there is no agent run and no follow-up comment spam.
 - **On `jira:issue_updated`**, the adapter inspects `changelog.items[]` for a
   `field: "labels"` entry and diffs `fromString`/`toString` to see which labels
   were *added* in this update.
-  - **A matching label was added →** analysis runs, same path as `issue_created`
-    with a match **unless** the issue already had a matching label *before*
-    this update — see the dedup rule below.
+  - **A matching label was added →** analysis runs for each repo that is
+    *newly* matched by this update — see "Per-repo delta dedup" below.
   - **Nothing was added, or the added labels don't match →** the adapter stays
     silent. This keeps the ticket clean on unrelated field edits (status
     transitions, assignee changes, description tweaks, …).
-- **Stateless dedup:** if the changelog's `fromString` for the `labels` field
-  already contained a label that matches a configured repo, the adapter
-  assumes the analysis already ran (on create, or on an earlier label-add) and
-  skips re-analyzing. This prevents comment spam when users curate labels on
-  an already-matched ticket. Re-analysis only happens when the **first**
-  matching label is added — never on a second/third matching label or on
-  label removals.
 - Customize the reminder body via **`missingLabelsMessage`** in the plugin
   options — placeholders `{available_labels}` (bullet list) and `{issue_key}`
   are substituted. Default template lives in
   [missing-labels-handler.ts](../packages/jira-adapter/src/handlers/missing-labels-handler.ts).
-- The flow is stateless — there is no dedup cache. With the default behavior
-  (`jira:issue_created` → `analyze`, `jira:issue_updated` → `analyze`) the
-  reminder is posted at most once per ticket because we only comment on
-  create; subsequent updates that still don't match stay silent.
 - To get the old "comment on every update" behavior back, set
   `webhookBehavior.events."jira:issue_updated".action` to `"acknowledge"` in
   your config.
+
+### Multiple repos per issue (fan-out)
+
+A single Jira ticket can legitimately touch more than one repository
+(cross-service bug, backend + frontend change, etc.). When its labels match
+several configured repos at once, the adapter **fans out**:
+
+- **One analysis per matched repo.** Each repo gets its own agent run with
+  `context.repoPath` / `context.cwd` scoped to that repo. Tasks use distinct
+  queue keys of the form `<ISSUE-KEY>:<repo-name>` (e.g. `KAN-42:api`,
+  `KAN-42:frontend`) so the orchestrator queue doesn't collapse them.
+- **opencode runs are serialized.** opencode stores per-user state in a
+  single SQLite DB under `~/.local/share/opencode/` and crashes when two
+  instances race to open it (upstream
+  [anomalyco/opencode#21215](https://github.com/anomalyco/opencode/issues/21215)).
+  To avoid `Failed to run the query 'PRAGMA journal_mode = WAL'` crashes,
+  the agent-runner marks opencode as `singleInstance: true` and releases
+  one opencode invocation at a time globally. The fan-out still works —
+  you'll see one analysis comment per repo — but they run back-to-back
+  rather than in parallel. Look for
+  `Agent queued task=KAN-42:frontend agent=opencode singleInstance=true waitMs=…`
+  in the logs when this serialization kicks in.
+- **One Jira comment per repo.** Result comments are prefixed with
+  `## Analysis for \`<repo-name>\`` so readers can tell them apart on the
+  ticket.
+- **One acknowledgment.** When a fan-out actually fans out (2+ repos or any
+  cap-skipped repos), the adapter posts a single summary comment up-front —
+  e.g. *"Analyzing this issue across 2 repositories: `api`, `web-app`. Results
+  will be posted as separate comments below."* Single-repo matches skip the
+  ack to stay quiet.
+- **Safety cap via `maxReposPerIssue`** (default `5`). If an issue matches
+  more than `maxReposPerIssue` repos, the adapter analyzes the first N (in
+  configured-repo order), names the ones it skipped in the ack, and logs a
+  warning. Set it to `0` to disable the cap.
+
+### Per-repo delta dedup on `issue_updated`
+
+The adapter is stateless: it uses the changelog to work out which matches
+existed *before* this update vs which exist now, and only analyzes the
+**delta**.
+
+- Issue had label `api`, now `frontend` is added → analyze `frontend` only.
+  `api` is already analyzed on the create (or on an earlier label-add) and
+  won't be re-run.
+- Issue had no matching labels, now `api` and `frontend` are added in one
+  edit → both run, plus one fan-out ack.
+- Issue had `api` + `frontend`, someone tweaks an unrelated label → silent.
+  Every currently-matched repo was already matched before this update.
+- Issue had `api`, someone *removes* it → silent. Label removals never
+  trigger analysis.
 
 ### Read-only analysis (default)
 

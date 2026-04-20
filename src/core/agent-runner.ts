@@ -44,8 +44,51 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
   const agents = new Map<string, Agent>();
   const activeRuns = new Map<string, ActiveRun>();
 
+  // Per-agent serialization chain. Only populated for agents with
+  // `singleInstance: true` (e.g. opencode — see the flag's docstring in
+  // `@agent-detective/types`). The value is always a resolved-or-pending
+  // promise representing "the tail of the queue for this agent"; a new
+  // caller awaits it, then installs its own tail, then runs.
+  const agentSerializationTails = new Map<string, Promise<void>>();
+
   function buildActiveRunKey(taskId: string, contextKey?: string): string {
     return `${taskId}:${contextKey || 'default'}`;
+  }
+
+  /**
+   * Acquire an exclusive slot on a single-instance agent. Returns a release
+   * function that the caller MUST invoke in a `finally` to let the next
+   * waiter proceed. Callers for non-single-instance agents should not call
+   * this; it would still work but adds a redundant microtask.
+   */
+  async function acquireAgentSlot(
+    agentId: string,
+    taskId: string
+  ): Promise<() => void> {
+    const prev = agentSerializationTails.get(agentId) ?? Promise.resolve();
+    let release!: () => void;
+    const ours = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    agentSerializationTails.set(agentId, ours);
+
+    const waitStartedAt = Date.now();
+    await prev;
+    const waitMs = Date.now() - waitStartedAt;
+    if (waitMs > 10) {
+      console.info(
+        `Agent queued task=${taskId} agent=${agentId} singleInstance=true waitMs=${waitMs}`
+      );
+    }
+
+    return () => {
+      release();
+      // If no one else queued after us, drop the entry so the map doesn't
+      // grow unbounded across a long-running process.
+      if (agentSerializationTails.get(agentId) === ours) {
+        agentSerializationTails.delete(agentId);
+      }
+    };
   }
 
   async function runAgentForChat(taskId: string, prompt: string, runOptions: RunAgentOptions = {}): Promise<string> {
@@ -66,6 +109,14 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       throw new Error(`Unknown agent: ${effectiveAgentId}. Ensure it is registered.`);
     }
     const activeKey = buildActiveRunKey(taskId, contextKey);
+
+    // Wait for our turn on single-instance agents BEFORE emitting the "start"
+    // log or computing durations, so the log reflects the actual spawn time
+    // (not queue-wait time). `acquireAgentSlot` logs its own queued/waitMs
+    // line when the wait is non-trivial.
+    const releaseAgentSlot = agent.singleInstance
+      ? await acquireAgentSlot(agent.id, taskId)
+      : null;
 
     console.info(
       `Agent start task=${taskId} agent=${effectiveAgentId} repo=${repoPath || 'none'}${readOnly ? ' readOnly=true' : ''}`
@@ -148,6 +199,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       throw err;
     } finally {
       activeRuns.delete(activeKey);
+      releaseAgentSlot?.();
     }
   }
 

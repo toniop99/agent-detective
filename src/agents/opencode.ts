@@ -139,6 +139,12 @@ const opencodeAgent: Agent = {
   parseModelList,
   defaultModel: DEFAULT_MODEL,
   checkAvailable: () => isCommandAvailable(OPENCODE_CMD),
+  // opencode keeps a single-user SQLite DB at `~/.local/share/opencode/`
+  // and crashes with `PRAGMA journal_mode = WAL` when two CLI instances
+  // race to open it. See https://github.com/anomalyco/opencode/issues/21215.
+  // The runner serializes opencode invocations to avoid that, at the cost of
+  // losing parallelism for multi-repo Jira fan-out.
+  singleInstance: true,
 };
 
 export default opencodeAgent;

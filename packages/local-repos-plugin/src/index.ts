@@ -15,7 +15,7 @@ import type {
   TechStackDetectionConfig,
   SummaryGenerationConfig,
 } from './types.js';
-import { matchRepoByLabels } from './repo-matcher.js';
+import { matchRepoByLabels, matchAllReposByLabels } from './repo-matcher.js';
 import { validateRepos, hasValidationErrors } from './validate.js';
 import { detectTechStack } from './tech-stack-detector.js';
 import { generateSummary } from './summary-generator.js';
@@ -141,6 +141,12 @@ const localReposPlugin: Plugin = {
       matchByLabels(labels) {
         const match = matchRepoByLabels(labels, validatedRepos);
         return match ? { name: match.name, path: match.path } : null;
+      },
+      matchAllByLabels(labels) {
+        return matchAllReposByLabels(labels, validatedRepos).map((r) => ({
+          name: r.name,
+          path: r.path,
+        }));
       },
       listConfiguredLabels() {
         return validatedRepos.map((r) => r.name);

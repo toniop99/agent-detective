@@ -214,8 +214,22 @@ export interface RepoMatcher {
    * Case-insensitive match of incoming labels against configured repos.
    * Returns the first configured repo whose `name` matches any label, or
    * `null` if none match.
+   *
+   * Prefer {@link matchAllByLabels} when the caller wants to fan out to
+   * every repo an issue touches; this single-match method is kept for
+   * callers that still need the "primary" semantics.
    */
   matchByLabels(labels: string[]): MatchedRepo | null;
+  /**
+   * Case-insensitive match of incoming labels against **all** configured
+   * repos. Returns every configured repo whose `name` matches any of the
+   * supplied labels, deduplicated, in a deterministic order (configuration
+   * order — not label order — so the output is stable regardless of how
+   * the user wrote the labels on the issue).
+   *
+   * Returns an empty array if nothing matches.
+   */
+  matchAllByLabels(labels: string[]): MatchedRepo[];
   /**
    * Repo names the user can add as labels to resolve an unmatched issue,
    * ordered for user-facing display.
@@ -270,6 +284,19 @@ export interface Agent {
    * Check if the agent's requirements (binaries, API keys) are met.
    */
   checkAvailable?(): boolean | Promise<boolean>;
+  /**
+   * When `true`, the runner guarantees that at most one invocation of this
+   * agent is in-flight at a time, globally across all tasks. Used for agent
+   * CLIs that can't handle concurrent instances (e.g. opencode keeps a
+   * single-user SQLite DB under `~/.local/share/opencode/` and crashes on
+   * `PRAGMA journal_mode = WAL` when a second process races the first —
+   * see https://github.com/anomalyco/opencode/issues/21215).
+   *
+   * This serializes runs at the agent-process level *only*; it does NOT
+   * serialize task queuing (the orchestrator still queues per task id) and
+   * it does NOT affect other agents running in parallel.
+   */
+  singleInstance?: boolean;
 }
 
 export interface ExecLocalOptions {

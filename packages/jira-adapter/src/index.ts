@@ -62,17 +62,29 @@ const jiraAdapterPlugin: Plugin = {
       },
     });
 
-    // Listen for completed tasks and post back to Jira
+    // Listen for completed tasks and post back to Jira. When the analysis was
+    // fanned out across multiple repos, `event.metadata.matchedRepo` is set
+    // per-task and we prepend a heading so a reader can tell the comments
+    // apart on the ticket.
     context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: TaskEvent; result: string }) => {
       const { event, result } = payload;
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
+        const matchedRepo =
+          typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0
+            ? event.metadata.matchedRepo
+            : null;
+        const body = matchedRepo
+          ? `## Analysis for \`${matchedRepo}\`\n\n${result}`
+          : result;
         const resultLength = typeof result === 'string' ? result.length : 0;
         const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
         extContext.logger?.info(
-          `Posting result back to Jira issue ${event.replyTo.id} (length=${resultLength}) preview="${resultPreview}${resultLength > 120 ? '…' : ''}"`
+          `Posting result back to Jira issue ${event.replyTo.id}${
+            matchedRepo ? ` (repo=${matchedRepo})` : ''
+          } (length=${resultLength}) preview="${resultPreview}${resultLength > 120 ? '…' : ''}"`
         );
         try {
-          await jiraClient.addComment(event.replyTo.id, result);
+          await jiraClient.addComment(event.replyTo.id, body);
         } catch (err) {
           extContext.logger?.error(`Failed to post comment to Jira: ${(err as Error).message}`);
         }

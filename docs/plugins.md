@@ -1185,7 +1185,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 
 | Action | Description |
 |--------|-------------|
-| `analyze` | Match the issue's labels against configured repos; if matched, run analysis and post the report. On `issue_created` without a match, post a single "please add a matching label" comment. On `issue_updated`, only retry when a *new* label is added via the changelog. |
+| `analyze` | Match the issue's labels against configured repos; if one or more match, fan out one analysis per repo and post one comment per repo. On `issue_created` without a match, post a single "please add a matching label" comment. On `issue_updated`, only the repos *newly* matched by this update run (per-repo delta dedup). |
 | `acknowledge` | Post a fixed acknowledgment comment (no matching, no analysis) |
 | `ignore` | Log the event and skip processing |
 
@@ -1200,6 +1200,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 | `webhookBehavior.events.{eventType}.analysisPrompt` | Custom analysis prompt template |
 | `analysisReadOnly` | When `true` (default), `analyze` tasks run with write/edit/shell tools denied |
 | `missingLabelsMessage` | Markdown template posted when no label matches on `issue_created`. Supports `{available_labels}` and `{issue_key}` placeholders. |
+| `maxReposPerIssue` | Safety cap on fan-out when an issue's labels match multiple repos. Default `5`; `0` disables the cap. Extra matches are logged and noted in the acknowledgment. |
 
 ##### Supported Event Types
 
@@ -1214,12 +1215,26 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 Matching is **label-only** and **deterministic**. The Jira adapter consumes
 the `RepoMatcher` service (`REPO_MATCHER_SERVICE` from
 `@agent-detective/types`) which `local-repos-plugin` registers. The matcher
-compares an issue's labels (case-insensitively) to configured repo names and
-returns the first match, or `null`.
+exposes two methods:
 
-On a match, the adapter emits `TASK_CREATED` with `context.repoPath`,
-`context.cwd`, and `metadata.matchedRepo` pre-set so the downstream analyzer
-has no selection work to do. There is no agent-driven discovery fallback.
+- `matchByLabels(labels) → MatchedRepo | null` — first match (label-order).
+- `matchAllByLabels(labels) → MatchedRepo[]` — every match, returned in
+  **configured-repo order** for stable fan-out.
+
+On a match, the adapter emits one `TASK_CREATED` **per matched repo** with
+`context.repoPath`, `context.cwd`, and `metadata.matchedRepo` pre-set so the
+downstream analyzer has no selection work to do. Task ids are composite —
+`<ISSUE-KEY>:<repo-name>` — so parallel fan-out runs don't collapse in the
+orchestrator queue. Result comments carry a `## Analysis for \`<repo-name>\``
+heading so readers can tell them apart on the ticket.
+
+On `issue_updated`, the matcher is consulted twice: once against the
+post-update labels and once against the pre-update labels derived from the
+changelog. Only the **delta** (repos newly matched by this update) is
+analyzed, preventing comment spam when users curate labels on an
+already-matched ticket. See the "Per-repo delta dedup" section in
+[jira-manual-e2e.md](./jira-manual-e2e.md). There is no agent-driven
+discovery fallback.
 
 #### Analysis Configuration
 

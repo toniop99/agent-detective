@@ -51,6 +51,13 @@ export const jiraAdapterOptionsSchema = z
      * `handlers/missing-labels-handler.ts` for supported placeholders.
      */
     missingLabelsMessage: z.string().optional(),
+    /**
+     * Safety cap for multi-repo fan-out. When an issue's labels match more
+     * than this many configured repos, the adapter analyzes the first N
+     * (repo-config order) and mentions the skipped ones in the acknowledgment.
+     * `0` disables the cap.
+     */
+    maxReposPerIssue: z.number().int().min(0).default(5),
     webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
   })
   .superRefine((data, ctx) => {

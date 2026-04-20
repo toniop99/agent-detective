@@ -38,6 +38,16 @@ export interface JiraAdapterConfig {
    * placeholders. Leave unset to use the built-in default.
    */
   missingLabelsMessage?: string;
+
+  /**
+   * Safety cap on how many repos a single Jira issue may fan out to when
+   * several of its labels match configured repos. Matches beyond this cap
+   * are logged and noted in the acknowledgment comment, but not analyzed.
+   * Set to `0` to disable the cap (not recommended).
+   *
+   * Default: 5.
+   */
+  maxReposPerIssue?: number;
 }
 
 export interface JiraTaskInfo {

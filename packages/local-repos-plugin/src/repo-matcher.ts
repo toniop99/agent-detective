@@ -21,3 +21,25 @@ export function matchRepoByLabels(
   }
   return null;
 }
+
+/**
+ * Case-insensitive match against *every* configured repo, for issues whose
+ * labels touch multiple repos (fan-out analysis).
+ *
+ * Output order follows the configured-repos order (not the label order) so the
+ * caller sees a stable list regardless of how the user typed the labels on
+ * the issue. Duplicates from repeated labels are silently collapsed.
+ */
+export function matchAllReposByLabels(
+  labels: readonly string[],
+  repos: readonly ValidatedRepo[]
+): ValidatedRepo[] {
+  if (!labels?.length || !repos?.length) return [];
+  const normalizedLabels = new Set<string>();
+  for (const label of labels) {
+    if (typeof label !== 'string' || !label) continue;
+    normalizedLabels.add(label.toLowerCase());
+  }
+  if (normalizedLabels.size === 0) return [];
+  return repos.filter((repo) => normalizedLabels.has(repo.name.toLowerCase()));
+}

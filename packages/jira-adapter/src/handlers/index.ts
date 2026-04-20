@@ -3,6 +3,7 @@ import {
   REPO_MATCHER_SERVICE,
   type EventBus,
   type Logger,
+  type MatchedRepo,
   type RepoMatcher,
 } from '@agent-detective/types';
 import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../types.js';
@@ -11,6 +12,13 @@ import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler
 import { handleIgnore, IgnoreHandlerDeps } from './ignore-handler.js';
 import { handleMissingLabels } from './missing-labels-handler.js';
 import { extractAddedLabelsFromChangelog, extractLabelsBeforeUpdate } from '../changelog.js';
+
+const DEFAULT_MAX_REPOS_PER_ISSUE = 5;
+
+/** Stable task id for a single (issue, repo) pair. Orchestrator uses this as the queue key. */
+export function buildIssueRepoTaskId(issueKey: string, repoName: string): string {
+  return `${issueKey}:${repoName}`;
+}
 
 export interface HandlerContext {
   jiraClient: AcknowledgeHandlerDeps['jiraClient'];
@@ -87,15 +95,17 @@ export async function routeToHandler(
 }
 
 /**
- * Core of the label-only flow:
+ * Core of the label-only, multi-repo flow:
  *
- *   - `jira:issue_created`: match labels → emit task, or post the
- *     "please add a matching tag" comment once.
- *   - `jira:issue_updated`: only react if the changelog added a label *and*
- *     that label now matches a configured repo; otherwise stay silent to
- *     avoid spamming the ticket on unrelated field edits.
- *   - Unknown / other events under the `analyze` action: fall back to
- *     "match or stay silent" with no comment, since we have no create/update
+ *   - `jira:issue_created`: match labels → emit one analysis task per matched
+ *     repo (capped by `maxReposPerIssue`), or post the "please add a matching
+ *     tag" comment once when nothing matches.
+ *   - `jira:issue_updated`: only act if the changelog added labels. For each
+ *     currently-matched repo, emit an analysis task **only if that specific
+ *     repo wasn't already matched before this update** (per-repo delta dedup
+ *     prevents re-analyzing repos we've already looked at).
+ *   - Unknown / other events under the `analyze` action: fall back to "match
+ *     or stay silent" with no comment, since we have no create/update
  *     semantics to lean on.
  *
  * If the `RepoMatcher` service isn't registered we cannot make a deterministic
@@ -122,8 +132,11 @@ async function handleAnalyze(
   const isUpdate = normalizedEvent === 'jira:issue_updated';
   const isCreate = normalizedEvent === 'jira:issue_created';
 
-  const match = matcher.matchByLabels(taskInfo.labels);
+  const currentMatches = matcher.matchAllByLabels(taskInfo.labels);
 
+  // Determine which of the currently-matched repos actually need analysis.
+  // On update we fan out only to repos that are newly matched *by this change*.
+  let reposToAnalyze: MatchedRepo[];
   if (isUpdate) {
     const addedLabels = extractAddedLabelsFromChangelog(rawPayload);
     if (addedLabels.length === 0) {
@@ -132,71 +145,124 @@ async function handleAnalyze(
       );
       return;
     }
-    if (!match) {
+    if (currentMatches.length === 0) {
       logger?.debug?.(
         `jira-adapter: ${taskInfo.key} update added labels [${addedLabels.join(', ')}] but none match a configured repo — staying silent.`
       );
       return;
     }
-    // Stateless dedup: if the issue already had a matching label *before*
-    // this update, the adapter (now or in a past run) already had a chance to
-    // analyze it on create or on the first matching label-add. Re-running
-    // analysis every time somebody tweaks labels would spam the ticket with
-    // near-identical comments, so stay silent here.
-    const previousLabels = extractLabelsBeforeUpdate(rawPayload);
-    const previousMatch = matcher.matchByLabels(previousLabels);
-    if (previousMatch) {
+    // Per-repo delta dedup: skip any repo that was already matched by labels
+    // present *before* this update (we've already analyzed that repo on a
+    // previous create or label-add).
+    const previousMatches = matcher.matchAllByLabels(extractLabelsBeforeUpdate(rawPayload));
+    const previousNames = new Set(previousMatches.map((r) => r.name.toLowerCase()));
+    reposToAnalyze = currentMatches.filter((r) => !previousNames.has(r.name.toLowerCase()));
+
+    if (reposToAnalyze.length === 0) {
       logger?.info(
-        `jira-adapter: ${taskInfo.key} already had matching label "${previousMatch.name}" before this update — skipping re-analysis.`
+        `jira-adapter: ${taskInfo.key} update touched labels but all matched repos [${currentMatches
+          .map((r) => r.name)
+          .join(', ')}] were already matched before — skipping re-analysis.`
       );
       return;
     }
     logger?.info(
-      `jira-adapter: ${taskInfo.key} update added label "${match.name}" → retrying analysis.`
+      `jira-adapter: ${taskInfo.key} update added repos [${reposToAnalyze
+        .map((r) => r.name)
+        .join(', ')}] → fan-out analysis.`
     );
-  } else if (!match) {
-    if (isCreate) {
-      await handleMissingLabels(taskInfo, matcher.listConfiguredLabels(), {
-        jiraClient,
-        messageTemplate: config.missingLabelsMessage,
-      });
-    } else {
-      logger?.debug?.(
-        `jira-adapter: ${taskInfo.key} (${webhookEvent}) has no matching label — staying silent.`
-      );
+  } else {
+    if (currentMatches.length === 0) {
+      if (isCreate) {
+        await handleMissingLabels(taskInfo, matcher.listConfiguredLabels(), {
+          jiraClient,
+          messageTemplate: config.missingLabelsMessage,
+        });
+      } else {
+        logger?.debug?.(
+          `jira-adapter: ${taskInfo.key} (${webhookEvent}) has no matching label — staying silent.`
+        );
+      }
+      return;
     }
-    return;
+    reposToAnalyze = currentMatches;
   }
 
-  if (!match) {
-    // Defensive guard: the branches above should have returned when there is
-    // no match, but this keeps TS happy and makes the invariant explicit.
-    return;
+  // Enforce the fan-out safety cap. `0` disables the cap.
+  const cap = config.maxReposPerIssue ?? DEFAULT_MAX_REPOS_PER_ISSUE;
+  let skippedByCap: MatchedRepo[] = [];
+  if (cap > 0 && reposToAnalyze.length > cap) {
+    skippedByCap = reposToAnalyze.slice(cap);
+    reposToAnalyze = reposToAnalyze.slice(0, cap);
+    logger?.warn(
+      `jira-adapter: ${taskInfo.key} matched ${
+        reposToAnalyze.length + skippedByCap.length
+      } repos but maxReposPerIssue=${cap}; analyzing [${reposToAnalyze
+        .map((r) => r.name)
+        .join(', ')}], skipping [${skippedByCap.map((r) => r.name).join(', ')}].`
+    );
+  }
+
+  // Single acknowledgment summarizing the fan-out (only when more than one
+  // repo will actually run — a single-repo analysis speaks for itself).
+  if (reposToAnalyze.length > 1 || skippedByCap.length > 0) {
+    try {
+      await jiraClient.addComment(
+        taskInfo.key,
+        buildFanOutAckMessage(reposToAnalyze, skippedByCap)
+      );
+    } catch (err) {
+      logger?.warn(
+        `jira-adapter: failed to post fan-out acknowledgment for ${taskInfo.key}: ${(err as Error).message}`
+      );
+    }
   }
 
   const readOnly = config.analysisReadOnly !== false;
 
-  events.emit(StandardEvents.TASK_CREATED, {
-    id: taskInfo.key,
-    type: 'incident',
-    source: '@agent-detective/jira-adapter',
-    message: taskInfo.description,
-    context: {
-      repoPath: match.path,
-      threadId: null,
-      cwd: match.path,
-    },
-    replyTo: {
-      type: 'issue',
-      id: taskInfo.key,
-    },
-    metadata: {
-      labels: taskInfo.labels,
-      projectKey: taskInfo.projectKey,
-      requiresCodeContext: true,
-      analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
-      readOnly,
-      matchedRepo: match.name,
-    },
-  });
+  for (const match of reposToAnalyze) {
+    events.emit(StandardEvents.TASK_CREATED, {
+      id: buildIssueRepoTaskId(taskInfo.key, match.name),
+      type: 'incident',
+      source: '@agent-detective/jira-adapter',
+      message: taskInfo.description,
+      context: {
+        repoPath: match.path,
+        threadId: null,
+        cwd: match.path,
+      },
+      replyTo: {
+        type: 'issue',
+        id: taskInfo.key,
+      },
+      metadata: {
+        labels: taskInfo.labels,
+        projectKey: taskInfo.projectKey,
+        requiresCodeContext: true,
+        analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
+        readOnly,
+        matchedRepo: match.name,
+      },
+    });
+  }
+}
+
+function buildFanOutAckMessage(
+  analyzed: readonly MatchedRepo[],
+  skipped: readonly MatchedRepo[]
+): string {
+  const analyzedList = analyzed.map((r) => `\`${r.name}\``).join(', ');
+  const lines = [
+    `Analyzing this issue across ${analyzed.length} repositories: ${analyzedList}. Results will be posted as separate comments below.`,
+  ];
+  if (skipped.length > 0) {
+    const skippedList = skipped.map((r) => `\`${r.name}\``).join(', ');
+    lines.push(
+      '',
+      `**Note:** ${skipped.length} additional matched ${
+        skipped.length === 1 ? 'repo was' : 'repos were'
+      } skipped to stay within the \`maxReposPerIssue\` safety cap: ${skippedList}. Remove an unrelated label or raise the cap if you need them analyzed.`
+    );
+  }
+  return lines.join('\n');
 }

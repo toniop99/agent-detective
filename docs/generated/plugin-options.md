@@ -47,6 +47,12 @@ Anchor: `jira-adapter`
     "missingLabelsMessage": {
       "type": "string"
     },
+    "maxReposPerIssue": {
+      "default": 5,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
     "webhookBehavior": {
       "default": {
         "defaults": {
@@ -130,6 +136,7 @@ Anchor: `jira-adapter`
     "webhookPath",
     "mockMode",
     "analysisReadOnly",
+    "maxReposPerIssue",
     "webhookBehavior"
   ],
   "additionalProperties": false

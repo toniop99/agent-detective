@@ -179,26 +179,37 @@ Manages repository configuration with:
 - Tech stack detection from file patterns (package.json, requirements.txt, etc.)
 - Summary generation from README files or recent commits
 - Exposes a **`RepoMatcher`** service under the `REPO_MATCHER_SERVICE` key
-  (`@agent-detective/types`) with two methods:
-  - `matchByLabels(labels)` — case-insensitive first-match against repo names.
+  (`@agent-detective/types`) with three methods:
+  - `matchByLabels(labels)` — case-insensitive first-match against repo names
+    (label-order).
+  - `matchAllByLabels(labels)` — every match, returned in configured-repo
+    order for stable multi-repo fan-out.
   - `listConfiguredLabels()` — repo names to show users when no label matches.
 
 ### jira-adapter Matching Flow
 
 For Jira incidents, the adapter is a thin orchestrator on top of `RepoMatcher`:
 
-1. **On `jira:issue_created`**: call `matchByLabels(issue.fields.labels)`.
-   - Match → emit `TASK_CREATED` with `context.repoPath` and
-     `metadata.matchedRepo` already set. The downstream analyzer only builds
-     repo context; it never has to pick a repo.
+1. **On `jira:issue_created`**: call `matchAllByLabels(issue.fields.labels)`.
+   - One or more matches → emit one `TASK_CREATED` **per matched repo**
+     (capped by `maxReposPerIssue`, default 5). Each task carries
+     `context.repoPath`, `context.cwd`, and `metadata.matchedRepo`; task ids
+     are `<ISSUE-KEY>:<repo-name>` so parallel runs don't collide in the
+     queue. When more than one repo runs — or any repo is skipped by the cap
+     — a single acknowledgment comment summarizes the fan-out. Result
+     comments are prefixed with `## Analysis for \`<repo-name>\``.
    - No match → post a single Markdown comment listing
      `listConfiguredLabels()` via the missing-labels handler, then stop. No
      task is emitted.
 2. **On `jira:issue_updated`**: the adapter parses `changelog.items[]` to find
-   labels that were *added* in this update.
-   - A matching label was added → run the same analysis path as on create.
-   - Otherwise → stay silent (no comment, no task). This prevents noise on
-     unrelated field edits.
+   labels that were *added* in this update, and compares the set of
+   currently-matched repos against the set that was already matched **before**
+   the update (derived from `changelog.items[].fromString`).
+   - Newly matched repos → fan out analysis for each of them (per-repo
+     delta dedup).
+   - No new matches → stay silent (no comment, no task). This prevents
+     comment spam on unrelated field edits or when users curate labels on
+     an already-matched ticket.
 
 Configuration in `config/default.json`:
 ```json
