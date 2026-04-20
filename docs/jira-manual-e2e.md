@@ -16,13 +16,31 @@ Jira Cloud sends **HTTPS POST** requests to a **public URL**. Your local `agent-
 
 1. Install a tunnel client (**ngrok**, **Cloudflare Tunnel**, **localtunnel**, etc.).
 2. Start a tunnel to **`http://127.0.0.1:3001`** (or your `PORT`).
-3. In Jira, register the webhook URL exactly as:
+3. In Jira, register the webhook URL (see the source-specific details below). The base path is always:
 
 `https://<tunnel-host>/plugins/agent-detective-jira-adapter/webhook/jira`
 
 4. Subscribe at least to **Issue: created** (and optionally **Issue: updated** for acknowledge behavior).
 
 No path prefix beyond `/plugins/...` is required unless you put a reverse proxy in front.
+
+### Which webhook source are you using?
+
+Jira Cloud offers two ways to send HTTP requests when issues change. Both are supported; the only difference is **how the event name reaches us**. The adapter accepts all three signals listed in [`resolveWebhookEvent`](../packages/jira-adapter/src/jira-webhook-controller.ts) and normalizes them to the canonical `jira:*` form before routing.
+
+| Source | Where Jira is configured | How the event arrives | What you do |
+|---|---|---|---|
+| **Native webhook** | Settings → System → WebHooks (site admin) | `body.webhookEvent = "jira:issue_created"` | Just point it at the base URL. Nothing else. |
+| **Automation — "Automation format"** | Automation rule → Send web request → *Web request body: Automation format* | `body.issue_event_type_name = "issue_created"` (or `"issue_generic"` for most updates). **Body is the issue object directly at the top level**, not wrapped in `{ issue: … }`. | Append `?webhookEvent=jira:issue_created` to the URL (event name). The adapter auto-detects and wraps the bare-issue body — no template edits needed. |
+| **Automation — "Jira format"** | Automation rule → Send web request → *Web request body: Jira format* | Body is `{ issue, user, timestamp }`; no event in body. | **Append `?webhookEvent=jira:issue_created` (or the matching value) to the URL**, one rule per event. |
+
+Notes:
+
+- **Automation-format bodies omit the envelope.** Jira Automation's "Automation format" default body expands `{{issue}}` at the top level, so the request looks like `{ self, id, key, fields, changelog, renderedFields }`. The adapter detects this via `key` + `fields` at the top level and auto-wraps it as `{ issue: { …bareIssue } }` before validation — see [`normalizeWebhookShape`](../packages/jira-adapter/src/webhook-handler.ts). You'll see `"shape":"bare-issue"` in the `Webhook payload accepted` log line when this triggers.
+- **Automation format still doesn't include the event name by default.** The body contains the issue, but not the trigger. You still need `?webhookEvent=…` on the URL, or you can customize the action's "Custom data" to add `{"issue_event_type_name":"{{issueEventTypeName}}"}`.
+- If `webhookEvent` is missing from the body **and** from the URL, the adapter logs a `summary` with empty `webhookEvent` / `issue_event_type_name` keys and falls back to `webhookBehavior.defaults`. Use that log to diagnose.
+- When the event comes from anywhere other than `body.webhookEvent`, you'll see a single `Resolved webhook event from <source>: jira:issue_created (raw="issue_created")` log line that tells you where we picked it up and what we normalized it to.
+- Your `webhookBehavior.events` config stays in canonical form (`jira:issue_created`, `jira:issue_updated`, …) regardless of source — see [default.json](../config/default.json).
 
 ## Configuration
 

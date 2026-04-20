@@ -170,12 +170,23 @@ export class JiraWebhookController {
     }
 
     try {
-      const webhookEvent = req.body?.webhookEvent || 'unknown';
-      const result = await this.webhookHandler.handleWebhook(req.body, webhookEvent);
+      const resolved = resolveWebhookEvent(req);
+      if (resolved.source !== 'body.webhookEvent' || resolved.event !== resolved.rawEvent) {
+        const rawSuffix =
+          resolved.rawEvent && resolved.rawEvent !== resolved.event
+            ? ` (raw="${resolved.rawEvent}")`
+            : '';
+        this.logger?.info(
+          `Resolved webhook event from ${resolved.source}: ${resolved.event}${rawSuffix}`
+        );
+      }
+      const result = await this.webhookHandler.handleWebhook(req.body, resolved.event);
       res.json(result);
     } catch (err) {
       if (err instanceof JiraWebhookPayloadError) {
-        this.logger?.warn(`Jira webhook rejected (malformed payload): ${err.message}`);
+        this.logger?.warn(
+          `Jira webhook rejected (malformed payload): ${err.message} summary=${JSON.stringify(err.summary)}`
+        );
         res.status(400).json({ status: 'error', message: err.message } as JiraWebhookResponse);
         return;
       }
@@ -183,4 +194,103 @@ export class JiraWebhookController {
       res.status(500).json({ status: 'error', message: (err as Error).message } as JiraWebhookResponse);
     }
   }
+}
+
+export type WebhookEventSource =
+  | 'body.webhookEvent'
+  | 'body.issue_event_type_name'
+  | 'body.eventTypeName'
+  | 'query.webhookEvent'
+  | 'fallback';
+
+export interface ResolvedWebhookEvent {
+  /** Canonical event name (e.g. "jira:issue_created"). */
+  event: string;
+  /** Verbatim value pulled from the request, before normalization. */
+  rawEvent: string;
+  /** Which field of the request supplied the event. */
+  source: WebhookEventSource;
+}
+
+/**
+ * Maps Jira Automation short names (sent under `issue_event_type_name` when the
+ * action body is "Automation format") to the canonical `jira:*` form used by
+ * the native Jira webhook system and by our `webhookBehavior.events` config.
+ *
+ * Automation emits `issue_generic` for most ordinary field changes, so we
+ * map it to `jira:issue_updated` to match operator expectations.
+ */
+const AUTOMATION_EVENT_ALIASES: Record<string, string> = {
+  issue_created: 'jira:issue_created',
+  issue_updated: 'jira:issue_updated',
+  issue_generic: 'jira:issue_updated',
+  issue_deleted: 'jira:issue_deleted',
+  issue_commented: 'jira:issue_commented',
+  issue_assigned: 'jira:issue_updated',
+  issue_resolved: 'jira:issue_updated',
+  issue_closed: 'jira:issue_updated',
+  issue_reopened: 'jira:issue_updated',
+  issue_moved: 'jira:issue_updated',
+};
+
+/**
+ * Normalizes any supported event value to the canonical `jira:*` form so the
+ * same `webhookBehavior.events` config works across every source (native
+ * webhook, Automation "Jira format" + URL override, Automation "Automation
+ * format"). Unknown values are returned unchanged.
+ */
+export function normalizeWebhookEventName(raw: string): string {
+  const value = raw.trim();
+  if (!value) return value;
+  if (value.startsWith('jira:')) return value;
+  const mapped = AUTOMATION_EVENT_ALIASES[value];
+  if (mapped) return mapped;
+  // Fall back to prefixing bare names that already start with `issue_`, so
+  // unknown-but-plausible Automation events route through the `jira:` tree.
+  if (/^issue_/.test(value)) return `jira:${value}`;
+  return value;
+}
+
+/**
+ * The classic Jira Cloud webhook (System → WebHooks) sends `webhookEvent` in
+ * the request body. Automation for Jira's "Send web request" action sends
+ * either "Jira format" (no event in body — event must come from the URL) or
+ * "Automation format" (event in `issue_event_type_name`). We accept all of
+ * these so the same config works for every source.
+ *
+ * Precedence (most specific → least specific):
+ *   1. body.webhookEvent          (native Jira webhooks)
+ *   2. body.issue_event_type_name (Automation "Automation format")
+ *   3. body.eventTypeName         (alt casing sometimes used in templates)
+ *   4. query.webhookEvent         (URL override, e.g. `?webhookEvent=jira:issue_created`)
+ *   5. 'unknown'                  (router falls back to `webhookBehavior.defaults`)
+ *
+ * Whatever value wins is then passed through `normalizeWebhookEventName` so
+ * downstream routing always sees a canonical `jira:*` name.
+ */
+export function resolveWebhookEvent(req: Request): ResolvedWebhookEvent {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const query = (req.query ?? {}) as Record<string, unknown>;
+
+  const pick = (raw: string, source: WebhookEventSource): ResolvedWebhookEvent => ({
+    rawEvent: raw,
+    event: normalizeWebhookEventName(raw),
+    source,
+  });
+
+  const bodyEvent = typeof body.webhookEvent === 'string' ? body.webhookEvent : undefined;
+  if (bodyEvent) return pick(bodyEvent, 'body.webhookEvent');
+
+  const issueEventType =
+    typeof body.issue_event_type_name === 'string' ? body.issue_event_type_name : undefined;
+  if (issueEventType) return pick(issueEventType, 'body.issue_event_type_name');
+
+  const eventTypeName =
+    typeof body.eventTypeName === 'string' ? body.eventTypeName : undefined;
+  if (eventTypeName) return pick(eventTypeName, 'body.eventTypeName');
+
+  const queryEvent = typeof query.webhookEvent === 'string' ? query.webhookEvent : undefined;
+  if (queryEvent) return pick(queryEvent, 'query.webhookEvent');
+
+  return { event: 'unknown', rawEvent: '', source: 'fallback' };
 }

@@ -34,7 +34,10 @@ export function createMockJiraClient(): MockJiraClientWithStore {
         text: commentText,
         createdAt: new Date().toISOString(),
       });
-      console.warn(`[MOCK] Added comment to ${issueKey}: ${commentText.slice(0, 50)}...`);
+      const banner = '─'.repeat(60);
+      console.warn(
+        `[MOCK] Added comment to ${issueKey} (length=${commentText.length} chars)\n${banner}\n${commentText}\n${banner}`
+      );
       return { success: true, issueKey };
     },
 

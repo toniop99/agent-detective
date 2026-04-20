@@ -49,13 +49,18 @@ const jiraAdapterPlugin: Plugin = {
       jiraClient,
       config: cfg,
       events: context.events,
+      logger: extContext.logger,
     });
 
     // Listen for completed tasks and post back to Jira
     context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: TaskEvent; result: string }) => {
       const { event, result } = payload;
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
-        extContext.logger?.info(`Posting result back to Jira issue ${event.replyTo.id}`);
+        const resultLength = typeof result === 'string' ? result.length : 0;
+        const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
+        extContext.logger?.info(
+          `Posting result back to Jira issue ${event.replyTo.id} (length=${resultLength}) preview="${resultPreview}${resultLength > 120 ? '…' : ''}"`
+        );
         try {
           await jiraClient.addComment(event.replyTo.id, result);
         } catch (err) {

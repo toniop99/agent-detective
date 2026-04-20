@@ -152,6 +152,13 @@ export interface RunAgentOptions {
   model?: string;
   onProgress?: (messages: string[]) => void;
   onFinal?: (text: string) => void | Promise<void>;
+  /**
+   * When true, the agent is instructed (via CLI flags / env vars that the
+   * specific agent adapter knows how to emit) to disable write/edit/shell
+   * tools. Used for investigation-only workflows such as Jira incident
+   * analysis, where the agent must never modify the target repository.
+   */
+  readOnly?: boolean;
 }
 
 export interface StopRunResult {

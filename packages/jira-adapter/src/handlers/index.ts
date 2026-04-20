@@ -1,4 +1,4 @@
-import { StandardEvents, type EventBus } from '@agent-detective/types';
+import { StandardEvents, type EventBus, type Logger } from '@agent-detective/types';
 import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../types.js';
 import { getDefaultAcknowledgmentMessage } from '../types.js';
 import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler.js';
@@ -8,6 +8,7 @@ export interface HandlerContext {
   jiraClient: AcknowledgeHandlerDeps['jiraClient'];
   config: JiraAdapterConfig;
   events: EventBus;
+  logger?: Logger;
 }
 
 function getEventConfig(

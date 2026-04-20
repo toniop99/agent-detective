@@ -83,6 +83,13 @@ export function createRepoAnalyzer(
       return null;
     }
 
+    // Propagate the selected repo to the task context so the orchestrator runs
+    // the agent with it as cwd. Without this, the agent is spawned in the
+    // agent-detective workspace and has to rediscover the repo from prose,
+    // which burns time budget and can trigger the post-final kill timer.
+    task.context.repoPath = selectedRepo.path;
+    task.context.cwd = selectedRepo.path;
+
     // 3. Build Repo Context
     try {
       const repoContext = await localReposService.buildRepoContext(selectedRepo.path);
