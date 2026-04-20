@@ -52,6 +52,35 @@ describe('agents', () => {
       assert.ok(cmd.includes('session-123'));
     });
 
+    it('uses full permission set by default', () => {
+      const cmd = opencodeAgent.buildCommand!({
+        prompt: 'Hello world',
+        promptExpression: '"$PROMPT"',
+        model: undefined,
+        thinking: undefined,
+      });
+      assert.ok(cmd.includes('OPENCODE_PERMISSION='), 'must set OPENCODE_PERMISSION');
+      assert.ok(cmd.includes('"*": "allow"'), 'default permission must allow all tools');
+      assert.ok(!cmd.includes('"deny"'), 'no deny entries in the default mode');
+    });
+
+    it('denies write/edit/shell tools when readOnly=true', () => {
+      const cmd = opencodeAgent.buildCommand!({
+        prompt: 'Investigate only',
+        promptExpression: '"$PROMPT"',
+        model: undefined,
+        thinking: undefined,
+        readOnly: true,
+      });
+      assert.ok(cmd.includes('OPENCODE_PERMISSION='), 'must set OPENCODE_PERMISSION');
+      for (const tool of ['bash', 'edit', 'write', 'multiedit', 'patch']) {
+        assert.ok(
+          cmd.includes(`"${tool}":"deny"`),
+          `read-only command must deny tool "${tool}" (got: ${cmd})`
+        );
+      }
+    });
+
     it('parses JSON output correctly', () => {
       const output = JSON.stringify({
         type: 'text',

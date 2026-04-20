@@ -57,8 +57,30 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 - **`webhookBehavior`:** default maps **`jira:issue_created`** → **`analyze`** ([default.json](../config/default.json)).
 - **`mockMode: true`:** analysis runs; “comments” are logged as **`[MOCK] Added comment...`** ([mock-jira-client.ts](../packages/jira-adapter/src/mock-jira-client.ts)).
 - **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../packages/jira-adapter/src/real-jira-client.ts). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../src/config/env-whitelist.ts)).
+- **Comment formatting (Markdown → ADF):** the agent is prompted to return GitHub-flavored Markdown and the adapter converts it to [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/) before posting — see [markdown-to-adf.ts](../packages/jira-adapter/src/markdown-to-adf.ts). Supported elements: headings, **bold**, *italic*, ~~strike~~, `inline code`, fenced code blocks with language, bullet / ordered / nested lists, blockquotes, links, horizontal rules, and hard breaks. HTML and tables are not supported and are rendered as plain text.
 
 Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the model toward root-cause analysis.
+
+### Read-only analysis (default)
+
+To prevent an investigating agent from modifying the target repository when a
+Jira ticket is misinterpreted as a change request, the adapter emits every
+`analyze` task with `metadata.readOnly = true`. The orchestrator forwards the
+flag to the agent runner, and the **opencode** adapter turns it into a stricter
+`OPENCODE_PERMISSION` env var that **denies** the `bash`, `edit`, `write`,
+`multiedit`, and `patch` tools — see [opencode.ts](../src/agents/opencode.ts).
+
+- Opt out per deployment with **`jira-adapter.analysisReadOnly: false`** in your
+  config if you genuinely want the agent to be able to apply fixes from Jira.
+- The default analysis prompt in
+  [local-repos-plugin/types.ts](../packages/local-repos-plugin/src/types.ts)
+  also instructs the agent to produce a written report only — this is the
+  *soft* layer complementing the hard tool-permission layer.
+- You can confirm it's active by looking at the startup log for an analysis
+  task: **`Agent start task=KAN-N agent=opencode repo=/… readOnly=true`**.
+- Read-only mode is opencode-specific today. If you route analysis through
+  another agent (`claude`, `codex`, `gemini`), add equivalent flag handling in
+  that agent's `buildCommand` before relying on this guarantee.
 
 ## Smoke test without Jira Cloud
 

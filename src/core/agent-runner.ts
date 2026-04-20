@@ -57,6 +57,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       model: modelOverride,
       onFinal,
       onProgress,
+      readOnly,
     } = runOptions;
 
     const effectiveAgentId = overrideAgentId || 'opencode';
@@ -67,7 +68,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     const activeKey = buildActiveRunKey(taskId, contextKey);
 
     console.info(
-      `Agent start task=${taskId} agent=${effectiveAgentId} repo=${repoPath || 'none'}`
+      `Agent start task=${taskId} agent=${effectiveAgentId} repo=${repoPath || 'none'}${readOnly ? ' readOnly=true' : ''}`
     );
 
     const startedAt = Date.now();
@@ -127,7 +128,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
           run,
           emitFinal,
           emitProgress,
-          schedulePostFinalKill,
+          readOnly,
         });
       }
 
@@ -160,7 +161,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       run,
       emitFinal,
       emitProgress,
-      schedulePostFinalKill,
+      readOnly,
     }: {
       prompt: string;
       cwd: string;
@@ -173,7 +174,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       run: ActiveRun;
       emitFinal: (text: string) => void;
       emitProgress: (payload: string[]) => void;
-      schedulePostFinalKill: () => void;
+      readOnly?: boolean;
     }
   ): Promise<string> {
     const promptBase64 = Buffer.from(prompt, 'utf8').toString('base64');
@@ -185,6 +186,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       promptExpression,
       model: effectiveModel,
       thinking: undefined,
+      readOnly,
     }) || `${agent.command} ${promptExpression}`;
 
     const command = [
@@ -212,7 +214,6 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         cwd,
         onSpawn: (child: ChildProcess) => {
           run.child = child;
-          schedulePostFinalKill();
         },
         onStdout: (chunk: string) => {
           streamedOutput += chunk;

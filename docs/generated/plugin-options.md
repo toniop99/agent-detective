@@ -40,6 +40,10 @@ Anchor: `jira-adapter`
     "analysisPrompt": {
       "type": "string"
     },
+    "analysisReadOnly": {
+      "default": true,
+      "type": "boolean"
+    },
     "webhookBehavior": {
       "default": {
         "defaults": {
@@ -122,6 +126,7 @@ Anchor: `jira-adapter`
     "enabled",
     "webhookPath",
     "mockMode",
+    "analysisReadOnly",
     "webhookBehavior"
   ],
   "additionalProperties": false

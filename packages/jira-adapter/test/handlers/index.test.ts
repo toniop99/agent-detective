@@ -131,4 +131,65 @@ describe('Handler Registry', () => {
     assert.equal(emittedEvents[0].payload.metadata.requiresCodeContext, true);
     assert.deepEqual(emittedEvents[0].payload.metadata.labels, ['bug', 'critical']);
   });
+
+  it('defaults analyze tasks to readOnly=true in metadata', async () => {
+    const config: JiraAdapterConfig = {
+      webhookBehavior: {
+        defaults: { action: 'ignore' },
+        events: {
+          'jira:issue_created': { action: 'analyze' },
+        },
+      },
+    };
+
+    const context = createMockContext(config);
+
+    await routeToHandler(
+      {},
+      {
+        id: '10001',
+        key: 'TEST-201',
+        summary: 'S',
+        description: 'D',
+        labels: [],
+        projectKey: 'TEST',
+      },
+      'jira:issue_created',
+      context
+    );
+
+    assert.equal(emittedEvents.length, 1);
+    assert.equal(emittedEvents[0].payload.metadata.readOnly, true);
+  });
+
+  it('honors analysisReadOnly=false to allow write-capable analysis', async () => {
+    const config: JiraAdapterConfig = {
+      analysisReadOnly: false,
+      webhookBehavior: {
+        defaults: { action: 'ignore' },
+        events: {
+          'jira:issue_created': { action: 'analyze' },
+        },
+      },
+    };
+
+    const context = createMockContext(config);
+
+    await routeToHandler(
+      {},
+      {
+        id: '10001',
+        key: 'TEST-202',
+        summary: 'S',
+        description: 'D',
+        labels: [],
+        projectKey: 'TEST',
+      },
+      'jira:issue_created',
+      context
+    );
+
+    assert.equal(emittedEvents.length, 1);
+    assert.equal(emittedEvents[0].payload.metadata.readOnly, false);
+  });
 });

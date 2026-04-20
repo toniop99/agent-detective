@@ -41,6 +41,7 @@ export const jiraAdapterOptionsSchema = z
     email: z.string().optional(),
     apiToken: z.string().optional(),
     analysisPrompt: z.string().optional(),
+    analysisReadOnly: z.boolean().default(true),
     webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
   })
   .superRefine((data, ctx) => {

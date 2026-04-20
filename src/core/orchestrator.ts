@@ -35,6 +35,7 @@ export function createOrchestrator(deps: OrchestratorDeps) {
           repoPath: task.context.repoPath,
           model: task.context.model,
           cwd: task.context.cwd,
+          readOnly: task.metadata?.readOnly === true,
         });
 
         // 4. Emit completion

@@ -203,6 +203,12 @@ export interface BuildCommandOptions {
   threadId?: string;
   model?: string;
   thinking?: string;
+  /**
+   * Hint to the agent adapter to emit a command that disables write/edit/shell
+   * tools (e.g. a stricter opencode permission set). The adapter is free to
+   * ignore this flag if it cannot enforce read-only mode.
+   */
+  readOnly?: boolean;
 }
 
 export interface AgentOutput {

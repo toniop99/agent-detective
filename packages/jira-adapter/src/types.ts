@@ -23,6 +23,14 @@ export interface JiraAdapterConfig {
   webhookBehavior?: JiraWebhookBehavior;
 
   analysisPrompt?: string;
+
+  /**
+   * When true (default), the `analyze` action runs the agent with its
+   * write/edit/shell tools DENIED, so the investigation can never modify
+   * the target repository. Set to `false` only if you explicitly want the
+   * agent to be able to apply fixes in response to Jira tickets.
+   */
+  analysisReadOnly?: boolean;
 }
 
 export interface JiraTaskInfo {

@@ -2,6 +2,7 @@ import { Version3Client } from 'jira.js';
 import { HttpException } from 'jira.js';
 import type { JiraAdapterConfig } from './types.js';
 import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';
 
 function normalizeBaseUrl(url: string): string {
   return String(url || '')
@@ -12,23 +13,34 @@ function normalizeBaseUrl(url: string): string {
 /** Minimal jira.js Version3Client surface used by this adapter. Enables test stubs. */
 export type Version3ClientSurface = Pick<Version3Client, 'issues' | 'issueComments'>;
 
-/** Atlassian Document Format (ADF) — minimal doc with one or more paragraphs. */
-export function plainTextToAdfDoc(plainText: string): { type: 'doc'; version: 1; content: Array<{ type: 'paragraph'; content: Array<{ type: 'text'; text: string }> }> } {
+/**
+ * Convert a plain-text (or single-paragraph) string into an ADF doc. Kept as a
+ * named export for backward compatibility and for callers that really don't
+ * want Markdown parsing. New code should prefer {@link markdownToAdfDoc}.
+ */
+export function plainTextToAdfDoc(plainText: string): AdfDoc {
   const text = String(plainText ?? '').replace(/\r\n/g, '\n');
   if (!text.trim()) {
     return {
       type: 'doc',
       version: 1,
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
+      content: [{ type: 'paragraph' }],
     };
   }
   const chunks = text.split(/\n{2,}/);
-  const content = chunks.map((chunk) => ({
-    type: 'paragraph' as const,
-    content: [{ type: 'text' as const, text: chunk.replace(/\n+/g, ' ').trim() || ' ' }],
-  }));
-  return { type: 'doc', version: 1, content };
+  return {
+    type: 'doc',
+    version: 1,
+    content: chunks.map((chunk) => {
+      const line = chunk.replace(/\n+/g, ' ').trim();
+      return line
+        ? { type: 'paragraph', content: [{ type: 'text', text: line }] }
+        : { type: 'paragraph' };
+    }),
+  };
 }
+
+export { markdownToAdfDoc } from './markdown-to-adf.js';
 
 export interface RealJiraClientOverrides {
   /** Inject a Version3Client (or compatible stub) to bypass the real HTTP stack in tests. */
@@ -68,7 +80,7 @@ export function createRealJiraClient(
       try {
         await client.issueComments.addComment({
           issueIdOrKey: issueKey,
-          comment: plainTextToAdfDoc(commentText),
+          comment: markdownToAdfDoc(commentText),
         });
         return { success: true, issueKey };
       } catch (err) {

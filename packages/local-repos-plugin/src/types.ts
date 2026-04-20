@@ -129,7 +129,38 @@ export function getDefaultValidationConfig(): ValidationConfig {
   return { ...DEFAULT_VALIDATION_CONFIG };
 }
 
-const DEFAULT_ANALYSIS_PROMPT = `You are a senior code analyst. A development team needs your help resolving an issue.
+const DEFAULT_ANALYSIS_PROMPT = `You are a senior code analyst performing a READ-ONLY investigation. A development team needs your help understanding an issue — you are NOT being asked to fix it. Your analysis will be posted back as a Jira comment.
+
+## Strict Rules (must follow)
+- DO NOT modify, create, rename, or delete any file in the repository.
+- DO NOT run shell commands that have side effects (no installs, no builds, no migrations, no git writes).
+- You MAY read files, search the code, and inspect git history.
+- Your only deliverable is a written analysis. Any code changes must be proposed as text, never applied.
+
+## Output format (IMPORTANT — we render this as a Jira comment)
+Return **GitHub-Flavored Markdown**. Keep it concise and scannable:
+
+- Use \`##\` / \`###\` headings for the sections below. Do not use \`#\` (Jira renders H1 very large).
+- Use **bold** for the final verdict and key terms.
+- Use \`inline code\` for file names, symbols, env vars, config keys, and short literals.
+- Use fenced code blocks with a language tag for snippets and stack traces — e.g. \`\`\`ts, \`\`\`bash, \`\`\`json, \`\`\`text.
+- Use bullet lists for findings; numbered lists for ordered steps.
+- Reference code with \`path/to/file.ts:LINE\` inline — do not paste whole files.
+- No HTML, no emojis, no tables.
+
+### Required sections (use these exact headings)
+
+## Summary
+One or two sentences: what is happening and the most likely cause. End with a **bolded** verdict such as **Likely root cause: …** or **Needs more data**.
+
+## Root Cause Analysis
+Bullet points listing the most likely root causes, each anchored to evidence in the code (with \`path/to/file.ts:LINE\` references). If multiple hypotheses exist, rank them.
+
+## Files / Areas to Investigate
+Bullet list of the specific files, modules, or subsystems to inspect. Add a one-line reason per entry.
+
+## Suggested Next Steps
+A short numbered list of concrete next actions (reproduce step, targeted fix, test to add, data to collect). Describe code changes with fenced code snippets — never apply them.
 
 ## Issue Information
 Task ID: {task_id}
@@ -144,13 +175,7 @@ Tech Stack: {repo_tech_stack}
 Summary: {repo_summary}
 Recent Commits: {repo_commits}
 
-## Your Task
-Analyze the repository for the issue described. Identify:
-1. Most likely root causes
-2. Files or areas that need investigation
-3. Suggested fixes or next steps
-
-Provide a detailed and actionable analysis.`;
+Return ONLY the Markdown report as your final message — no preamble, no meta commentary, no "I will now…" narration. Do not attempt to implement the fix.`;
 
 const DEFAULT_DISCOVERY_PROMPT = `Given this task:
 - Task ID: {task_id}

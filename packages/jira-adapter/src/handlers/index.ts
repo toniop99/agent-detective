@@ -45,6 +45,11 @@ export async function routeToHandler(
 
   switch (eventConfig.action) {
     case 'analyze': {
+      // Default to read-only analysis so a misinterpreted ticket can never
+      // lead the agent to modify the target repository. Users can opt out
+      // by setting `analysisReadOnly: false` in the plugin options.
+      const readOnly = config.analysisReadOnly !== false;
+
       events.emit(StandardEvents.TASK_CREATED, {
         id: taskInfo.key,
         type: 'incident',
@@ -64,6 +69,7 @@ export async function routeToHandler(
           projectKey: taskInfo.projectKey,
           requiresCodeContext: true,
           analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
+          readOnly,
         },
       });
       break;

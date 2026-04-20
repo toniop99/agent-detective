@@ -123,6 +123,35 @@ describe('real-jira-client', () => {
     assert.ok(Array.isArray(body.content));
   });
 
+  it('addComment renders Markdown as rich ADF (headings, code blocks, marks)', async () => {
+    const stub = createStubClient();
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    const md = [
+      '## Root cause',
+      '',
+      '**Likely cause:** null deref in `parseUser`.',
+      '',
+      '```ts',
+      'const name = user.profile?.name;',
+      '```',
+      '',
+      '- touch `src/parse.ts:42`',
+      '- add a regression test',
+    ].join('\n');
+
+    await client.addComment('KAN-42', md);
+
+    const body = stub.spies.addComment[0]!.comment as {
+      type: string;
+      content: Array<{ type: string; [k: string]: unknown }>;
+    };
+    const types = body.content.map((n) => n.type);
+    assert.ok(types.includes('heading'), `expected heading node, got: ${types.join(',')}`);
+    assert.ok(types.includes('codeBlock'), 'expected codeBlock node');
+    assert.ok(types.includes('bulletList'), 'expected bulletList node');
+  });
+
   it('addComment wraps HttpException into a descriptive Error', async () => {
     const stub = createStubClient();
     stub.nextAddCommentError = new HttpException(
