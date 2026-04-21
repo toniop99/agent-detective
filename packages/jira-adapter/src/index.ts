@@ -8,6 +8,7 @@ import { JiraWebhookController } from './jira-webhook-controller.js';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './options-schema.js';
 import { zodToPluginSchema } from './zod-to-plugin-schema.js';
+import { stampComment } from './comment-trigger.js';
 
 export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './options-schema.js';
 
@@ -43,7 +44,7 @@ const jiraAdapterPlugin: Plugin = {
     const mockMode = cfg.mockMode ?? true;
     const jiraClient = mockMode
       ? createMockJiraClient()
-      : createRealJiraClient(cfg);
+      : createRealJiraClient(cfg, { logger: extContext.logger });
 
     const webhookHandler = createJiraWebhookHandler({
       jiraClient,
@@ -73,9 +74,9 @@ const jiraAdapterPlugin: Plugin = {
           typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0
             ? event.metadata.matchedRepo
             : null;
-        const body = matchedRepo
-          ? `## Analysis for \`${matchedRepo}\`\n\n${result}`
-          : result;
+        const body = stampComment(
+          matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result
+        );
         const resultLength = typeof result === 'string' ? result.length : 0;
         const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
         extContext.logger?.info(

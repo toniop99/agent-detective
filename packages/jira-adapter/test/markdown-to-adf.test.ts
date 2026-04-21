@@ -203,4 +203,95 @@ describe('markdownToAdfDoc', () => {
     assert.equal(doc.content.length, 1);
     assert.equal(doc.content[0].type, 'paragraph');
   });
+
+  describe('ADF-validator safety (regressions for Jira INVALID_INPUT 400s)', () => {
+    it('demotes headings inside list items to paragraphs (listItem.content forbids heading)', () => {
+      const md = [
+        '- ## Critical:',
+        '  Details about the critical issue.',
+        '- Another item',
+      ].join('\n');
+
+      const doc = markdownToAdfDoc(md);
+      const list = findOne(asNode(doc), 'bulletList')!;
+      const items = list.content as AdfNode[];
+      for (const item of items) {
+        assert.equal(item.type, 'listItem');
+        const children = item.content as AdfNode[];
+        for (const child of children) {
+          // heading is the only case we actively demote here; rules/blockquotes
+          // are dropped. The important invariant is: no `heading` anywhere in
+          // a listItem subtree.
+          assert.notEqual(child.type, 'heading', 'listItem must not contain heading');
+        }
+      }
+      // Make sure the heading's text wasn't discarded — it should be in a
+      // paragraph inside the first list item.
+      const firstItem = items[0]!;
+      const firstChildren = firstItem.content as AdfNode[];
+      assert.equal(firstChildren[0]!.type, 'paragraph');
+      const firstText = ((firstChildren[0] as AdfNode).content as AdfNode[])[0];
+      assert.match(firstText.text as string, /Critical/);
+    });
+
+    it('drops rules nested inside list items (rules are only valid at doc level)', () => {
+      const md = ['- First item', '  ---', '  More text', '- Second item'].join('\n');
+      const doc = markdownToAdfDoc(md);
+      const rules = walk(asNode(doc), (n) => n.type === 'rule');
+      // Any rules remaining must be at the top-level of the doc, not nested.
+      for (const r of rules) {
+        assert.ok(
+          (doc.content as unknown[]).includes(r),
+          'rule survived outside top-level (would nest inside listItem → INVALID_INPUT)'
+        );
+      }
+    });
+
+    it('strips clashing marks when the code mark is present (code is exclusive in ADF)', () => {
+      // `**`x`**` — bold wrapping inline code. LLMs do this all the time.
+      const doc = markdownToAdfDoc('normal **`x`** normal');
+      const codeTexts = walk(asNode(doc), (n) => n.type === 'text').filter((t) =>
+        Array.isArray(t.marks) && (t.marks as AdfNode[]).some((m) => m.type === 'code')
+      );
+      assert.ok(codeTexts.length >= 1, 'expected at least one text node with a code mark');
+      for (const t of codeTexts) {
+        const marks = t.marks as AdfNode[];
+        assert.equal(marks.length, 1, `code mark must be exclusive, got ${JSON.stringify(marks)}`);
+        assert.equal(marks[0].type, 'code');
+      }
+    });
+
+    it('drops link marks with an empty href (ADF rejects them) but keeps the text', () => {
+      // `[text]()` parses as a link with an empty href in marked.
+      const doc = markdownToAdfDoc('see [click here]() for details');
+      const anchors = walk(asNode(doc), (n) => n.type === 'text').filter(
+        (t) => t.text === 'click here'
+      );
+      assert.ok(anchors.length >= 1, 'text node preserved');
+      for (const t of anchors) {
+        const marks = (t.marks as AdfNode[] | undefined) ?? [];
+        for (const m of marks) {
+          assert.notEqual(m.type, 'link', 'empty-href link mark must be dropped');
+        }
+      }
+    });
+
+    it('never emits newlines inside paragraph text nodes (ADF text runs are single-line)', () => {
+      // Synthetic path that exercises the default-token fallback (which uses
+      // raw text). Markdown tables go through that branch when not explicitly
+      // handled and are the most common real-world source of embedded
+      // newlines in paragraph text.
+      const md = ['| a | b |', '|---|---|', '| 1 | 2 |'].join('\n');
+      const doc = markdownToAdfDoc(md);
+      const paragraphTexts = walk(asNode(doc), (n) => n.type === 'paragraph').flatMap(
+        (p) => ((p.content as AdfNode[] | undefined) ?? []).filter((c) => c.type === 'text')
+      );
+      for (const t of paragraphTexts) {
+        assert.ok(
+          typeof t.text === 'string' && !(t.text as string).includes('\n'),
+          `paragraph text node must not contain newlines: ${JSON.stringify(t.text)}`
+        );
+      }
+    });
+  });
 });

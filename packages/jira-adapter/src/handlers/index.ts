@@ -11,9 +11,110 @@ import { getDefaultAcknowledgmentMessage } from '../types.js';
 import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler.js';
 import { handleIgnore, IgnoreHandlerDeps } from './ignore-handler.js';
 import { handleMissingLabels } from './missing-labels-handler.js';
-import { extractAddedLabelsFromChangelog, extractLabelsBeforeUpdate } from '../changelog.js';
+import {
+  extractCommentInfo,
+  hasTriggerPhrase,
+  isOwnComment,
+  stampComment,
+} from '../comment-trigger.js';
 
 const DEFAULT_MAX_REPOS_PER_ISSUE = 5;
+const DEFAULT_RETRY_TRIGGER_PHRASE = '#agent-detective analyze';
+
+/**
+ * Last line of defense against a webhook-echo loop: once we post a
+ * missing-labels reminder for an issue, we refuse to post another for the
+ * same issue within this window, regardless of what the comment-trigger
+ * plumbing says.
+ *
+ * The primary loop protection is `isOwnComment` + the visible marker
+ * footer in `comment-trigger.ts`. This rate-limit kicks in only when that
+ * primary protection fails — e.g. a Jira edition that re-serializes our
+ * ADF in a way that drops the marker text, or an operator-edited reminder
+ * template that strips the footer. 60s is small enough that a user
+ * legitimately adding + re-commenting in quick succession still works the
+ * second time around, but orders of magnitude larger than the webhook
+ * round-trip that drives the pathological loop.
+ */
+const MISSING_LABELS_REMINDER_WINDOW_MS = 60_000;
+const recentMissingLabelsReminders = new Map<string, number>();
+
+/**
+ * Per-(issue, repo) cooldown for **automatic** (non-comment-triggered)
+ * analysis. The reason this exists:
+ *
+ * Jira Automation rules commonly fire on both "issue created" *and*
+ * "issue updated", and posting a comment updates the issue from Jira's
+ * perspective. Unless the operator carefully scopes the rule, the
+ * adapter's own result comments can trigger another webhook that — if
+ * our payload-shape classifier misidentifies it as `issue_created` —
+ * re-runs analysis and appends another comment, which fires another
+ * webhook, and so on. Payload-shape classification is the primary
+ * defense (see `detectChangelogActivity`), but as a last-resort circuit
+ * breaker we refuse to auto-analyze the same `(issueKey, repoName)` pair
+ * more than once per window.
+ *
+ * Explicit `jira:comment_created` retries **do not** consult this window:
+ * when a human types the trigger phrase, they are explicitly asking for
+ * a fresh run and shouldn't be silently suppressed.
+ *
+ * 10 minutes is small enough that real follow-up analyses (e.g. you
+ * re-tag an issue later the same day) still fire, but orders of
+ * magnitude larger than the webhook round-trip that causes the loop.
+ */
+const ANALYSIS_COOLDOWN_WINDOW_MS = 10 * 60_000;
+const recentAnalysisRuns = new Map<string, number>();
+
+function analysisKey(issueKey: string, repoName: string): string {
+  return `${issueKey}:${repoName}`;
+}
+
+function shouldSkipAutoAnalysis(
+  issueKey: string,
+  repoName: string,
+  now: number
+): { skip: boolean; ageMs?: number } {
+  const last = recentAnalysisRuns.get(analysisKey(issueKey, repoName));
+  if (last !== undefined && now - last < ANALYSIS_COOLDOWN_WINDOW_MS) {
+    return { skip: true, ageMs: now - last };
+  }
+  return { skip: false };
+}
+
+function recordAnalysisRun(issueKey: string, repoName: string, now: number): void {
+  recentAnalysisRuns.set(analysisKey(issueKey, repoName), now);
+  for (const [key, ts] of recentAnalysisRuns) {
+    if (now - ts > ANALYSIS_COOLDOWN_WINDOW_MS * 3) recentAnalysisRuns.delete(key);
+  }
+}
+
+function shouldPostReminder(issueKey: string, now: number): boolean {
+  const last = recentMissingLabelsReminders.get(issueKey);
+  if (last !== undefined && now - last < MISSING_LABELS_REMINDER_WINDOW_MS) {
+    return false;
+  }
+  return true;
+}
+
+function recordReminderPosted(issueKey: string, now: number): void {
+  recentMissingLabelsReminders.set(issueKey, now);
+  // Opportunistic GC so the map doesn't grow forever in long-lived processes.
+  for (const [key, ts] of recentMissingLabelsReminders) {
+    if (now - ts > MISSING_LABELS_REMINDER_WINDOW_MS * 10) {
+      recentMissingLabelsReminders.delete(key);
+    }
+  }
+}
+
+/** Test-only escape hatch. Not exported from the package index. */
+export function __resetMissingLabelsReminderStateForTests(): void {
+  recentMissingLabelsReminders.clear();
+}
+
+/** Test-only escape hatch. Not exported from the package index. */
+export function __resetAnalysisCooldownForTests(): void {
+  recentAnalysisRuns.clear();
+}
 
 /** Stable task id for a single (issue, repo) pair. Orchestrator uses this as the queue key. */
 export function buildIssueRepoTaskId(issueKey: string, repoName: string): string {
@@ -95,21 +196,24 @@ export async function routeToHandler(
 }
 
 /**
- * Core of the label-only, multi-repo flow:
+ * Core of the label-only, multi-repo flow. Two event types trigger analysis,
+ * and everything else under `analyze` is a no-op:
  *
  *   - `jira:issue_created`: match labels → emit one analysis task per matched
  *     repo (capped by `maxReposPerIssue`), or post the "please add a matching
- *     tag" comment once when nothing matches.
- *   - `jira:issue_updated`: only act if the changelog added labels. For each
- *     currently-matched repo, emit an analysis task **only if that specific
- *     repo wasn't already matched before this update** (per-repo delta dedup
- *     prevents re-analyzing repos we've already looked at).
- *   - Unknown / other events under the `analyze` action: fall back to "match
- *     or stay silent" with no comment, since we have no create/update
- *     semantics to lean on.
+ *     tag + `<trigger>` comment" reminder once when nothing matches.
+ *   - `jira:comment_created`: if the comment contains the configured trigger
+ *     phrase AND is not adapter-authored, re-run the match against the
+ *     issue's CURRENT labels. Matches → fan out. No matches → post the
+ *     reminder again (the user explicitly asked).
  *
- * If the `RepoMatcher` service isn't registered we cannot make a deterministic
- * decision; we log and skip rather than guess.
+ * No changelog parsing, no delta dedup, no `issue_updated` retry. The
+ * comment trigger is the entire retry mechanism, which keeps the handler
+ * stateless and deterministic at the cost of requiring one extra user
+ * action after the labels are added.
+ *
+ * If the `RepoMatcher` service isn't registered we cannot make a
+ * deterministic decision; we log and skip rather than guess.
  */
 async function handleAnalyze(
   rawPayload: unknown,
@@ -118,7 +222,7 @@ async function handleAnalyze(
   context: HandlerContext,
   eventConfig: JiraEventConfig
 ): Promise<void> {
-  const { config, jiraClient, events, logger, getService } = context;
+  const { config, logger, getService } = context;
 
   const matcher = getService?.<RepoMatcher>(REPO_MATCHER_SERVICE) ?? null;
   if (!matcher) {
@@ -129,66 +233,137 @@ async function handleAnalyze(
   }
 
   const normalizedEvent = webhookEvent.toLowerCase();
-  const isUpdate = normalizedEvent === 'jira:issue_updated';
   const isCreate = normalizedEvent === 'jira:issue_created';
+  const isCommentCreated = normalizedEvent === 'jira:comment_created';
 
-  const currentMatches = matcher.matchAllByLabels(taskInfo.labels);
-
-  // Determine which of the currently-matched repos actually need analysis.
-  // On update we fan out only to repos that are newly matched *by this change*.
-  let reposToAnalyze: MatchedRepo[];
-  if (isUpdate) {
-    const addedLabels = extractAddedLabelsFromChangelog(rawPayload);
-    if (addedLabels.length === 0) {
-      logger?.debug?.(
-        `jira-adapter: ${taskInfo.key} update had no label additions — staying silent.`
-      );
-      return;
-    }
-    if (currentMatches.length === 0) {
-      logger?.debug?.(
-        `jira-adapter: ${taskInfo.key} update added labels [${addedLabels.join(', ')}] but none match a configured repo — staying silent.`
-      );
-      return;
-    }
-    // Per-repo delta dedup: skip any repo that was already matched by labels
-    // present *before* this update (we've already analyzed that repo on a
-    // previous create or label-add).
-    const previousMatches = matcher.matchAllByLabels(extractLabelsBeforeUpdate(rawPayload));
-    const previousNames = new Set(previousMatches.map((r) => r.name.toLowerCase()));
-    reposToAnalyze = currentMatches.filter((r) => !previousNames.has(r.name.toLowerCase()));
-
-    if (reposToAnalyze.length === 0) {
-      logger?.info(
-        `jira-adapter: ${taskInfo.key} update touched labels but all matched repos [${currentMatches
-          .map((r) => r.name)
-          .join(', ')}] were already matched before — skipping re-analysis.`
-      );
-      return;
-    }
-    logger?.info(
-      `jira-adapter: ${taskInfo.key} update added repos [${reposToAnalyze
-        .map((r) => r.name)
-        .join(', ')}] → fan-out analysis.`
+  if (isCommentCreated) {
+    const shouldRun = shouldTreatCommentAsRetry(rawPayload, config, logger, taskInfo.key);
+    if (!shouldRun) return;
+  } else if (!isCreate) {
+    // Any other event routed to `analyze` (e.g. a custom rule pointing
+    // `jira:issue_updated` back at analyze) matches on current labels only —
+    // no create-specific reminder, no comment-specific gating.
+    logger?.debug?.(
+      `jira-adapter: ${taskInfo.key} (${webhookEvent}) routed to analyze via custom config — running plain label match.`
     );
-  } else {
-    if (currentMatches.length === 0) {
-      if (isCreate) {
-        await handleMissingLabels(taskInfo, matcher.listConfiguredLabels(), {
-          jiraClient,
-          messageTemplate: config.missingLabelsMessage,
-        });
-      } else {
-        logger?.debug?.(
-          `jira-adapter: ${taskInfo.key} (${webhookEvent}) has no matching label — staying silent.`
-        );
-      }
-      return;
-    }
-    reposToAnalyze = currentMatches;
   }
 
-  // Enforce the fan-out safety cap. `0` disables the cap.
+  const reposToAnalyze = matcher.matchAllByLabels(taskInfo.labels);
+
+  if (reposToAnalyze.length === 0) {
+    // Both create and comment-retry post the reminder on empty match. The
+    // comment-retry path re-posts because the user explicitly invoked the
+    // trigger — silence there feels broken. Non-create / non-comment events
+    // under a custom `analyze` mapping stay silent (we've got no
+    // user-initiated signal to justify a comment).
+    if (isCreate || isCommentCreated) {
+      await postMissingLabelsReminder(taskInfo, matcher, context);
+    } else {
+      logger?.debug?.(
+        `jira-adapter: ${taskInfo.key} (${webhookEvent}) has no matching label — staying silent.`
+      );
+    }
+    return;
+  }
+
+  await fanOutAnalysis(reposToAnalyze, taskInfo, context, eventConfig, {
+    // Only explicit user comment retries bypass the cooldown. Every other
+    // path (issue_created, custom issue_updated→analyze mapping) has to
+    // wait out the window for the same (issue, repo) pair.
+    bypassCooldown: isCommentCreated,
+  });
+}
+
+/**
+ * Decides whether a `jira:comment_created` event should trigger a retry:
+ *
+ *   - Comment must be extractable (body present).
+ *   - Comment must NOT be adapter-authored (marker or `jiraUser` match).
+ *   - Body must contain `retryTriggerPhrase` (case-insensitive substring).
+ *
+ * Any failure logs at `debug` and returns `false`. Success logs at `info`
+ * so operators can confirm the trigger fired against a specific comment.
+ */
+function shouldTreatCommentAsRetry(
+  rawPayload: unknown,
+  config: JiraAdapterConfig,
+  logger: Logger | undefined,
+  issueKey: string
+): boolean {
+  const comment = extractCommentInfo(rawPayload);
+  if (!comment) {
+    logger?.debug?.(
+      `jira-adapter: ${issueKey} comment_created payload had no extractable comment body — ignoring.`
+    );
+    return false;
+  }
+
+  const ownUser = config.jiraUser;
+  if (isOwnComment(comment.body, comment.author, ownUser)) {
+    logger?.debug?.(
+      `jira-adapter: ${issueKey} comment_created authored by adapter (marker or jiraUser match) — ignoring to avoid loop.`
+    );
+    return false;
+  }
+
+  const phrase = config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE;
+  if (!hasTriggerPhrase(comment.body, phrase)) {
+    logger?.debug?.(
+      `jira-adapter: ${issueKey} comment_created does not contain trigger phrase ("${phrase}") — ignoring.`
+    );
+    return false;
+  }
+
+  logger?.info(
+    `jira-adapter: ${issueKey} comment_created contains trigger phrase ("${phrase}") — re-running label match.`
+  );
+  return true;
+}
+
+async function postMissingLabelsReminder(
+  taskInfo: JiraTaskInfo,
+  matcher: RepoMatcher,
+  context: HandlerContext
+): Promise<void> {
+  const { config, jiraClient, logger } = context;
+  const now = Date.now();
+  if (!shouldPostReminder(taskInfo.key, now)) {
+    const last = recentMissingLabelsReminders.get(taskInfo.key) ?? now;
+    logger?.warn(
+      `jira-adapter: suppressing duplicate missing-labels reminder for ${taskInfo.key} ` +
+        `(last posted ${Math.round((now - last) / 1000)}s ago, window=${Math.round(
+          MISSING_LABELS_REMINDER_WINDOW_MS / 1000
+        )}s). This usually means a comment_created webhook echoing our own ` +
+        `reminder slipped past own-comment detection — check that the reminder ` +
+        `comment still renders the "Posted by agent-detective" footer in Jira.`
+    );
+    return;
+  }
+  const triggerPhrase = config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE;
+  await handleMissingLabels(taskInfo, matcher.listConfiguredLabels(), {
+    jiraClient,
+    messageTemplate: config.missingLabelsMessage,
+    triggerPhrase,
+  });
+  recordReminderPosted(taskInfo.key, now);
+}
+
+/**
+ * Emits `TASK_CREATED` once per matched repo (capped by `maxReposPerIssue`)
+ * and posts a single fan-out acknowledgment when more than one repo will run
+ * or anything was skipped. Shared between the create and comment-retry paths
+ * so they produce identical Jira artefacts.
+ */
+async function fanOutAnalysis(
+  currentMatches: readonly MatchedRepo[],
+  taskInfo: JiraTaskInfo,
+  context: HandlerContext,
+  eventConfig: JiraEventConfig,
+  options: { bypassCooldown?: boolean } = {}
+): Promise<void> {
+  const { config, jiraClient, events, logger } = context;
+
+  let reposToAnalyze: MatchedRepo[] = [...currentMatches];
   const cap = config.maxReposPerIssue ?? DEFAULT_MAX_REPOS_PER_ISSUE;
   let skippedByCap: MatchedRepo[] = [];
   if (cap > 0 && reposToAnalyze.length > cap) {
@@ -203,13 +378,46 @@ async function handleAnalyze(
     );
   }
 
-  // Single acknowledgment summarizing the fan-out (only when more than one
-  // repo will actually run — a single-repo analysis speaks for itself).
+  // Enforce the per-(issue, repo) cooldown for automatic paths. This is
+  // the last-ditch loop guard for the case where Jira Automation echoes
+  // our own comment-posts back as ambiguously-shaped webhooks that slip
+  // past `detectChangelogActivity`. Explicit comment retries bypass this.
+  if (!options.bypassCooldown) {
+    const now = Date.now();
+    const skippedByCooldown: MatchedRepo[] = [];
+    const allowed: MatchedRepo[] = [];
+    for (const repo of reposToAnalyze) {
+      const check = shouldSkipAutoAnalysis(taskInfo.key, repo.name, now);
+      if (check.skip) {
+        skippedByCooldown.push(repo);
+        logger?.warn(
+          `jira-adapter: suppressing auto-analysis of ${taskInfo.key}:${repo.name} ` +
+            `(ran ${Math.round((check.ageMs ?? 0) / 1000)}s ago, window=${Math.round(
+              ANALYSIS_COOLDOWN_WINDOW_MS / 1000
+            )}s). This is the circuit breaker for webhook echo loops — if ` +
+            `it keeps tripping, check your Jira Automation rule scope and ` +
+            `the event classifier log line above. An explicit "` +
+            `${config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE}" ` +
+            `comment bypasses this cooldown.`
+        );
+      } else {
+        allowed.push(repo);
+      }
+    }
+    if (skippedByCooldown.length > 0 && allowed.length === 0) {
+      // Every repo was suppressed — nothing to do, and we deliberately
+      // stay silent (no acknowledgment comment) so we don't tickle the
+      // loop further. The warn above is the only visible side effect.
+      return;
+    }
+    reposToAnalyze = allowed;
+  }
+
   if (reposToAnalyze.length > 1 || skippedByCap.length > 0) {
     try {
       await jiraClient.addComment(
         taskInfo.key,
-        buildFanOutAckMessage(reposToAnalyze, skippedByCap)
+        stampComment(buildFanOutAckMessage(reposToAnalyze, skippedByCap))
       );
     } catch (err) {
       logger?.warn(
@@ -219,8 +427,12 @@ async function handleAnalyze(
   }
 
   const readOnly = config.analysisReadOnly !== false;
+  const now = Date.now();
 
   for (const match of reposToAnalyze) {
+    if (!options.bypassCooldown) {
+      recordAnalysisRun(taskInfo.key, match.name, now);
+    }
     events.emit(StandardEvents.TASK_CREATED, {
       id: buildIssueRepoTaskId(taskInfo.key, match.name),
       type: 'incident',

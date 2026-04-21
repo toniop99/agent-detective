@@ -114,11 +114,50 @@ function decodeEntities(s: string): string {
     .replace(/&amp;/g, '&');
 }
 
+/**
+ * Build a text node, applying a handful of ADF-specific invariants that
+ * Jira's validator rejects outright with a generic `INVALID_INPUT`:
+ *
+ *   - Text must be non-empty (we return `null` so the caller can skip the
+ *     slot entirely rather than emit `{type:"text", text:""}`).
+ *   - ADF text nodes are a single run of inline text and **do not carry
+ *     newlines**. We replace `\n` with a space; legitimate Markdown hard
+ *     breaks come through as separate `br` tokens and are emitted as
+ *     `hardBreak` nodes, not as embedded newlines.
+ *   - The `code` mark is mutually exclusive with every other mark in ADF
+ *     (strong, em, strike, link, …). When we see them stacked — which
+ *     happens easily when an LLM emits `` **`x`** `` — we keep only
+ *     `code` so the node remains valid.
+ *   - `link` marks with an empty/whitespace `href` are invalid. We drop
+ *     the mark while preserving the text.
+ */
 function textNode(text: string, marks: AdfMark[]): AdfText | null {
   if (!text) return null;
-  const node: AdfText = { type: 'text', text };
-  if (marks.length) node.marks = marks;
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\n/g, ' ');
+  if (!normalized) return null;
+  const sanitizedMarks = sanitizeMarks(marks);
+  const node: AdfText = { type: 'text', text: normalized };
+  if (sanitizedMarks.length) node.marks = sanitizedMarks;
   return node;
+}
+
+function sanitizeMarks(marks: AdfMark[]): AdfMark[] {
+  if (!marks.length) return marks;
+  const filtered = marks.filter((m) => !isInvalidMark(m));
+  const hasCode = filtered.some((m) => m.type === 'code');
+  if (hasCode) {
+    // `code` is exclusive in ADF.
+    return filtered.filter((m) => m.type === 'code');
+  }
+  return filtered;
+}
+
+function isInvalidMark(mark: AdfMark): boolean {
+  if (mark.type === 'link') {
+    const href = mark.attrs?.href;
+    if (typeof href !== 'string' || !href.trim()) return true;
+  }
+  return false;
 }
 
 function inlineFromTokens(tokens: Token[] | undefined, marks: AdfMark[] = []): AdfInline[] {
@@ -225,6 +264,7 @@ function blockFromToken(t: Token): AdfBlock | AdfBlock[] | null {
       const l = t as Tokens.List;
       const items: AdfListItem[] = l.items.map((item) => {
         let children = blocksFromTokens(item.tokens);
+        children = restrictToListItemChildren(children);
         if (children.length === 0) {
           children = [{ type: 'paragraph' }];
         }
@@ -279,6 +319,53 @@ function blockFromToken(t: Token): AdfBlock | AdfBlock[] | null {
       return null;
     }
   }
+}
+
+/**
+ * ADF's `listItem.content` only accepts
+ * `paragraph | orderedList | bulletList | codeBlock`. Demote anything else
+ * — headings most commonly — to a paragraph carrying the same inline
+ * content, and drop structurally meaningless nodes (rules, blockquotes)
+ * entirely. Without this, an LLM that writes `- ## Critical:` produces a
+ * heading nested inside a listItem and Jira rejects the whole comment
+ * with a generic `INVALID_INPUT`.
+ */
+function restrictToListItemChildren(blocks: AdfBlock[]): AdfBlock[] {
+  const out: AdfBlock[] = [];
+  for (const block of blocks) {
+    switch (block.type) {
+      case 'paragraph':
+      case 'orderedList':
+      case 'bulletList':
+      case 'codeBlock':
+        out.push(block);
+        break;
+      case 'heading': {
+        // Flatten heading into paragraph; the text still reads correctly,
+        // it just loses its visual emphasis level.
+        const paragraph: AdfParagraph = { type: 'paragraph' };
+        if (block.content && block.content.length > 0) paragraph.content = block.content;
+        out.push(paragraph);
+        break;
+      }
+      case 'blockquote': {
+        // A quoted block inside a list item is rare and tends to render
+        // poorly even when valid. Inline its child paragraphs directly.
+        for (const child of block.content) {
+          if (child.type === 'paragraph' || child.type === 'orderedList' || child.type === 'bulletList' || child.type === 'codeBlock') {
+            out.push(child);
+          }
+        }
+        break;
+      }
+      case 'rule':
+        // Rules are meaningless inside a list; drop silently.
+        break;
+      default:
+        break;
+    }
+  }
+  return out;
 }
 
 function prependMarker(blocks: AdfBlock[], marker: string): AdfBlock[] {

@@ -1,4 +1,8 @@
-export type JiraWebhookEventType = 'jira:issue_created' | 'jira:issue_updated' | 'jira:issue_deleted';
+export type JiraWebhookEventType =
+  | 'jira:issue_created'
+  | 'jira:issue_updated'
+  | 'jira:issue_deleted'
+  | 'jira:comment_created';
 export type EventAction = 'analyze' | 'acknowledge' | 'ignore';
 
 export interface JiraEventConfig {
@@ -48,6 +52,33 @@ export interface JiraAdapterConfig {
    * Default: 5.
    */
   maxReposPerIssue?: number;
+
+  /**
+   * Phrase that, when found inside a Jira comment by a non-adapter user,
+   * triggers (or re-triggers) label matching and analysis. The match is
+   * case-insensitive and substring-based so operators can embed it in
+   * longer sentences (e.g. "hey #agent-detective analyze please"). Every
+   * comment we post gets tagged with a hidden marker so our own output —
+   * including result comments that happen to quote the phrase — never
+   * re-triggers the flow.
+   *
+   * Default: `#agent-detective analyze`.
+   */
+  retryTriggerPhrase?: string;
+
+  /**
+   * Identity of the Jira account the adapter posts as. Used as a secondary
+   * safeguard when filtering our own comments: any comment whose author
+   * matches `accountId` or `email` is ignored regardless of whether it
+   * carries the hidden marker. Optional — in `mockMode` and most
+   * deployments the marker alone is sufficient, but setting this makes
+   * loop protection robust against bot account impersonation or future
+   * marker changes.
+   */
+  jiraUser?: {
+    accountId?: string;
+    email?: string;
+  };
 }
 
 export interface JiraTaskInfo {

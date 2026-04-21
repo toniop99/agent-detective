@@ -28,7 +28,11 @@ describe('normalizeWebhookEventName', () => {
     assert.equal(normalizeWebhookEventName('issue_updated'), 'jira:issue_updated');
     assert.equal(normalizeWebhookEventName('issue_generic'), 'jira:issue_updated');
     assert.equal(normalizeWebhookEventName('issue_deleted'), 'jira:issue_deleted');
-    assert.equal(normalizeWebhookEventName('issue_commented'), 'jira:issue_commented');
+    // Both Automation's `issue_commented` and the native `comment_created`
+    // route to `jira:comment_created` — that's the event the new
+    // comment-triggered retry flow listens for.
+    assert.equal(normalizeWebhookEventName('issue_commented'), 'jira:comment_created');
+    assert.equal(normalizeWebhookEventName('comment_created'), 'jira:comment_created');
   });
 
   it('prefixes unknown but plausible issue_* names with jira:', () => {
@@ -142,6 +146,78 @@ describe('resolveWebhookEvent precedence', () => {
     // tests that we fall through to the 'created' branch, not 'updated'.
     assert.equal(r.source, 'payload.shape');
     assert.equal(r.event, 'jira:issue_created');
+  });
+
+  // Regression for the webhook-echo loop: Jira Automation's "Automation
+  // format" expands `{{issue}}` which embeds the issue's REST changelog
+  // *page*, not the event's item list. Once the adapter posts a comment,
+  // that page gains a `histories[]` entry. We must infer `issue_updated`
+  // from `histories` (not just `items`) so the default `ignore` action
+  // kicks in and breaks the loop.
+  it('infers jira:issue_updated from changelog.histories (Automation {{issue}}.changelog page)', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          // Bare-issue payload as Automation emits it.
+          key: 'KAN-16',
+          fields: { summary: 's' },
+          changelog: {
+            startAt: 0,
+            maxResults: 100,
+            total: 1,
+            histories: [{ id: '1', items: [{ field: 'comment' }] }],
+          },
+        },
+      })
+    );
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.event, 'jira:issue_updated');
+    assert.match(r.reason ?? '', /changelog activity.*histories/);
+  });
+
+  it('infers jira:issue_updated from changelog.total when histories/items are absent', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          key: 'KAN-16',
+          fields: { summary: 's' },
+          changelog: { total: 3 },
+        },
+      })
+    );
+    assert.equal(r.event, 'jira:issue_updated');
+    assert.match(r.reason ?? '', /total=3/);
+  });
+
+  it('still classifies a brand-new issue with an empty changelog page as created', () => {
+    // Automation's `{{issue}}.changelog` on a fresh issue has no histories
+    // and total=0 — must NOT be mistaken for an update.
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          key: 'KAN-17',
+          fields: { summary: 's' },
+          changelog: { startAt: 0, maxResults: 100, total: 0, histories: [] },
+        },
+      })
+    );
+    assert.equal(r.event, 'jira:issue_created');
+  });
+
+  it('infers jira:comment_created when a comment object is present (takes precedence over changelog)', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          issue: { key: 'KAN-7', fields: { summary: 's' } },
+          comment: { body: '#agent-detective analyze', author: { accountId: 'u1' } },
+          // A changelog might also be present if Automation bundled a field
+          // change in the same webhook — comment still wins.
+          changelog: { items: [{ field: 'labels', fromString: '', toString: 'api' }] },
+        },
+      })
+    );
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.event, 'jira:comment_created');
   });
 
   it('falls back to "unknown" only when the payload is not an issue shape at all', () => {

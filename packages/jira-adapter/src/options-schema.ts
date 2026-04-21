@@ -8,10 +8,12 @@ export const DEFAULT_WEBHOOK_BEHAVIOR: JiraWebhookBehavior = {
   },
   events: {
     'jira:issue_created': { action: 'analyze' },
-    // `analyze` retries the deterministic label-match when a label is added
-    // via the changelog; see handlers/index.ts. `acknowledge` remains available
-    // for users who want the old comment-on-every-update behavior.
-    'jira:issue_updated': { action: 'analyze' },
+    // `analyze` on `jira:comment_created` is the manual retry mechanism:
+    // if the initial create had no matching label, the adapter posts a
+    // reminder asking for a label + a trigger comment. When the user later
+    // comments with `retryTriggerPhrase` in it, the matcher runs again
+    // against the ticket's current labels.
+    'jira:comment_created': { action: 'analyze' },
   },
 };
 
@@ -19,6 +21,7 @@ const jiraWebhookEventTypeSchema = z.enum([
   'jira:issue_created',
   'jira:issue_updated',
   'jira:issue_deleted',
+  'jira:comment_created',
 ]);
 
 const jiraEventConfigSchema = z.object({
@@ -58,6 +61,25 @@ export const jiraAdapterOptionsSchema = z
      * `0` disables the cap.
      */
     maxReposPerIssue: z.number().int().min(0).default(5),
+    /**
+     * Phrase that, when found inside a Jira comment by a non-adapter user,
+     * triggers a fresh label match + analysis. Matching is case-insensitive
+     * and substring-based. Default is a slash/hashtag command-style phrase
+     * that is extremely unlikely to appear in normal conversation.
+     */
+    retryTriggerPhrase: z.string().min(1).default('#agent-detective analyze'),
+    /**
+     * Identity of the Jira account the adapter posts as. Combined with the
+     * hidden marker the adapter stamps on every comment, this is used to
+     * ignore comments the adapter itself authored so result / reminder
+     * comments can't re-trigger analysis.
+     */
+    jiraUser: z
+      .object({
+        accountId: z.string().optional(),
+        email: z.string().optional(),
+      })
+      .optional(),
     webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
   })
   .superRefine((data, ctx) => {

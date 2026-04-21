@@ -53,6 +53,23 @@ Anchor: `jira-adapter`
       "minimum": 0,
       "maximum": 9007199254740991
     },
+    "retryTriggerPhrase": {
+      "default": "#agent-detective analyze",
+      "type": "string",
+      "minLength": 1
+    },
+    "jiraUser": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "webhookBehavior": {
       "default": {
         "defaults": {
@@ -63,7 +80,7 @@ Anchor: `jira-adapter`
           "jira:issue_created": {
             "action": "analyze"
           },
-          "jira:issue_updated": {
+          "jira:comment_created": {
             "action": "analyze"
           }
         }
@@ -100,7 +117,8 @@ Anchor: `jira-adapter`
             "enum": [
               "jira:issue_created",
               "jira:issue_updated",
-              "jira:issue_deleted"
+              "jira:issue_deleted",
+              "jira:comment_created"
             ]
           },
           "additionalProperties": {
@@ -137,6 +155,7 @@ Anchor: `jira-adapter`
     "mockMode",
     "analysisReadOnly",
     "maxReposPerIssue",
+    "retryTriggerPhrase",
     "webhookBehavior"
   ],
   "additionalProperties": false

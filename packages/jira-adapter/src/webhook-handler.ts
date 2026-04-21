@@ -100,7 +100,26 @@ export function summarizeWebhookPayload(
       : null,
     hasUser: Boolean(p.user),
     hasChangelog: Boolean(p.changelog),
+    changelog: summarizeChangelog(p.changelog),
+    hasComment: Boolean(p.comment),
     topLevelKeys: Object.keys(p),
+  };
+}
+
+/**
+ * Surface the bits of a `changelog` object that drive our event
+ * classification: the number of `items` (native webhook delta) and
+ * `histories` (Automation's `{{issue}}.changelog` page) plus `total`.
+ * We intentionally do not include field names here — those can contain
+ * user data — but counts are enough to diagnose misclassification.
+ */
+function summarizeChangelog(changelog: unknown): Record<string, unknown> | null {
+  if (!changelog || typeof changelog !== 'object') return null;
+  const c = changelog as Record<string, unknown>;
+  return {
+    itemsLen: Array.isArray(c.items) ? (c.items as unknown[]).length : null,
+    historiesLen: Array.isArray(c.histories) ? (c.histories as unknown[]).length : null,
+    total: typeof c.total === 'number' ? c.total : null,
   };
 }
 
@@ -133,6 +152,16 @@ const webhookEnvelopeSchema = z
     changelog: z
       .looseObject({
         items: z.array(z.looseObject({})).optional(),
+      })
+      .optional(),
+    // `jira:comment_created` delivers `{ comment, issue, ... }`. The
+    // comment body is either a plain string (REST v2 / Automation "Jira
+    // format") or an ADF doc (REST v3); both are accepted and flattened
+    // in `comment-trigger.ts` before matching.
+    comment: z
+      .looseObject({
+        body: z.union([z.string(), z.looseObject({})]).optional(),
+        author: z.looseObject({}).optional(),
       })
       .optional(),
   })

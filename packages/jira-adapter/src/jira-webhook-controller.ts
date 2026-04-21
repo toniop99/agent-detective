@@ -176,8 +176,9 @@ export class JiraWebhookController {
           resolved.rawEvent && resolved.rawEvent !== resolved.event
             ? ` (raw="${resolved.rawEvent}")`
             : '';
+        const reasonSuffix = resolved.reason ? ` — ${resolved.reason}` : '';
         this.logger?.info(
-          `Resolved webhook event from ${resolved.source}: ${resolved.event}${rawSuffix}`
+          `Resolved webhook event from ${resolved.source}: ${resolved.event}${rawSuffix}${reasonSuffix}`
         );
       }
       const result = await this.webhookHandler.handleWebhook(req.body, resolved.event);
@@ -211,6 +212,13 @@ export interface ResolvedWebhookEvent {
   rawEvent: string;
   /** Which field of the request supplied the event. */
   source: WebhookEventSource;
+  /**
+   * Human-readable justification for `payload.shape` decisions, used in
+   * the info log so operators can see *why* we picked an event when it's
+   * not obvious from the payload alone (e.g. "changelog activity
+   * (histories[3])").
+   */
+  reason?: string;
 }
 
 /**
@@ -226,7 +234,12 @@ const AUTOMATION_EVENT_ALIASES: Record<string, string> = {
   issue_updated: 'jira:issue_updated',
   issue_generic: 'jira:issue_updated',
   issue_deleted: 'jira:issue_deleted',
-  issue_commented: 'jira:issue_commented',
+  // Both Jira's short `issue_commented` and the native `comment_created`
+  // route to the canonical `jira:comment_created` event — that's the only
+  // one `webhookBehavior.events` understands now that comment-triggered
+  // retry is the standard flow.
+  issue_commented: 'jira:comment_created',
+  comment_created: 'jira:comment_created',
   issue_assigned: 'jira:issue_updated',
   issue_resolved: 'jira:issue_updated',
   issue_closed: 'jira:issue_updated',
@@ -253,6 +266,38 @@ export function normalizeWebhookEventName(raw: string): string {
 }
 
 /**
+ * True if the given object has any sign of issue-changelog activity —
+ * enough to treat the event as an `issue_updated` rather than an
+ * `issue_created`. Two different payload shapes carry this signal:
+ *
+ *   - Native Jira webhooks (`jira:issue_updated`) put the delta at the
+ *     top level: `{ changelog: { items: [{ field, ... }] } }`.
+ *   - Jira Automation's "Automation format" expands `{{issue}}` directly,
+ *     which embeds the issue's REST `changelog` page —
+ *     `{ changelog: { histories: [{ id, items: [...] }], total, ... } }`.
+ *     On a brand-new issue `histories` is empty and `total` is 0, so we
+ *     only flag updates when at least one history entry exists.
+ *
+ * Returning both the boolean and the signal name lets callers surface
+ * *why* the classifier picked `issue_updated`, which is otherwise very
+ * hard to debug from the payload alone.
+ */
+function detectChangelogActivity(changelog: unknown): { active: boolean; signal?: string } {
+  if (!changelog || typeof changelog !== 'object') return { active: false };
+  const c = changelog as Record<string, unknown>;
+  if (Array.isArray(c.items) && (c.items as unknown[]).length > 0) {
+    return { active: true, signal: `items[${(c.items as unknown[]).length}]` };
+  }
+  if (Array.isArray(c.histories) && (c.histories as unknown[]).length > 0) {
+    return { active: true, signal: `histories[${(c.histories as unknown[]).length}]` };
+  }
+  if (typeof c.total === 'number' && c.total > 0) {
+    return { active: true, signal: `total=${c.total}` };
+  }
+  return { active: false };
+}
+
+/**
  * Last-resort inference from the payload shape itself, used when none of the
  * explicit event sources (body.webhookEvent, issue_event_type_name,
  * eventTypeName, query.webhookEvent) is populated. This is the common case
@@ -260,26 +305,48 @@ export function normalizeWebhookEventName(raw: string): string {
  * when the user didn't add `?webhookEvent=…` to the URL.
  *
  * Heuristics (only when the payload clearly represents an issue event):
- *   - a `changelog` (with items) is present         → `jira:issue_updated`
- *   - otherwise, but the payload looks like an issue → `jira:issue_created`
+ *   - a `comment` object is present                       → `jira:comment_created`
+ *   - `changelog` shows activity (items / histories / total) → `jira:issue_updated`
+ *   - otherwise, but the payload looks like an issue       → `jira:issue_created`
  *
- * Returns `null` when the payload isn't recognizable as either shape, so the
- * caller can keep falling through to the final `unknown` fallback.
+ * `comment` wins over `changelog` because Jira Automation comment-event
+ * rules always carry `{{issue.comments.last}}` (or similar) alongside the
+ * issue, and the presence of a comment is a stronger signal than an
+ * incidental label-change changelog attached to the same event.
+ *
+ * Correctly recognizing the `histories` / `total` variants is what
+ * prevents the "adapter posts a comment → Automation fires its update
+ * rule → we treat the echoed bare-issue payload as `issue_created` →
+ * we analyze again → loop" failure mode. An issue that has been
+ * updated at least once always has a non-empty `changelog.histories`
+ * when Automation serializes `{{issue}}`.
+ *
+ * Returns `null` when the payload isn't recognizable as any issue-shaped
+ * event, so the caller can keep falling through to the final `unknown`
+ * fallback. Also returns a `reason` string on hit so the caller can log
+ * why it chose what it chose.
  */
-function inferEventFromPayloadShape(body: Record<string, unknown>): string | null {
-  const changelog = body.changelog as Record<string, unknown> | undefined;
-  const hasChangelogItems =
-    !!changelog &&
-    typeof changelog === 'object' &&
-    Array.isArray(changelog.items) &&
-    (changelog.items as unknown[]).length > 0;
+function inferEventFromPayloadShape(
+  body: Record<string, unknown>
+): { event: string; reason: string } | null {
+  const hasComment = !!body.comment && typeof body.comment === 'object';
+  const changelogActivity = detectChangelogActivity(body.changelog);
 
   const isEnvelope = !!body.issue && typeof body.issue === 'object';
   const isBareIssue =
     typeof body.key === 'string' && !!body.fields && typeof body.fields === 'object';
 
-  if (!isEnvelope && !isBareIssue) return null;
-  return hasChangelogItems ? 'jira:issue_updated' : 'jira:issue_created';
+  if (!isEnvelope && !isBareIssue && !hasComment) return null;
+  if (hasComment) {
+    return { event: 'jira:comment_created', reason: 'comment object present' };
+  }
+  if (changelogActivity.active) {
+    return {
+      event: 'jira:issue_updated',
+      reason: `changelog activity (${changelogActivity.signal})`,
+    };
+  }
+  return { event: 'jira:issue_created', reason: 'issue shape, no changelog activity' };
 }
 
 /**
@@ -326,7 +393,9 @@ export function resolveWebhookEvent(req: Request): ResolvedWebhookEvent {
   if (queryEvent) return pick(queryEvent, 'query.webhookEvent');
 
   const inferred = inferEventFromPayloadShape(body);
-  if (inferred) return pick(inferred, 'payload.shape');
+  if (inferred) {
+    return { ...pick(inferred.event, 'payload.shape'), reason: inferred.reason };
+  }
 
   return { event: 'unknown', rawEvent: '', source: 'fallback' };
 }

@@ -35,7 +35,13 @@ function createStubClient(): {
   const issueComments = {
     async addComment(params: Record<string, unknown>) {
       spies.addComment.push(params);
-      if (ctx.nextAddCommentError) throw ctx.nextAddCommentError;
+      if (ctx.nextAddCommentError) {
+        // One-shot: clear after throwing so retries can observe success
+        // unless the test explicitly re-arms the error.
+        const err = ctx.nextAddCommentError;
+        ctx.nextAddCommentError = undefined;
+        throw err;
+      }
       return { id: '10001', body: params.comment } as unknown;
     },
     async getComments(params: Record<string, unknown>) {
@@ -161,6 +167,102 @@ describe('real-jira-client', () => {
     const client = createRealJiraClient({}, { client: stub.client });
 
     await assert.rejects(client.addComment('X-1', 'hi'), /Jira addComment failed: 400/);
+  });
+
+  it('addComment retries as plain-text ADF when Jira rejects the body with INVALID_INPUT', async () => {
+    // Jira returns this shape when its ADF validator refuses a comment body.
+    // The retry must fire and succeed so the analysis result isn't lost.
+    const stub = createStubClient();
+    stub.nextAddCommentError = new HttpException(
+      {
+        errorMessages: ['INVALID_INPUT'],
+        errors: { comment: 'INVALID_INPUT' },
+      },
+      400
+    );
+    const warnings: string[] = [];
+    const infos: string[] = [];
+    const client = createRealJiraClient(
+      {},
+      {
+        client: stub.client,
+        logger: {
+          info: (msg: string) => infos.push(String(msg)),
+          warn: (msg: string) => warnings.push(String(msg)),
+          error: () => {},
+          debug: () => {},
+        },
+      }
+    );
+
+    const result = await client.addComment(
+      'KAN-42',
+      '# Heading\n\n**Bold** and `code` and [text]().'
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(stub.spies.addComment.length, 2, 'should have posted twice (attempt + retry)');
+
+    // Second call must use the plain-text ADF shape: a doc with only
+    // paragraphs, no heading/codeBlock/marks.
+    const retryBody = stub.spies.addComment[1]!.comment as {
+      type: string;
+      content: Array<{ type: string }>;
+    };
+    assert.equal(retryBody.type, 'doc');
+    for (const block of retryBody.content) {
+      assert.equal(block.type, 'paragraph');
+    }
+
+    assert.ok(
+      warnings.some((w) => w.includes('INVALID_INPUT') && w.includes('KAN-42')),
+      `expected a warn log for the retry, got: ${warnings.join(' | ')}`
+    );
+    assert.ok(
+      infos.some((i) => i.includes('plain-text retry succeeded')),
+      `expected an info log for the successful retry, got: ${infos.join(' | ')}`
+    );
+  });
+
+  it('addComment does NOT retry on non-INVALID_INPUT 400s (avoids masking real bugs)', async () => {
+    const stub = createStubClient();
+    stub.nextAddCommentError = new HttpException(
+      { errorMessages: ['issueIdOrKey is required'] },
+      400
+    );
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    await assert.rejects(client.addComment('X-1', 'hi'), /Jira addComment failed: 400/);
+    assert.equal(stub.spies.addComment.length, 1, 'should not retry for unrelated 400s');
+  });
+
+  it('addComment surfaces the retry error when the plain-text fallback also fails', async () => {
+    // One-shot stub: first call throws INVALID_INPUT; then we immediately
+    // rearm a different error for the retry.
+    const stub = createStubClient();
+    const firstErr = new HttpException(
+      { errors: { comment: 'INVALID_INPUT' } },
+      400
+    );
+    const secondErr = new HttpException({ errorMessages: ['rate limited'] }, 429);
+
+    // Custom wrapper: override addComment to throw two different errors in sequence.
+    const issueComments = (stub.client as unknown as { issueComments: Record<string, unknown> }).issueComments as {
+      addComment: (p: Record<string, unknown>) => Promise<unknown>;
+    };
+    const calls: Array<Record<string, unknown>> = [];
+    issueComments.addComment = async (p: Record<string, unknown>) => {
+      calls.push(p);
+      if (calls.length === 1) throw firstErr;
+      throw secondErr;
+    };
+
+    const client = createRealJiraClient({}, { client: stub.client });
+    await assert.rejects(
+      client.addComment('X-1', '# Heading\n\nbody'),
+      /Jira addComment failed: 429/
+    );
+    assert.equal(calls.length, 2);
   });
 
   it('getIssue returns null on HTTP 404 from SDK', async () => {

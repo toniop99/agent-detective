@@ -201,15 +201,32 @@ For Jira incidents, the adapter is a thin orchestrator on top of `RepoMatcher`:
    - No match → post a single Markdown comment listing
      `listConfiguredLabels()` via the missing-labels handler, then stop. No
      task is emitted.
-2. **On `jira:issue_updated`**: the adapter parses `changelog.items[]` to find
-   labels that were *added* in this update, and compares the set of
-   currently-matched repos against the set that was already matched **before**
-   the update (derived from `changelog.items[].fromString`).
-   - Newly matched repos → fan out analysis for each of them (per-repo
-     delta dedup).
-   - No new matches → stay silent (no comment, no task). This prevents
-     comment spam on unrelated field edits or when users curate labels on
-     an already-matched ticket.
+2. **On `jira:comment_created`**: the adapter reads the comment body and
+   runs the match again **only** when:
+   - the body contains `retryTriggerPhrase` (case-insensitive substring,
+     default `#agent-detective analyze`), and
+   - the comment isn't adapter-authored (detected primarily by a visible
+     *"Posted by agent-detective · ad-v1"* footer the adapter stamps on
+     every comment it posts, with an optional
+     `jiraUser.accountId` / `jiraUser.email` fallback, a per-issue
+     60-second reminder rate-limit, and — for non-comment-triggered
+     paths — a 10-minute per-`(issue, repo)` analysis cooldown as
+     additional loop-safety nets).
+
+   If both gates pass and there's a match, the adapter fans out identically
+   to the `issue_created` path. No match → the reminder is posted again
+   (the user explicitly asked). This replaces the previous
+   `jira:issue_updated` changelog-based retry, so arbitrary field edits no
+   longer trigger any work.
+3. **On `jira:issue_updated` and everything else**: the adapter ignores the
+   event. Configure `webhookBehavior.events."jira:issue_updated".action` to
+   `"acknowledge"` only if you want a notification comment on every edit.
+   The payload-shape classifier explicitly infers `issue_updated` (not
+   `issue_created`) whenever the incoming payload carries any changelog
+   activity — top-level `items`, `{{issue}}.changelog.histories`, or
+   `changelog.total > 0` — which is what prevents adapter result comments
+   from being mis-routed back into `analyze` when Jira Automation echoes
+   them as bare-issue payloads.
 
 Configuration in `config/default.json`:
 ```json
@@ -230,7 +247,7 @@ Configuration in `config/default.json`:
           "defaults": { "action": "ignore" },
           "events": {
             "jira:issue_created": { "action": "analyze" },
-            "jira:issue_updated": { "action": "analyze" }
+            "jira:comment_created": { "action": "analyze" }
           }
         }
       }
@@ -276,9 +293,9 @@ packages/
 │   │   ├── types.ts                 # Config interfaces & types
 │   │   ├── normalizer.ts            # Jira payload → TaskEvent
 │   │   ├── webhook-handler.ts       # Main webhook router
-│   │   ├── changelog.ts             # Added-labels extractor for issue_updated
+│   │   ├── comment-trigger.ts       # Comment-triggered retry: marker, phrase match, own-comment filter
 │   │   ├── handlers/                # Modular action handlers
-│   │   │   ├── index.ts             # Handler router (label-match orchestration)
+│   │   │   ├── index.ts             # Handler router (label-match + comment retry orchestration)
 │   │   │   ├── acknowledge-handler.ts
 │   │   │   ├── missing-labels-handler.ts
 │   │   │   └── ignore-handler.ts

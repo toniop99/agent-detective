@@ -509,11 +509,12 @@ Settings for repository analysis:
     "defaults": { "action": "ignore" },
     "events": {
       "jira:issue_created": { "action": "analyze" },
-      "jira:issue_updated": { "action": "analyze" }
+      "jira:comment_created": { "action": "analyze" }
     }
   },
   "analysisReadOnly": true,
-  "missingLabelsMessage": "## I can't link this ticket to a repository yet\n\nPlease add one of: {available_labels}"
+  "missingLabelsMessage": "## I can't link this ticket to a repository yet\n\nPlease add one of: {available_labels}, then comment {trigger_phrase}.",
+  "retryTriggerPhrase": "#agent-detective analyze"
 }
 ```
 
@@ -526,7 +527,10 @@ Settings for repository analysis:
 | `webhookBehavior.events.*.action` | string | - | Per-event action: `"analyze"`, `"acknowledge"`, `"ignore"` |
 | `webhookBehavior.events.*.acknowledgmentMessage` | string | - | Message for `acknowledge` action |
 | `analysisReadOnly` | boolean | `true` | Run analyze tasks with mutating tools denied |
-| `missingLabelsMessage` | string | built-in | Markdown template for the reminder comment on an unmatched `issue_created`; supports `{available_labels}` and `{issue_key}` |
+| `missingLabelsMessage` | string | built-in | Markdown template for the reminder comment on an unmatched `issue_created` or comment-triggered retry; supports `{available_labels}`, `{issue_key}`, and `{trigger_phrase}` |
+| `retryTriggerPhrase` | string | `"#agent-detective analyze"` | Case-insensitive substring that a user comment must contain to trigger a retry |
+| `jiraUser.accountId` | string | — | Adapter's Jira accountId, used to filter out adapter-authored comments |
+| `jiraUser.email` | string | — | Adapter's Jira email, used to filter out adapter-authored comments |
 
 ## Process Management
 

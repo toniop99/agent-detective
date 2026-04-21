@@ -86,7 +86,7 @@
             "jira:issue_created": {
               "action": "analyze"
             },
-            "jira:issue_updated": {
+            "jira:comment_created": {
               "action": "analyze"
             }
           }

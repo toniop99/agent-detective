@@ -1172,7 +1172,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
           },
           "events": {
             "jira:issue_created": { "action": "analyze" },
-            "jira:issue_updated": { "action": "acknowledge" }
+            "jira:comment_created": { "action": "analyze" }
           }
         }
       }
@@ -1185,7 +1185,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 
 | Action | Description |
 |--------|-------------|
-| `analyze` | Match the issue's labels against configured repos; if one or more match, fan out one analysis per repo and post one comment per repo. On `issue_created` without a match, post a single "please add a matching label" comment. On `issue_updated`, only the repos *newly* matched by this update run (per-repo delta dedup). |
+| `analyze` | Match the issue's labels against configured repos; on matches, fan out one analysis per repo. On `issue_created` without a match, post a "please add a matching label and comment `<trigger>`" reminder. On `jira:comment_created`, run the match **only** when the comment body contains `retryTriggerPhrase` and wasn't authored by the adapter itself. No automatic retry on `issue_updated`. |
 | `acknowledge` | Post a fixed acknowledgment comment (no matching, no analysis) |
 | `ignore` | Log the event and skip processing |
 
@@ -1199,15 +1199,18 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 | `webhookBehavior.events.{eventType}.acknowledgmentMessage` | Override message for a specific event |
 | `webhookBehavior.events.{eventType}.analysisPrompt` | Custom analysis prompt template |
 | `analysisReadOnly` | When `true` (default), `analyze` tasks run with write/edit/shell tools denied |
-| `missingLabelsMessage` | Markdown template posted when no label matches on `issue_created`. Supports `{available_labels}` and `{issue_key}` placeholders. |
+| `missingLabelsMessage` | Markdown template posted when no label matches on `issue_created` or on a comment-triggered retry. Supports `{available_labels}`, `{issue_key}`, and `{trigger_phrase}` placeholders. |
 | `maxReposPerIssue` | Safety cap on fan-out when an issue's labels match multiple repos. Default `5`; `0` disables the cap. Extra matches are logged and noted in the acknowledgment. |
+| `retryTriggerPhrase` | Case-insensitive substring that, when found in a `jira:comment_created` body authored by a non-adapter user, kicks off a fresh label match. Default `#agent-detective analyze`. Pick something unlikely to appear in normal conversation — any matching comment runs analysis. |
+| `jiraUser.accountId` / `jiraUser.email` | Optional identity of the Jira account the adapter posts as. Used together with the visible *"Posted by agent-detective"* footer marker to filter out adapter-authored comments so the retry flow can't loop. Comments from this account are ignored even if the marker is stripped. |
 
 ##### Supported Event Types
 
 | Event Type | Default Action |
 |-----------|---------------|
 | `jira:issue_created` | `analyze` |
-| `jira:issue_updated` | `analyze` (retries only when a new label is added via the changelog) |
+| `jira:comment_created` | `analyze` (gated: only runs when the comment contains `retryTriggerPhrase` and is not adapter-authored) |
+| `jira:issue_updated` | `ignore` (falls to default) — no more changelog-based auto-retry |
 | `jira:issue_deleted` | `ignore` (falls to default) |
 
 #### Repository matching
@@ -1228,13 +1231,31 @@ downstream analyzer has no selection work to do. Task ids are composite —
 orchestrator queue. Result comments carry a `## Analysis for \`<repo-name>\``
 heading so readers can tell them apart on the ticket.
 
-On `issue_updated`, the matcher is consulted twice: once against the
-post-update labels and once against the pre-update labels derived from the
-changelog. Only the **delta** (repos newly matched by this update) is
-analyzed, preventing comment spam when users curate labels on an
-already-matched ticket. See the "Per-repo delta dedup" section in
-[jira-manual-e2e.md](./jira-manual-e2e.md). There is no agent-driven
-discovery fallback.
+Retries are user-initiated via `jira:comment_created`: if a ticket was
+created without a matching label, the adapter posts a reminder listing
+every configured label plus the exact `retryTriggerPhrase` to include in a
+follow-up comment. Posting a comment that contains the phrase re-runs the
+match against the ticket's current labels — no changelog parsing, no
+delta bookkeeping. Adapter-authored comments carry a visible
+*"Posted by agent-detective · ad-v1"* footer (rendered as a plain
+Markdown `---` + italic line so it round-trips reliably through Jira's
+Markdown → ADF pipeline); the `comment_created` handler drops anything
+containing that footer, optionally cross-checked against
+`jiraUser.accountId` / `jiraUser.email`. Two last-resort circuit
+breakers backstop the above: the adapter refuses to post more than one
+missing-labels reminder to the same issue within a 60-second window,
+and it refuses to auto-analyze the same `(issue, repo)` pair more than
+once per 10 minutes on non-comment-triggered paths (explicit comment
+retries bypass the cooldown because a human explicitly asked for the
+re-run). The payload-shape event classifier also treats any
+`changelog.items` / `changelog.histories` / `changelog.total > 0`
+signal as `issue_updated` (default `ignore`) rather than
+`issue_created`, so result comments that Jira Automation echoes back as
+bare-issue payloads never get mis-routed into `analyze`. Together these
+layers guarantee result comments and reminders can never loop back into
+the retry handler. There is no agent-driven discovery fallback. See the "Matching
+a ticket to a repository" section in
+[jira-manual-e2e.md](./jira-manual-e2e.md) for the full flow.
 
 #### Analysis Configuration
 

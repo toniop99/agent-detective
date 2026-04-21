@@ -20,7 +20,7 @@ Jira Cloud sends **HTTPS POST** requests to a **public URL**. Your local `agent-
 
 `https://<tunnel-host>/plugins/agent-detective-jira-adapter/webhook/jira`
 
-4. Subscribe at least to **Issue: created** (and optionally **Issue: updated** for acknowledge behavior).
+4. Subscribe at least to **Issue: created** and **Comment: created** — the latter powers the manual retry flow (see ["Matching a ticket to a repository"](#matching-a-ticket-to-a-repository)). **Issue: updated** is no longer needed; the adapter ignores it by default.
 
 No path prefix beyond `/plugins/...` is required unless you put a reverse proxy in front.
 
@@ -38,7 +38,7 @@ Notes:
 
 - **Automation-format bodies omit the envelope.** Jira Automation's "Automation format" default body expands `{{issue}}` at the top level, so the request looks like `{ self, id, key, fields, changelog, renderedFields }`. The adapter detects this via `key` + `fields` at the top level and auto-wraps it as `{ issue: { …bareIssue } }` before validation — see [`normalizeWebhookShape`](../packages/jira-adapter/src/webhook-handler.ts). You'll see `"shape":"bare-issue"` in the `Webhook payload accepted` log line when this triggers.
 - **Automation format still doesn't include the event name by default.** The body contains the issue, but not the trigger. Prefer `?webhookEvent=…` on the URL or customize the action's "Custom data" to add `{"issue_event_type_name":"{{issueEventTypeName}}"}` — both are more explicit than relying on shape inference.
-- **Payload-shape fallback.** When none of the explicit sources above provide an event, the adapter inspects the payload itself: a non-empty `changelog.items` array ⇒ `jira:issue_updated`, otherwise (issue envelope or bare-issue) ⇒ `jira:issue_created`. You'll see `Resolved webhook event from payload.shape: jira:issue_updated` in the logs when this kicks in. This is a safety net for Automation rules that forget the URL query — routing still works, but the log makes it obvious you should fix the rule for clarity.
+- **Payload-shape fallback.** When none of the explicit sources above provide an event, the adapter inspects the payload itself: a `comment` object ⇒ `jira:comment_created`, a non-empty `changelog.items` array ⇒ `jira:issue_updated`, otherwise (issue envelope or bare-issue) ⇒ `jira:issue_created`. The `comment` case wins over `changelog` because comment-event Automation rules typically include both. You'll see `Resolved webhook event from payload.shape: jira:comment_created` in the logs when this kicks in. This is a safety net for Automation rules that forget the URL query — routing still works, but the log makes it obvious you should fix the rule for clarity.
 - If the payload doesn't look like an issue event at all, the adapter resolves to `unknown` and falls back to `webhookBehavior.defaults`. Use the `Webhook payload accepted` summary line to diagnose.
 - When the event comes from anywhere other than `body.webhookEvent`, you'll see a single `Resolved webhook event from <source>: jira:issue_created (raw="issue_created")` log line that tells you where we picked it up and what we normalized it to.
 - Your `webhookBehavior.events` config stays in canonical form (`jira:issue_created`, `jira:issue_updated`, …) regardless of source — see [default.json](../config/default.json).
@@ -66,33 +66,112 @@ Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the mod
 ### Matching a ticket to a repository
 
 The adapter uses **labels only** — no AI-driven guessing, no fallbacks — to
-decide which repo a ticket belongs to. The rules:
+decide which repo a ticket belongs to. There are exactly two triggers for a
+match attempt:
+
+1. **`jira:issue_created`** — the one-shot path for tickets created with the
+   right labels already set.
+2. **`jira:comment_created`** with a trigger phrase — the explicit retry path
+   for everything else. This replaces the previous `jira:issue_updated`
+   changelog-based retry, so silent edits, status transitions, assignee
+   changes and label curation never re-trigger analysis.
+
+The rules:
 
 - **On `jira:issue_created`**, the adapter looks at `issue.fields.labels` and
-  asks the `RepoMatcher` service for a case-insensitive match against every
+  asks the `RepoMatcher` service for case-insensitive matches against every
   configured repo name.
   - **One or more matches →** the adapter emits a `TASK_CREATED` event **per
     matched repo**, with `context.repoPath` / `context.cwd` pre-set to that
     repo and `metadata.matchedRepo` set to its name. See "Multiple repos per
     issue" below.
   - **No match →** the adapter posts a single Markdown comment asking the
-    reporter to add one of the configured labels, then exits. No task is
-    created, so there is no agent run and no follow-up comment spam.
-- **On `jira:issue_updated`**, the adapter inspects `changelog.items[]` for a
-  `field: "labels"` entry and diffs `fromString`/`toString` to see which labels
-  were *added* in this update.
-  - **A matching label was added →** analysis runs for each repo that is
-    *newly* matched by this update — see "Per-repo delta dedup" below.
-  - **Nothing was added, or the added labels don't match →** the adapter stays
-    silent. This keeps the ticket clean on unrelated field edits (status
-    transitions, assignee changes, description tweaks, …).
+    reporter to add a label **and** leave a follow-up comment containing the
+    **retry trigger phrase**. No task is created; the ticket stays quiet
+    until the user explicitly asks for another attempt.
+- **On `jira:comment_created`**, the adapter runs the match again **only
+  when** the comment body contains the configured trigger phrase
+  (case-insensitive substring) **and** the comment was not authored by the
+  adapter itself.
+  - **Trigger + one or more matches →** the same fan-out as
+    `issue_created`. Result comments are posted with a `## Analysis for
+    <repo>` heading and a fan-out acknowledgment for multi-repo cases.
+  - **Trigger + still no matching label →** the adapter posts the reminder
+    again (the user asked). This is intentionally stateless: if the labels
+    are wrong, re-running `<trigger>` will just ask again, which is the
+    right escalation path.
+  - **No trigger phrase, or adapter-authored comment →** silent. No task,
+    no comment.
+- **On everything else** (`jira:issue_updated`, `jira:issue_deleted`, …),
+  the adapter does nothing unless you explicitly override the action in
+  `webhookBehavior.events`. Defaults ignore these events to prevent comment
+  spam on unrelated field edits.
 - Customize the reminder body via **`missingLabelsMessage`** in the plugin
-  options — placeholders `{available_labels}` (bullet list) and `{issue_key}`
-  are substituted. Default template lives in
+  options — placeholders `{available_labels}` (bullet list), `{issue_key}`,
+  and `{trigger_phrase}` are substituted. Default template lives in
   [missing-labels-handler.ts](../packages/jira-adapter/src/handlers/missing-labels-handler.ts).
-- To get the old "comment on every update" behavior back, set
-  `webhookBehavior.events."jira:issue_updated".action` to `"acknowledge"` in
-  your config.
+- Customize the trigger phrase via **`retryTriggerPhrase`** (default
+  `#agent-detective analyze`). The phrase is matched as a case-insensitive
+  substring so it can be embedded in longer sentences like
+  *"labels added — #agent-detective analyze please"*. Pick a phrase that
+  is extremely unlikely to show up in normal conversation on the ticket,
+  because any user comment containing it will kick off analysis.
+
+#### Loop protection (four layers)
+
+Two kinds of webhook-echo loop are possible: the **reminder loop** (the
+adapter's missing-labels comment triggers another comment_created that
+matches the trigger phrase and posts the reminder again) and the
+**analysis loop** (the adapter's result comment is mis-identified as a
+fresh `issue_created` by Jira Automation "Automation format" rules,
+which runs the agent again, which posts another comment…). Four
+independent layers guard against both:
+
+1. **Correct event classification.** When the webhook carries no
+   explicit event name (the common case for Jira Automation rules that
+   forget the URL override), the adapter infers it from the payload
+   shape. Any `changelog` signal —
+   top-level `items`, `histories` from `{{issue}}.changelog`, or a
+   non-zero `total` — classifies the event as `jira:issue_updated`,
+   which defaults to `ignore`. Only genuine creations (no changelog
+   activity, empty history page) are routed to `analyze`. Every
+   inference is logged as
+   `Resolved webhook event from payload.shape: jira:<event> — <reason>`
+   so you can audit why a specific webhook was or was not analyzed.
+2. **Visible footer marker.** Every comment the adapter posts ends with
+   a *"— Posted by agent-detective · ad-v1"* footer (rendered from a
+   Markdown `---` + italic line). The `comment_created` handler ignores
+   any comment containing the `agent-detective · ad-v1` token, so the
+   adapter's own acknowledgments, reminders, result posts and fan-out
+   summaries never re-trigger analysis even when they quote the trigger
+   phrase. The footer lives in ordinary ADF text nodes, so it survives
+   Jira's Markdown → ADF serialization and the webhook echo round-trip
+   reliably. (An earlier hidden-HTML-comment marker was dropped in some
+   Jira pipelines, which is exactly how the loop originally showed up.)
+3. **Optional `jiraUser` identity.** Configure
+   **`jiraUser.accountId`** or **`jiraUser.email`** with the Jira
+   account the adapter posts as. Comments from that account are then
+   ignored regardless of footer presence. Optional; useful if an
+   operator customizes the reminder template and strips the footer.
+4. **Circuit breakers.** As a last line of defense the adapter refuses
+   to repeat certain actions for the same issue within a short window:
+   - **Missing-labels reminders:** at most one per issue per 60 s. Logs
+     `suppressing duplicate missing-labels reminder for <KEY>`.
+   - **Auto-analysis of the same `(issue, repo)` pair:** at most one
+     per 10 min, for non-comment-triggered events only (classic
+     `issue_created` and any custom `issue_updated → analyze` mapping).
+     Explicit `jira:comment_created` retries bypass this window because
+     a human explicitly asked for a fresh run. Logs
+     `suppressing auto-analysis of <KEY>:<repo> (ran Ns ago, …)`.
+
+If either circuit-breaker warning shows up in steady-state traffic it
+means one of the upstream guards (1–3) is misbehaving and should be
+investigated — the breakers keep things safe but they are diagnostics
+of a real misconfiguration, not a design endpoint.
+
+Comments stamped with the legacy `<!-- agent-detective:v1 -->` marker
+(anything posted before the footer change) are still recognized as
+adapter-authored so historical tickets don't suddenly flap.
 
 ### Multiple repos per issue (fan-out)
 
@@ -128,21 +207,27 @@ several configured repos at once, the adapter **fans out**:
   configured-repo order), names the ones it skipped in the ack, and logs a
   warning. Set it to `0` to disable the cap.
 
-### Per-repo delta dedup on `issue_updated`
+### Manual retry via comment
 
-The adapter is stateless: it uses the changelog to work out which matches
-existed *before* this update vs which exist now, and only analyzes the
-**delta**.
+Because retries are always user-initiated, the adapter does not need any
+dedup bookkeeping — it simply re-matches the issue's current labels on
+every `comment_created` event that contains the trigger phrase. Expected
+behaviors:
 
-- Issue had label `api`, now `frontend` is added → analyze `frontend` only.
-  `api` is already analyzed on the create (or on an earlier label-add) and
-  won't be re-run.
-- Issue had no matching labels, now `api` and `frontend` are added in one
-  edit → both run, plus one fan-out ack.
-- Issue had `api` + `frontend`, someone tweaks an unrelated label → silent.
-  Every currently-matched repo was already matched before this update.
-- Issue had `api`, someone *removes* it → silent. Label removals never
-  trigger analysis.
+- Ticket created with no matching label → adapter posts the reminder.
+  User adds the label, leaves `#agent-detective analyze` (or your configured
+  phrase) → adapter runs analysis. No `issue_updated` wiring required.
+- Already-analyzed ticket, user comments `#agent-detective analyze` again
+  → adapter runs analysis again, fresh, against the current labels. This
+  is explicit: if you don't want a re-run, don't post the phrase.
+- User adds/removes labels without commenting with the trigger → silent.
+  Editing labels is harmless and no longer spams the ticket.
+- User comments the trigger phrase with **no** matching label → the
+  reminder is posted again. The user asked; the adapter answers.
+- Adapter's own result/reminder comments contain the trigger phrase (e.g.
+  quoted in the reminder text) → silent, thanks to the visible footer
+  marker; the 60s reminder rate-limit is the last-ditch backstop if the
+  footer is ever stripped.
 
 ### Read-only analysis (default)
 

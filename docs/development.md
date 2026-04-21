@@ -148,7 +148,7 @@ agent-detective/
 │       ├── src/
 │       │   ├── index.ts              # Plugin entry
 │       │   ├── types.ts              # JiraAdapterConfig & DTOs
-│       │   ├── changelog.ts          # Added-labels extractor
+│       │   ├── comment-trigger.ts    # Retry-phrase match + own-comment filter
 │       │   ├── webhook-handler.ts   # Webhook processing
 │       │   ├── normalizer.ts        # Jira payload → TaskEvent
 │       │   └── mock-jira-client.ts # In-memory Jira client

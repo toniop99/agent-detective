@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { handleAcknowledge } from '../../src/handlers/acknowledge-handler.js';
 import type { AcknowledgeHandlerDeps } from '../../src/handlers/acknowledge-handler.js';
+import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
 
 interface MockComment {
   issueKey: string;
@@ -52,7 +53,11 @@ describe('Acknowledge Handler', () => {
 
     assert.equal(mockComments.length, 1);
     assert.equal(mockComments[0].issueKey, 'TEST-1');
-    assert.equal(mockComments[0].text, 'Thanks for the update!');
+    // Every adapter-posted comment is stamped with the loop-protection
+    // marker so a future `comment_created` webhook can tell our own output
+    // apart from user replies.
+    assert.match(mockComments[0].text, /^Thanks for the update!/);
+    assert.ok(mockComments[0].text.includes(AGENT_DETECTIVE_MARKER));
   });
 
   it('uses default message when none provided', async () => {
