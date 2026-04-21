@@ -1,3 +1,4 @@
+import type { Logger } from '@agent-detective/types';
 import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
 export type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
@@ -18,9 +19,17 @@ export interface MockJiraClientWithStore extends JiraClient {
   issues: Map<string, JiraIssueRecord>;
 }
 
-export function createMockJiraClient(): MockJiraClientWithStore {
+export function createMockJiraClient(options?: { logger?: Pick<Logger, 'warn' | 'info'> }): MockJiraClientWithStore {
+  const { logger } = options ?? {};
   const comments = new Map<string, JiraCommentRecord[]>();
   const issues = new Map<string, JiraIssueRecord>();
+  const log = (line: string) => {
+    if (logger?.warn) {
+      logger.warn(line);
+    } else {
+      logger?.info?.(line);
+    }
+  };
 
   return {
     comments,
@@ -35,8 +44,8 @@ export function createMockJiraClient(): MockJiraClientWithStore {
         createdAt: new Date().toISOString(),
       });
       const banner = '─'.repeat(60);
-      console.warn(
-        `[MOCK] Added comment to ${issueKey} (length=${commentText.length} chars)\n${banner}\n${commentText}\n${banner}`
+      log(
+        `[MOCK] Added comment to ${issueKey} (length=${commentText.length} chars)\n${banner}\n${commentText}\n${banner}`,
       );
       return { success: true, issueKey };
     },

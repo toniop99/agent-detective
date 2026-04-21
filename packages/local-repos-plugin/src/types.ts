@@ -21,15 +21,23 @@ export interface SummaryGenerationConfig {
   agentId?: string;
   model?: string;
   summaryPrompt?: string;
+  /** Truncate agent- and heuristics-generated summaries; default 500. */
+  maxOutputChars?: number;
 }
 
 export interface ValidationConfig {
-  validateOnStartup?: boolean;
   failOnMissing?: boolean;
 }
 
 export interface RepoContextConfig {
   gitLogMaxCommits?: number;
+  gitCommandTimeoutMs?: number;
+  gitMaxBufferBytes?: number;
+  /**
+   * Passed to `git diff` as the `from` ref (default in code: `HEAD~5`).
+   * Configured in options / env `REPO_CONTEXT_DIFF_FROM_REF`.
+   */
+  diffFromRef?: string;
 }
 
 export interface LocalReposPluginOptions {
@@ -87,7 +95,6 @@ const DEFAULT_SUMMARY_CONFIG: SummaryGenerationConfig = {
 };
 
 const DEFAULT_VALIDATION_CONFIG: ValidationConfig = {
-  validateOnStartup: true,
   failOnMissing: false,
 };
 

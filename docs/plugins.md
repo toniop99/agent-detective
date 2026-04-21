@@ -342,138 +342,76 @@ packages/my-jira/
 }
 ```
 
-### Full Implementation
+### Webhook + services pattern (sketch)
+
+Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are normally registered via `@Controller` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
+
+The official **jira-adapter** implements the full Jira + fan-out flow — treat it as the reference, not the stale snippet below. This sketch shows the *correct* `PluginContext` surface:
 
 ```typescript
-// packages/my-jira/src/index.ts
-import type { Plugin, PluginContext, TaskEvent, RepoContext } from '@agent-detective/types';
-import { normalizePayload } from './normalizer.js';
-import { createJiraClient } from './jira-client.js';
+// Sketch — not a full drop-in. See packages/jira-adapter for production code.
+import type { Plugin, PluginContext, TaskEvent, RepoMatcher } from '@agent-detective/types';
+import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
+import type { LocalReposService } from '@agent-detective/local-repos-plugin';
+
+type JiraClient = { addComment(issueKey: string, text: string): Promise<void> };
 
 const plugin: Plugin = {
-  name: '@myorg/agent-detective-jira',
+  name: '@myorg/my-jira',
   version: '0.1.0',
   schemaVersion: '1.0',
+  dependsOn: ['@agent-detective/local-repos-plugin'],
+  schema: { type: 'object', properties: { enabled: { type: 'boolean', default: true } }, required: [] },
 
-  schema: {
-    type: 'object',
-    properties: {
-      enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/agent-detective-jira-adapter/webhook/jira' },
-      mockMode: { type: 'boolean', default: false },
-      baseUrl: { type: 'string', default: '' },
-      email: { type: 'string', default: '' },
-      apiToken: { type: 'string', default: '' },
-      repoContext: {
-        type: 'object',
-        default: {
-          gitLogMaxCommits: 50,
-          searchPatterns: ['*.js', '*.ts', '*.py'],
-        },
-      },
-    },
-    required: ['webhookPath'],
-  },
+  register(_app, context: PluginContext) {
+    const { config, agentRunner, enqueue, logger } = context;
+    if (!config.enabled) return;
 
-  register(app, context: PluginContext) {
-    const { config, agentRunner, plugins, logger } = context;
-
-    if (!config.enabled) {
-      logger.info(`Plugin is disabled`);
+    const matcher = context.getService<RepoMatcher>(REPO_MATCHER_SERVICE);
+    let local: LocalReposService;
+    try {
+      local = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
+    } catch {
+      logger.error('local-repos-plugin is required for this example');
       return;
     }
+    const jira = makeJiraClient();
 
-    const localReposPlugin = plugins['@agent-detective/local-repos-plugin'];
-    const buildRepoContext = localReposPlugin?.buildRepoContext as Function;
-    const formatRepoContextForPrompt = localReposPlugin?.formatRepoContextForPrompt as Function;
+    _app.post('/webhook/jira', async (req, res) => {
+      const task = normalizePayload(req.body) as TaskEvent;
+      const labels = (task.metadata?.labels as string[] | undefined) ?? [];
+      const m = matcher.matchByLabels(labels);
+      task.context = { ...task.context, repoPath: m?.path ?? null };
 
-    const jiraClient = config.mockMode
-      ? createMockJiraClient()
-      : createRealJiraClient(config);
-
-    const webhookPath = config.webhookPath as string;
-
-    app.post(webhookPath, async (req, res) => {
-      try {
-        const taskEvent = normalizePayload(req.body);
-
-        const localRepos = localReposPlugin?.localRepos as any;
-        const repoPath = localRepos?.resolveRepoFromMapping({
-          labels: (taskEvent.metadata.labels as string[]) || [],
-          projectKey: (taskEvent.metadata.projectKey as string) || '',
+      void enqueue(task.id, async () => {
+        let ctxText = '';
+        if (task.context.repoPath) {
+          const built = await local.buildRepoContext(task.context.repoPath, { maxCommits: 50 });
+          ctxText = local.formatRepoContextForPrompt(built);
+        }
+        await agentRunner.runAgentForChat(task.id, buildPrompt(task, ctxText), {
+          onFinal: async (t) => {
+            await jira.addComment(task.replyTo.id, t);
+          },
         });
-        taskEvent.context.repoPath = repoPath;
-
-        logger.info(`Webhook: ${taskEvent.id} -> repo: ${repoPath || 'none'}`);
-
-        enqueueTask(taskEvent.id, async () => {
-          await processTask(taskEvent, { config, agentRunner, jiraClient, buildRepoContext, formatRepoContextForPrompt, logger });
-        });
-
-        res.json({ status: 'queued', taskId: taskEvent.id });
-      } catch (err) {
-        logger.error(`Webhook error: ${(err as Error).message}`);
-        res.status(500).json({ error: (err as Error).message });
-      }
+      });
+      res.json({ status: 'queued' });
     });
-
-    logger.info(`Jira adapter registered at ${webhookPath}`);
   },
 };
 
+function buildPrompt(task: TaskEvent, repo: string) {
+  return [task.message, repo ? `### Repository context\n${repo}` : ''].filter(Boolean).join('\n\n');
+}
+function normalizePayload(body: unknown): TaskEvent {
+  void body;
+  throw new Error('See your normalizer / packages/jira-adapter');
+}
+function makeJiraClient(): JiraClient {
+  return { async addComment() {} };
+}
+
 export default plugin;
-
-async function processTask(
-  taskEvent: TaskEvent,
-  { config, agentRunner, jiraClient, buildRepoContext, formatRepoContextForPrompt, logger }: PluginContext & { jiraClient: JiraClient }
-) {
-  let repoContextText = '';
-
-  if (taskEvent.context.repoPath) {
-    try {
-      const repoContext = await buildRepoContext(taskEvent.context.repoPath, {
-        maxCommits: (config.repoContext as { gitLogMaxCommits?: number })?.gitLogMaxCommits || 50,
-        searchPatterns: (config.repoContext as { searchPatterns?: string[] })?.searchPatterns || ['*.js', '*.ts', '*.py'],
-      });
-      repoContextText = formatRepoContextForPrompt(repoContext);
-    } catch (err) {
-      logger.warn(`Failed to build repo context: ${(err as Error).message}`);
-    }
-  }
-
-  const prompt = buildPrompt(taskEvent, repoContextText);
-
-  await agentRunner.runAgentForChat(taskEvent.id, prompt, {
-    contextKey: taskEvent.id,
-    repoPath: taskEvent.context.repoPath,
-    onFinal: async (commentText: string) => {
-      await jiraClient.addComment(taskEvent.replyTo.id, commentText);
-      logger.info(`Comment added to ${taskEvent.replyTo.id}`);
-    },
-  });
-}
-
-function buildPrompt(taskEvent: TaskEvent, repoContextText: string): string {
-  const lines: string[] = [];
-  lines.push(taskEvent.message);
-  lines.push('');
-
-  if (repoContextText) {
-    lines.push('### Repository Context');
-    lines.push(repoContextText);
-  } else {
-    lines.push('(No repository context available)');
-  }
-
-  lines.push('');
-  lines.push('### Task');
-  lines.push('Analyze the incident and provide:');
-  lines.push('1. Possible root causes');
-  lines.push('2. Files or areas to investigate');
-  lines.push('3. Suggested fixes or debugging steps');
-
-  return lines.join('\n');
-}
 ```
 
 ### Minimal Normalizer
@@ -551,19 +489,23 @@ const plugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, repoMapping, buildRepoContext, formatRepoContextForPrompt, logger } = context;
+    const { config, agentRunner, enqueue, logger } = context;
 
     if (!config.enabled) return;
+
+    // Optional: resolve a default repo from local-repos (or another service you register).
+    // There is no context.repoMapping — use getService<RepoMatcher>(REPO_MATCHER_SERVICE) or
+    // getService<LocalReposService>('@agent-detective/local-repos-plugin') and your own rules.
 
     const telegram = createTelegramBot(config.botToken as string);
 
     telegram.on('message', async (msg) => {
       const { chatId, text, messageId } = msg;
 
-      const projectMatch = text.match(/proj:(\S+)/);
-      const repoPath = projectMatch
-        ? repoMapping.resolveProjectFromName(projectMatch[1])
-        : (config.defaultRepoPath as string) || null;
+      const defaultPath = (config.defaultRepoPath as string) || null;
+      // There is no context.repoMapping. Resolve paths via your own config,
+      // or getService<RepoMatcher>(REPO_MATCHER_SERVICE) / LocalReposService.
+      const repoPath = defaultPath;
 
       const taskEvent: TaskEvent = {
         id: `${chatId}:${messageId}`,
@@ -586,8 +528,13 @@ const plugin: Plugin = {
         },
       };
 
-      enqueueTask(taskEvent.context.threadId, async () => {
-        await processQuestion(taskEvent, { config, agentRunner, buildRepoContext, formatRepoContextForPrompt, telegram, logger });
+      void enqueue(taskEvent.context.threadId ?? 'default', async () => {
+        const out = await agentRunner.runAgentForChat(taskEvent.id, taskEvent.message, {
+          contextKey: taskEvent.context.threadId ?? taskEvent.id,
+          repoPath: taskEvent.context.repoPath,
+        });
+        logger.info('Reply', { out: out.slice(0, 200) });
+        // await telegram.sendMessage(chatId, out);
       });
     });
 
@@ -676,7 +623,7 @@ const plugin: Plugin = {
   },
 
   register(app, context: PluginContext) {
-    const { config, agentRunner, repoMapping, buildRepoContext, formatRepoContextForPrompt, logger } = context;
+    const { config, agentRunner, logger } = context;
 
     if (!config.enabled) return;
 
@@ -697,7 +644,7 @@ const plugin: Plugin = {
         const events = await fetchExternalEvents(config);
         for (const rawEvent of events) {
           const taskEvent = normalizeEvent(rawEvent);
-          await processTask(taskEvent, { config, agentRunner, repoMapping, buildRepoContext, formatRepoContextForPrompt, logger });
+          await processTask(taskEvent, { config, agentRunner, logger });
         }
       } catch (err) {
         logger.error(`Polling error: ${(err as Error).message}`);
@@ -885,40 +832,27 @@ Stops an active agent run.
 
 ---
 
-### RepoMapping
+### `RepoMatcher` (service) and `local-repos` service
 
-Available in plugins via `context.repoMapping`.
+`PluginContext` does **not** include `repoMapping` or `buildRepoContext` directly.
 
-#### `repoMapping.resolveRepoFromMapping(options)`
+- **`REPO_MATCHER_SERVICE`** — register/consume a `RepoMatcher` (`matchByLabels`, `matchAllByLabels`, `listConfiguredLabels`). The bundled **local-repos-plugin** provides the implementation; the **jira-adapter** consumes it for label → repo resolution.
+- **`@agent-detective/local-repos-plugin`** service — a `LocalReposService` with `localRepos`, `buildRepoContext(repoPath, options?)`, and `formatRepoContextForPrompt`. `BuildRepoContextOptions` in `@agent-detective/types` only supports `{ maxCommits?: number }` (file search was removed; agents search the tree themselves).
 
-Resolves a repository path from labels/project key.
+```typescript
+import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
+import type { RepoMatcher } from '@agent-detective/types';
+import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.labels` | `string[]` | Jira labels or tags |
-| `options.projectKey` | `string` | Project key (e.g., `PROJ`) |
-| `options.projectName` | `string` | Project name (e.g., `awesome-symfony`) |
+const matcher = context.getService<RepoMatcher>(REPO_MATCHER_SERVICE);
+const m = matcher.matchByLabels(['my-repo-name']);
 
-**Returns:** `string | null` - absolute path to repository
-
----
-
-### BuildRepoContext
-
-Available in plugins via `context.buildRepoContext`.
-
-#### `buildRepoContext(repoPath, options)`
-
-Analyzes a repository and returns context for prompts.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `repoPath` | `string` | required | Absolute path to repository |
-| `options.maxCommits` | `number` | `50` | Max recent commits to retrieve |
-| `options.searchPatterns` | `string[]` | `['*.js', '*.ts', '*.py']` | File patterns to search |
-| `options.errorPatterns` | `boolean` | `true` | Search for error patterns |
-
-**Returns:** `Promise<RepoContext>`
+const local = context.getService<LocalReposService>('@agent-detective/local-repos-plugin');
+if (m) {
+  const built = await local.buildRepoContext(m.path, { maxCommits: 50 });
+  const text = local.formatRepoContextForPrompt(built);
+}
+```
 
 ---
 
@@ -1160,7 +1094,6 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
       "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": false,
         "baseUrl": "https://your-domain.atlassian.net",
         "email": "bot@example.com",

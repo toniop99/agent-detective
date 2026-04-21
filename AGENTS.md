@@ -4,10 +4,13 @@
 
 TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main Express app). **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development.md` (Monorepo layout).
 
-**Packages:**
-- `@agent-detective/types` - Shared types (SINGLE SOURCE OF TRUTH)
-- `@agent-detective/local-repos-plugin` - Repository management
-- `@agent-detective/jira-adapter` - Jira integration
+**Packages** (`packages/*`):
+- `@agent-detective/types` — Shared types (single source of truth)
+- `@agent-detective/core` — OpenAPI / controller utilities
+- `@agent-detective/observability` — Logging, metrics, health
+- `@agent-detective/process-utils` — Process helpers
+- `@agent-detective/local-repos-plugin` — Repository + `RepoMatcher` service
+- `@agent-detective/jira-adapter` — Jira integration
 
 ## Configuration
 
@@ -124,9 +127,12 @@ src/
 └── index.ts                  # Bootstrap
 
 packages/
-├── types/src/index.ts        # ALL shared types (use this!)
-├── local-repos-plugin/src/   # Repository management
-└── jira-adapter/src/         # Jira plugin
+├── types/src/index.ts
+├── core/src/
+├── observability/src/
+├── process-utils/src/
+├── local-repos-plugin/src/
+└── jira-adapter/src/
 
 test/                         # *.test.ts files (tsx --test)
 ```

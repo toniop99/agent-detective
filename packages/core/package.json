@@ -22,7 +22,8 @@
   "license": "MIT",
   "dependencies": {
     "@agent-detective/types": "workspace:*",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

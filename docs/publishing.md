@@ -4,11 +4,16 @@ This guide covers how to publish packages to npm for the agent-detective monorep
 
 ## Package Overview
 
-| Package | Version | Description | Publish Command |
-|---------|---------|-------------|----------------|
-| `@agent-detective/types` | `1.0.0` | Shared TypeScript types | `pnpm publish` |
-| `@agent-detective/jira-adapter` | `0.1.0` | Jira webhook adapter | `pnpm publish` |
-| `agent-detective` | `0.1.0` | Main application | `npm publish` |
+The **root** `agent-detective` app is **`"private": true`** and is **not** published to npm. Publish **workspace packages** under `packages/` (via Changesets) as needed.
+
+| Package | Description |
+|---------|-------------|
+| `@agent-detective/types` | Shared TypeScript types |
+| `@agent-detective/core` | OpenAPI / HTTP controller helpers |
+| `@agent-detective/observability` | Logging, metrics, health |
+| `@agent-detective/process-utils` | Process / shell helpers |
+| `@agent-detective/local-repos-plugin` | Local repo + matcher plugin |
+| `@agent-detective/jira-adapter` | Jira adapter plugin |
 
 ## Prerequisites
 

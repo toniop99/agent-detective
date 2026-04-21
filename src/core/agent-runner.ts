@@ -1,5 +1,5 @@
 import { shellQuote, wrapCommandWithPty } from './process.js';
-import type { RunAgentOptions, Agent, ChildProcess, AgentInfo } from './types.js';
+import type { RunAgentOptions, Agent, ChildProcess, AgentInfo, Logger } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
@@ -7,6 +7,8 @@ const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
 interface CreateAgentRunnerOptions {
   agentTimeoutMs?: number;
   agentMaxBuffer?: number;
+  /** After SIGTERM, delay before SIGKILL (default 1000). */
+  forceKillDelayMs?: number;
   execLocal: (cmd: string, args: string[], options?: Record<string, unknown>) => Promise<string>;
   execLocalStreaming: (cmd: string, args: string[], options?: Record<string, unknown>) => Promise<string>;
   terminateChildProcess: (child: ChildProcess | null, signal?: string) => void;
@@ -21,6 +23,8 @@ interface CreateAgentRunnerOptions {
   threadTurns?: Map<string, unknown>;
   postFinalGraceMs?: number;
   defaultTimeZone?: string;
+  /** Defaults to `console` when omitted (e.g. unit tests). */
+  logger?: Pick<Logger, 'info' | 'warn' | 'error'>;
 }
 
 interface ActiveRun {
@@ -39,6 +43,8 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     terminateChildProcess,
     defaultModels,
     postFinalGraceMs = 30000,
+    forceKillDelayMs = 1000,
+    logger: log = console,
   } = options;
 
   const agents = new Map<string, Agent>();
@@ -76,8 +82,8 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     await prev;
     const waitMs = Date.now() - waitStartedAt;
     if (waitMs > 10) {
-      console.info(
-        `Agent queued task=${taskId} agent=${agentId} singleInstance=true waitMs=${waitMs}`
+      log.info(
+        `Agent queued task=${taskId} agent=${agentId} singleInstance=true waitMs=${waitMs}`,
       );
     }
 
@@ -118,8 +124,8 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       ? await acquireAgentSlot(agent.id, taskId)
       : null;
 
-    console.info(
-      `Agent start task=${taskId} agent=${effectiveAgentId} repo=${repoPath || 'none'}${readOnly ? ' readOnly=true' : ''}`
+    log.info(
+      `Agent start task=${taskId} agent=${effectiveAgentId} repo=${repoPath || 'none'}${readOnly ? ' readOnly=true' : ''}`,
     );
 
     const startedAt = Date.now();
@@ -143,7 +149,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         setTimeout(() => {
           if (run.settled || !run.child) return;
           terminateChildProcess?.(run.child, 'SIGKILL');
-        }, 1000);
+        }, Math.max(0, Number(forceKillDelayMs) || 0));
       }, delayMs);
     };
 
@@ -160,41 +166,27 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     };
 
     try {
-      let result: string;
-
-      if (agent.backend === 'app-server') {
-        result = await runAppServerAgent(agent, {
-          prompt,
-          cwd,
-          run,
-          emitFinal,
-          emitProgress,
-        });
-      } else {
-        result = await runShellAgent(agent, {
-          prompt,
-          cwd,
-          model: modelOverride,
-          defaultModels,
-          run,
-          emitFinal,
-          emitProgress,
-          readOnly,
-        });
-      }
+      const result: string = await runShellAgent(agent, {
+        prompt,
+        cwd,
+        model: modelOverride,
+        defaultModels,
+        run,
+        emitFinal,
+        emitProgress,
+        readOnly,
+      });
 
       run.settled = true;
       const elapsedMs = Date.now() - startedAt;
-      console.info(
-        `Agent finished task=${taskId} durationMs=${elapsedMs}`
-      );
+      log.info(`Agent finished task=${taskId} durationMs=${elapsedMs}`);
 
       return result;
     } catch (err) {
       run.settled = true;
       const elapsedMs = Date.now() - startedAt;
-      console.error(
-        `Agent error task=${taskId} durationMs=${elapsedMs} error=${(err as Error).message}`
+      log.error(
+        `Agent error task=${taskId} durationMs=${elapsedMs} error=${(err as Error).message}`,
       );
       throw err;
     } finally {
@@ -301,19 +293,6 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     }
   }
 
-  async function runAppServerAgent(
-    _agent: Agent,
-    _options: {
-      prompt: string;
-      cwd: string;
-      run: ActiveRun;
-      emitFinal: (text: string) => void;
-      emitProgress: (payload: string[]) => void;
-    }
-  ): Promise<string> {
-    throw new Error('App-server agents not yet implemented');
-  }
-
   return {
     runAgentForChat,
     stopActiveRun: async (taskId: string, contextKey?: string): Promise<{ status: 'idle' | 'stopping' }> => {
@@ -327,7 +306,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     },
     registerAgent: (agent: Agent): void => {
       if (agents.has(agent.id)) {
-        console.warn(`Agent ${agent.id} already registered, overwriting`);
+        log.warn(`Agent ${agent.id} already registered, overwriting`);
       }
       agents.set(agent.id, agent);
     },

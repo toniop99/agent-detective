@@ -2,21 +2,13 @@
   "schemaVersion": "1.0",
   "type": "object",
   "properties": {
-    "enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Enable or disable the Jira adapter"
-    },
-    "webhookPath": {
-      "type": "string",
-      "default": "/plugins/agent-detective-jira-adapter/webhook/jira",
-      "description": "Webhook endpoint path"
-    },
-    "mockMode": {
-      "type": "boolean",
-      "default": true,
-      "description": "Use mock Jira client for testing"
-    }
+    "enabled": { "type": "boolean", "default": true, "description": "Enable or disable the Jira adapter" },
+    "mockMode": { "type": "boolean", "default": true, "description": "Use mock Jira client for testing" },
+    "baseUrl": { "type": "string", "description": "Jira Cloud base URL" },
+    "autoAnalysisCooldownMs": { "type": "number", "default": 600000 },
+    "missingLabelsReminderCooldownMs": { "type": "number", "default": 60000 }
   },
-  "required": []
+  "additionalProperties": false,
+  "required": [],
+  "description": "Authoritative Zod shape: packages/jira-adapter/src/options-schema.ts. Webhook path is /plugins/{sanitized-name}/webhook/jira."
 }

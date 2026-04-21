@@ -18,7 +18,6 @@ export interface JiraWebhookBehavior {
 
 export interface JiraAdapterConfig {
   enabled?: boolean;
-  webhookPath?: string;
   mockMode?: boolean;
   baseUrl?: string;
   email?: string;
@@ -65,6 +64,12 @@ export interface JiraAdapterConfig {
    * Default: `#agent-detective analyze`.
    */
   retryTriggerPhrase?: string;
+
+  /** See `options-schema.ts` — default 10 minutes. */
+  autoAnalysisCooldownMs?: number;
+
+  /** See `options-schema.ts` — default 60 seconds. */
+  missingLabelsReminderCooldownMs?: number;
 
   /**
    * Identity of the Jira account the adapter posts as. Used as a secondary

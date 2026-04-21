@@ -1,6 +1,5 @@
 import { execSync } from 'node:child_process';
 import codex from './codex.js';
-import codexApp from './codex-app.js';
 import claude from './claude.js';
 import gemini from './gemini.js';
 import opencode from './opencode.js';
@@ -8,7 +7,6 @@ import type { Agent } from '../core/types.js';
 
 const agents = new Map<string, Agent>([
   [codex.id, codex],
-  [codexApp.id, codexApp],
   [claude.id, claude],
   [gemini.id, gemini],
   [opencode.id, opencode],
@@ -17,7 +15,6 @@ const agents = new Map<string, Agent>([
 export const DEFAULT_AGENT = opencode.id;
 
 export const AGENT_CODEX = codex.id;
-export const AGENT_CODEX_APP = codexApp.id;
 export const AGENT_CLAUDE = claude.id;
 export const AGENT_OPENCODE = opencode.id;
 export const AGENT_GEMINI = gemini.id;

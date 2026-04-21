@@ -1,8 +1,26 @@
 import { execLocal } from '@agent-detective/process-utils';
-import type { Commit } from '@agent-detective/types';
+import type { Commit, Logger } from '@agent-detective/types';
 
-export async function gitLog(repoPath: string, options: { maxCommits?: number; filePattern?: string } = {}): Promise<Commit[]> {
-  const { maxCommits = 50, filePattern } = options;
+type WarnLog = Pick<Logger, 'warn'>;
+
+function warn(log: WarnLog | undefined, message: string): void {
+  if (log) {
+    log.warn(message);
+  }
+}
+
+export async function gitLog(
+  repoPath: string,
+  options: {
+    maxCommits?: number;
+    filePattern?: string;
+    logger?: WarnLog;
+    commandTimeoutMs?: number;
+    maxBufferBytes?: number;
+  } = {},
+): Promise<Commit[]> {
+  const { maxCommits = 50, filePattern, logger, commandTimeoutMs = 10_000, maxBufferBytes = 1024 * 1024 } =
+    options;
 
   const fileFilter = filePattern ? `--follow -- ${filePattern}` : '';
 
@@ -11,8 +29,8 @@ export async function gitLog(repoPath: string, options: { maxCommits?: number; f
   try {
     const output = await execLocal('bash', ['-lc', cmd], {
       cwd: repoPath,
-      timeout: 10000,
-      maxBuffer: 1024 * 1024,
+      timeout: commandTimeoutMs,
+      maxBuffer: maxBufferBytes,
     });
 
     const lines = output.split('\n').filter(Boolean);
@@ -25,19 +43,24 @@ export async function gitLog(repoPath: string, options: { maxCommits?: number; f
       return { hash: line.slice(0, 7), message: line };
     });
   } catch (err) {
-    console.warn(`git log failed for ${repoPath}: ${(err as Error).message}`);
+    warn(logger, `git log failed for ${repoPath}: ${(err as Error).message}`);
     return [];
   }
 }
 
-export async function gitShow(repoPath: string, commitHash: string): Promise<Commit | null> {
+export async function gitShow(
+  repoPath: string,
+  commitHash: string,
+  options: { logger?: WarnLog; commandTimeoutMs?: number; maxBufferBytes?: number } = {},
+): Promise<Commit | null> {
+  const { logger, commandTimeoutMs = 10_000, maxBufferBytes = 1024 * 1024 } = options;
   const cmd = `git show --stat --format="%H%n%an%n%ae%n%ad%n%s%n%b" ${commitHash}`;
 
   try {
     const output = await execLocal('bash', ['-lc', cmd], {
       cwd: repoPath,
-      timeout: 10000,
-      maxBuffer: 1024 * 1024,
+      timeout: commandTimeoutMs,
+      maxBuffer: maxBufferBytes,
     });
 
     const lines = output.split('\n');
@@ -51,23 +74,38 @@ export async function gitShow(repoPath: string, commitHash: string): Promise<Com
       message: subject,
     };
   } catch (err) {
-    console.warn(`git show failed for ${repoPath}@${commitHash}: ${(err as Error).message}`);
+    warn(logger, `git show failed for ${repoPath}@${commitHash}: ${(err as Error).message}`);
     return null;
   }
 }
 
-export async function gitDiff(repoPath: string, { from = 'HEAD~5', to = 'HEAD' }: { from?: string; to?: string } = {}): Promise<string> {
+export async function gitDiff(
+  repoPath: string,
+  {
+    from = 'HEAD~5',
+    to = 'HEAD',
+    logger,
+    commandTimeoutMs = 10_000,
+    maxBufferBytes = 1024 * 1024,
+  }: {
+    from?: string;
+    to?: string;
+    logger?: WarnLog;
+    commandTimeoutMs?: number;
+    maxBufferBytes?: number;
+  } = {},
+): Promise<string> {
   const cmd = `git diff ${from}..${to} --stat`;
 
   try {
     const output = await execLocal('bash', ['-lc', cmd], {
       cwd: repoPath,
-      timeout: 10000,
-      maxBuffer: 1024 * 1024,
+      timeout: commandTimeoutMs,
+      maxBuffer: maxBufferBytes,
     });
     return output.trim();
   } catch (err) {
-    console.warn(`git diff failed for ${repoPath}: ${(err as Error).message}`);
+    warn(logger, `git diff failed for ${repoPath}: ${(err as Error).message}`);
     return '';
   }
 }

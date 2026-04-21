@@ -40,7 +40,6 @@ See **[configuration.md](configuration.md)** for `default.json` / `local.json` m
           "enabled": true
         },
         "validation": {
-          "validateOnStartup": true,
           "failOnMissing": false
         }
       }
@@ -49,7 +48,6 @@ See **[configuration.md](configuration.md)** for `default.json` / `local.json` m
       "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true
       }
     }
@@ -79,6 +77,35 @@ End-to-end Jira webhook testing (tunnel, labels, smoke script): [jira-manual-e2e
 - **`pnpm test`** runs **`turbo run test`** (package tests, e.g. `@agent-detective/jira-adapter`, with `^build` deps) then **root** tests with **tsx** on `test/**/*.test.ts`.
 - **`pnpm run publish`** runs **Changesets** (`changeset publish`), not Turborepo.
 - **Turborepo cache**: stored under **`.turbo/`** at the repo root. To discard local task cache: `rm -rf .turbo` (or `pnpm exec turbo daemon clean` if you use the daemon). **`pnpm run clean`** runs each package’s `clean` script (typically `rm -rf dist`) via `turbo run clean`.
+
+### Workspace and tooling (detail)
+
+`pnpm-workspace.yaml` lists only `packages/*` (the root app is not a subfolder package; it is the repo root with its own `package.json`).
+
+**`turbo.json`** defines `build`, `typecheck`, `lint`, `test`, and `clean` with `dependsOn: ["^build"]` where needed so dependency packages build first.
+
+**`tsup`** is used in packages for fast ESM + `dts` output; the root app uses `tsup` for `build:app` to emit `dist/index.js`.
+
+| Command | Description |
+|--------|-------------|
+| `pnpm run build` | Build all workspace packages (Turbo, cached) |
+| `pnpm run typecheck` | `turbo run typecheck` + root `tsc --noEmit` |
+| `pnpm run test` | Package tests + root `test/**/*.test.ts` |
+| `pnpm run clean` | Each package’s `clean` (e.g. `rm -rf dist`) |
+| `pnpm run publish` (root) | Changesets: `changeset publish` (publishable **workspace** packages only) |
+
+**Build order (conceptual):** `types` and `process-utils` have no workspace deps; `core` and `observability` depend on types; plugins depend on types/core/process-utils as declared in their `package.json`. Turbo resolves the graph via `^build`.
+
+**New package:** create `packages/<name>/` with `package.json`, `tsup.config.ts`, `tsconfig.json` extending the repo base, and list workspace deps as `workspace:*`. See a sibling package (e.g. `packages/jira-adapter`) as a template.
+
+**VS Code:** point TypeScript at the workspace SDK:
+
+```json
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
+```
 
 ## Building
 
@@ -125,34 +152,18 @@ agent-detective/
 │   │   ├── index.ts                  # Agent registry
 │   │   ├── opencode.ts
 │   │   ├── codex.ts
-│   │   ├── codex-app.ts
 │   │   ├── claude.ts
 │   │   ├── gemini.ts
 │   │   └── utils.ts
 │   ├── server.ts                     # Express server (+ Core API endpoints)
 │   └── index.ts                      # Bootstrap
 ├── packages/                         # Workspace packages
-│   ├── types/                        # @agent-detective/types (shared types)
-│   │   ├── src/index.ts              # SINGLE SOURCE OF TRUTH for types
-│   │   └── dist/                     # Built output for npm
-│   ├── local-repos-plugin/          # Repository management plugin
-│   │   ├── src/
-│   │   │   ├── index.ts              # Plugin entry + RepoMatcher registration
-│   │   │   ├── types.ts              # LocalReposConfig, ValidatedRepo interfaces
-│   │   │   ├── validate.ts           # Path validation
-│   │   │   ├── repo-matcher.ts       # Deterministic label → repo match
-│   │   │   ├── tech-stack-detector.ts # Auto-detect tech stack
-│   │   │   └── repo-context/        # Git log + file search
-│   │   └── dist/
-│   └── jira-adapter/                 # Official Jira plugin
-│       ├── src/
-│       │   ├── index.ts              # Plugin entry
-│       │   ├── types.ts              # JiraAdapterConfig & DTOs
-│       │   ├── comment-trigger.ts    # Retry-phrase match + own-comment filter
-│       │   ├── webhook-handler.ts   # Webhook processing
-│       │   ├── normalizer.ts        # Jira payload → TaskEvent
-│       │   └── mock-jira-client.ts # In-memory Jira client
-│       └── dist/
+│   ├── types/                        # @agent-detective/types
+│   ├── core/                         # @agent-detective/core (OpenAPI helpers, shared utilities)
+│   ├── observability/                # @agent-detective/observability
+│   ├── process-utils/                # @agent-detective/process-utils
+│   ├── local-repos-plugin/          # @agent-detective/local-repos-plugin
+│   └── jira-adapter/                 # @agent-detective/jira-adapter
 ├── test/                             # Main app tests
 │   └── core/
 ├── config/
@@ -180,9 +191,9 @@ pnpm run jira:webhook-smoke
 
 ## Debugging
 
-### Enable Debug Logging
+### Enable debug logging
 
-The core modules use `console.info`/`console.warn` for operational logging.
+Set log level via `observability` in config or `OBSERVABILITY_LOG_LEVEL` / `LOG_LEVEL` (see [observability.md](observability.md)).
 
 ### Common Issues
 

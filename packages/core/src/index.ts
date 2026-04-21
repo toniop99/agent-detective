@@ -130,6 +130,11 @@ export {
 } from './constants.js';
 
 /**
+ * Zod object schema to legacy {@link PluginSchema} (JSON-schema-like) for the plugin loader.
+ */
+export { zodToPluginSchema } from './zod-to-plugin-schema.js';
+
+/**
  * Metadata types and storage utilities for decorators.
  * These are primarily for internal use but may be useful for advanced scenarios.
  */

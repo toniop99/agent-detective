@@ -66,7 +66,6 @@
           "enabled": true
         },
         "validation": {
-          "validateOnStartup": true,
           "failOnMissing": false
         }
       }
@@ -75,7 +74,6 @@
       "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
         "webhookBehavior": {
           "defaults": {

@@ -19,9 +19,13 @@ These variables override or extend the merged JSON when set:
 |----------|--------|
 | `PORT` | HTTP listen port (integer). |
 | `AGENT` | Default agent id (e.g. `opencode`). |
-| `MODEL` | Default model for the selected agent. |
 | `AGENTS_OPENCODE_MODEL`, `AGENTS_CLAUDE_MODEL`, `AGENTS_GEMINI_MODEL` | Per-agent default model. |
 | `AGENTS_<ID>_MODEL` | Any agent id in uppercase letters/digits (e.g. `AGENTS_OPENCODE_MODEL`). |
+| `AGENTS_RUNNER_TIMEOUT_MS` | `agents.runner.timeoutMs` (agent child process + exec timeout, ms). |
+| `AGENTS_RUNNER_MAX_BUFFER_BYTES` | `agents.runner.maxBufferBytes` |
+| `AGENTS_RUNNER_POST_FINAL_GRACE_MS` | `agents.runner.postFinalGraceMs` (SIGTERM delay before kill). |
+| `AGENTS_RUNNER_FORCE_KILL_DELAY_MS` | `agents.runner.forceKillDelayMs` (after SIGTERM, before SIGKILL). |
+| `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | Comma-separated paths; merged into `observability.requestLogger.excludePaths` (default logs skip `/api/health` and `/api/metrics`). |
 | `DOCS_AUTH_REQUIRED` | `true` / `false` — require `X-API-KEY` for `/docs`. |
 | `DOCS_API_KEY` | API key value when docs auth is enabled. |
 
@@ -36,7 +40,13 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | Variable | Target |
 |----------|--------|
 | `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL` | Options for `@agent-detective/jira-adapter` (`apiToken`, `email`, `baseUrl`). |
-| `REPO_CONTEXT_GIT_LOG_MAX_COMMITS` | Positive integer merged into `@agent-detective/local-repos-plugin` at `options.repoContext.gitLogMaxCommits`. |
+| `JIRA_AUTO_ANALYSIS_COOLDOWN_MS` | `options.autoAnalysisCooldownMs` on the Jira plugin (default 600000). |
+| `JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS` | `options.missingLabelsReminderCooldownMs` (default 60000). |
+| `REPO_CONTEXT_GIT_LOG_MAX_COMMITS` | Positive integer → `options.repoContext.gitLogMaxCommits` (local-repos). |
+| `REPO_CONTEXT_GIT_COMMAND_TIMEOUT_MS` | `options.repoContext.gitCommandTimeoutMs` |
+| `REPO_CONTEXT_GIT_MAX_BUFFER_BYTES` | `options.repoContext.gitMaxBufferBytes` |
+| `REPO_CONTEXT_DIFF_FROM_REF` | `options.repoContext.diffFromRef` (e.g. `HEAD~5`) |
+| `SUMMARY_MAX_OUTPUT_CHARS` | `options.summaryGeneration.maxOutputChars` |
 
 For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-manual-e2e.md](jira-manual-e2e.md).
 

@@ -20,10 +20,6 @@ Anchor: `jira-adapter`
       "default": true,
       "type": "boolean"
     },
-    "webhookPath": {
-      "default": "/plugins/agent-detective-jira-adapter/webhook/jira",
-      "type": "string"
-    },
     "mockMode": {
       "default": true,
       "type": "boolean"
@@ -147,16 +143,29 @@ Anchor: `jira-adapter`
         "defaults"
       ],
       "additionalProperties": false
+    },
+    "autoAnalysisCooldownMs": {
+      "default": 600000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "missingLabelsReminderCooldownMs": {
+      "default": 60000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     }
   },
   "required": [
     "enabled",
-    "webhookPath",
     "mockMode",
     "analysisReadOnly",
     "maxReposPerIssue",
     "retryTriggerPhrase",
-    "webhookBehavior"
+    "webhookBehavior",
+    "autoAnalysisCooldownMs",
+    "missingLabelsReminderCooldownMs"
   ],
   "additionalProperties": false
 }
@@ -201,30 +210,99 @@ Anchor: `local-repos-plugin`
     },
     "techStackDetection": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "patterns": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
-      "additionalProperties": {}
+      "additionalProperties": false
     },
     "summaryGeneration": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "readme",
+            "commits",
+            "both"
+          ]
+        },
+        "maxReadmeLines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "commitCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "useAgent": {
+          "type": "boolean"
+        },
+        "agentId": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "summaryPrompt": {
+          "type": "string"
+        },
+        "maxOutputChars": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
       },
-      "additionalProperties": {}
+      "additionalProperties": false
     },
     "validation": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
+      "properties": {
+        "failOnMissing": {
+          "type": "boolean"
+        }
       },
-      "additionalProperties": {}
+      "additionalProperties": false
     },
     "repoContext": {
       "type": "object",
       "properties": {
         "gitLogMaxCommits": {
-          "type": "number"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "gitCommandTimeoutMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "gitMaxBufferBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "diffFromRef": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

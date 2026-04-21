@@ -31,9 +31,12 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 
 | Package | Description |
 |---------|-------------|
-| `agent-detective` | Main application (Express server) |
+| Root app | Express server (`src/`, not under `packages/`) |
 | `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/local-repos-plugin` | Local repository configuration |
+| `@agent-detective/core` | OpenAPI / controller utilities |
+| `@agent-detective/observability` | Logging, metrics, health |
+| `@agent-detective/process-utils` | Process / shell helpers |
+| `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |
 | `@agent-detective/jira-adapter` | Jira webhook adapter |
 
 ## Configuration

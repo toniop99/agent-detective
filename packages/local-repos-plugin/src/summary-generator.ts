@@ -4,6 +4,8 @@ import type { AgentRunner, Logger } from '@agent-detective/types';
 import type { SummaryGenerationConfig } from './types.js';
 import { execLocal } from '@agent-detective/process-utils';
 
+const DEFAULT_MAX_OUTPUT_CHARS = 500;
+
 const DEFAULT_CONFIG: SummaryGenerationConfig = {
   enabled: true,
   source: 'both',
@@ -11,6 +13,7 @@ const DEFAULT_CONFIG: SummaryGenerationConfig = {
   commitCount: 10,
   useAgent: false,
   agentId: 'opencode',
+  maxOutputChars: DEFAULT_MAX_OUTPUT_CHARS,
   summaryPrompt: 'Summarize this repository in 2-3 sentences based on the provided context.',
 };
 
@@ -34,18 +37,20 @@ export async function generateSummary(
     }
   }
 
+  const maxChars = resolvedConfig.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+
   switch (resolvedConfig.source) {
     case 'readme':
-      return generateFromReadme(repoPath, resolvedConfig.maxReadmeLines || 3);
+      return generateFromReadme(repoPath, resolvedConfig.maxReadmeLines || 3, maxChars);
     case 'commits':
-      return generateFromCommits(repoPath, resolvedConfig.commitCount || 10);
+      return generateFromCommits(repoPath, resolvedConfig.commitCount || 10, maxChars);
     case 'both':
     default: {
-      const readmeSummary = await generateFromReadme(repoPath, resolvedConfig.maxReadmeLines || 3);
+      const readmeSummary = await generateFromReadme(repoPath, resolvedConfig.maxReadmeLines || 3, maxChars);
       if (readmeSummary) {
         return readmeSummary;
       }
-      return generateFromCommits(repoPath, resolvedConfig.commitCount || 10);
+      return generateFromCommits(repoPath, resolvedConfig.commitCount || 10, maxChars);
     }
   }
 }
@@ -65,10 +70,11 @@ async function generateSummaryWithAgent(
     cwd: repoPath,
   });
 
-  return response.trim().slice(0, 500);
+  const maxChars = config.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+  return response.trim().slice(0, maxChars);
 }
 
-async function generateFromReadme(repoPath: string, maxLines: number): Promise<string> {
+async function generateFromReadme(repoPath: string, maxLines: number, maxChars: number): Promise<string> {
   const readmePaths = [
     join(repoPath, 'README.md'),
     join(repoPath, 'README.txt'),
@@ -81,7 +87,7 @@ async function generateFromReadme(repoPath: string, maxLines: number): Promise<s
         const content = readFileSync(readmePath, 'utf8');
         const lines = content.split('\n').filter((line: string) => line.trim() !== '');
         const firstLines = lines.slice(0, maxLines);
-        return firstLines.join(' ').trim().slice(0, 500);
+        return firstLines.join(' ').trim().slice(0, maxChars);
       } catch {
         // Continue to next readme
       }
@@ -91,7 +97,7 @@ async function generateFromReadme(repoPath: string, maxLines: number): Promise<s
   return '';
 }
 
-async function generateFromCommits(repoPath: string, commitCount: number): Promise<string> {
+async function generateFromCommits(repoPath: string, commitCount: number, maxChars: number): Promise<string> {
   try {
     const output = await execLocal('bash', [
       '-lc',
@@ -108,12 +114,12 @@ async function generateFromCommits(repoPath: string, commitCount: number): Promi
     }
 
     const commitSummary = lines.slice(0, 5).join('. ');
-    return `Recent commits: ${commitSummary}`.slice(0, 500);
+    return `Recent commits: ${commitSummary}`.slice(0, maxChars);
   } catch {
     return '';
   }
 }
 
 export async function generateQuickSummary(repoPath: string): Promise<string> {
-  return generateFromReadme(repoPath, 2);
+  return generateFromReadme(repoPath, 2, DEFAULT_MAX_OUTPUT_CHARS);
 }

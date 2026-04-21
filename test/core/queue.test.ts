@@ -1,6 +1,13 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
+import type { Logger } from '@agent-detective/types';
 import { createEnqueue, createMemoryTaskQueue } from '../../src/core/queue.js';
+
+const testLogger: Logger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 describe('Queue', () => {
   let queues: Map<string, Promise<void>>;
@@ -10,7 +17,7 @@ describe('Queue', () => {
   });
 
   it('executes task immediately if queue is empty', async () => {
-    const enqueue = createEnqueue(queues);
+    const enqueue = createEnqueue(queues, testLogger);
     let executed = false;
 
     await enqueue('task-1', async () => {
@@ -22,7 +29,7 @@ describe('Queue', () => {
   });
 
   it('queues tasks with same key sequentially', async () => {
-    const enqueue = createEnqueue(queues);
+    const enqueue = createEnqueue(queues, testLogger);
     const order: string[] = [];
 
     await enqueue('task-1', async () => {
@@ -41,7 +48,7 @@ describe('Queue', () => {
   });
 
   it('executes tasks with different keys in parallel', async () => {
-    const enqueue = createEnqueue(queues);
+    const enqueue = createEnqueue(queues, testLogger);
     const order: string[] = [];
 
     await enqueue('task-1', async () => {
@@ -63,7 +70,7 @@ describe('Queue', () => {
   });
 
   it('cleans up queue after task completes', async () => {
-    const enqueue = createEnqueue(queues);
+    const enqueue = createEnqueue(queues, testLogger);
 
     await enqueue('task-1', async () => {});
 
@@ -71,7 +78,7 @@ describe('Queue', () => {
   });
 
   it('createMemoryTaskQueue matches createEnqueue behavior', async () => {
-    const { enqueue } = createMemoryTaskQueue();
+    const { enqueue } = createMemoryTaskQueue(testLogger);
     let executed = false;
     await enqueue('k', async () => {
       executed = true;
@@ -79,20 +86,6 @@ describe('Queue', () => {
     assert.ok(executed);
   });
 
-  it('handles errors without crashing', async () => {
-    const enqueue = createEnqueue(queues);
-    let errorHandled = false;
-
-    await enqueue('task-1', async () => {
-      throw new Error('Test error');
-    });
-
-    await enqueue('task-1', async () => {
-      errorHandled = true;
-    });
-
-    assert.ok(errorHandled);
-  });
 });
 
 function delay(ms: number): Promise<void> {

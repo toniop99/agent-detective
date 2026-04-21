@@ -1,7 +1,21 @@
 {
-  "_comment": "Copy to config/local.json (gitignored). Merge overrides default.json — see docs/configuration.md",
+  "_comment": "Copy to config/local.json (gitignored). Merged over default.json — see docs/configuration.md and docs/CHANGELOG.md",
   "port": 3001,
   "agent": "opencode",
+  "agents": {
+    "opencode": { "defaultModel": "opencode/gpt-5-nano" },
+    "runner": {
+      "timeoutMs": 120000,
+      "maxBufferBytes": 10485760,
+      "postFinalGraceMs": 30000,
+      "forceKillDelayMs": 1000
+    }
+  },
+  "observability": {
+    "requestLogger": {
+      "excludePaths": ["/api/health", "/api/metrics"]
+    }
+  },
   "plugins": [
     {
       "package": "@agent-detective/local-repos-plugin",
@@ -13,8 +27,16 @@
             "description": "Repo used when Jira issue has label my-test-repo"
           }
         ],
+        "summaryGeneration": {
+          "maxOutputChars": 500
+        },
+        "repoContext": {
+          "gitLogMaxCommits": 50,
+          "gitCommandTimeoutMs": 10000,
+          "gitMaxBufferBytes": 1048576,
+          "diffFromRef": "HEAD~5"
+        },
         "validation": {
-          "validateOnStartup": true,
           "failOnMissing": true
         }
       }
@@ -23,24 +45,24 @@
       "package": "@agent-detective/jira-adapter",
       "options": {
         "enabled": true,
-        "webhookPath": "/plugins/agent-detective-jira-adapter/webhook/jira",
         "mockMode": true,
+        "baseUrl": "https://your-domain.atlassian.net",
+        "email": "you@example.com",
+        "apiToken": "use-env-in-production",
+        "autoAnalysisCooldownMs": 600000,
+        "missingLabelsReminderCooldownMs": 60000,
         "webhookBehavior": {
           "defaults": {
             "action": "ignore",
             "acknowledgmentMessage": "Thanks — we are reviewing this issue."
           },
           "events": {
-            "jira:issue_created": {
-              "action": "analyze"
-            },
-            "jira:comment_created": {
-              "action": "analyze"
-            }
+            "jira:issue_created": { "action": "analyze" },
+            "jira:comment_created": { "action": "analyze" }
           }
         }
       }
     }
   ],
-  "_real_jira_comment": "To post real comments: set jira mockMode false plus baseUrl, email, apiToken (or env JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN). See docs/jira-manual-e2e.md"
+  "_jira_secrets": "Prefer env: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (see docs/configuration.md). Cooldowns: JIRA_AUTO_ANALYSIS_COOLDOWN_MS, JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS."
 }

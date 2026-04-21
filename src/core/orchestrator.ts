@@ -1,13 +1,21 @@
-import { StandardEvents, type EventBus, type AgentRunner, type EnqueueFn, type TaskEvent } from '@agent-detective/types';
+import {
+  StandardEvents,
+  type EventBus,
+  type AgentRunner,
+  type EnqueueFn,
+  type TaskEvent,
+  type Logger,
+} from '@agent-detective/types';
 
 export interface OrchestratorDeps {
   eventBus: EventBus;
   agentRunner: AgentRunner;
   enqueue: EnqueueFn;
+  logger: Pick<Logger, 'error'>;
 }
 
 export function createOrchestrator(deps: OrchestratorDeps) {
-  const { eventBus, agentRunner, enqueue } = deps;
+  const { eventBus, agentRunner, enqueue, logger } = deps;
 
   function start() {
     eventBus.on(StandardEvents.TASK_CREATED, handleTaskCreated);
@@ -44,7 +52,9 @@ export function createOrchestrator(deps: OrchestratorDeps) {
           result,
         });
       } catch (err) {
-        console.error(`Orchestrator error for task ${task.id}:`, err);
+        logger.error(
+          `Orchestrator error for task ${task.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
         eventBus.emit(StandardEvents.TASK_FAILED, {
           event: task,
           error: (err as Error).message,

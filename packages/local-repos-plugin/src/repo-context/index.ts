@@ -2,9 +2,14 @@ import { gitLog, gitShow, gitDiff } from './git-log.js';
 import type { RepoContext, BuildRepoContextOptions } from '@agent-detective/types';
 
 export async function buildRepoContext(repoPath: string, options: BuildRepoContextOptions = {}): Promise<RepoContext> {
-  const { maxCommits = 50 } = options;
+  const { maxCommits = 50, logger, gitCommandTimeoutMs, gitMaxBufferBytes } = options;
 
-  const commits = await gitLog(repoPath, { maxCommits });
+  const commits = await gitLog(repoPath, {
+    maxCommits,
+    logger,
+    commandTimeoutMs: gitCommandTimeoutMs,
+    maxBufferBytes: gitMaxBufferBytes,
+  });
   const repoName = repoPath.split('/').pop() ?? repoPath;
 
   return {

@@ -7,7 +7,12 @@ import { createAgentRunner } from './core/agent-runner.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgentLabel, listAgents } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
-import { generateSpecFromRoutes, getRegisteredRoutes, CORE_PLUGIN_TAG } from '@agent-detective/core';
+import {
+  generateSpecFromRoutes,
+  getRegisteredRoutes,
+  CORE_PLUGIN_TAG,
+  type OperationMetadata,
+} from '@agent-detective/core';
 import { applyLogLevelAliasForObservability } from './config/env-whitelist.js';
 
 applyLogLevelAliasForObservability();
@@ -23,11 +28,35 @@ serverLogger.info('Starting agent-detective...', {
   port: config.port || 3001,
 });
 
+const defaultModels: Record<string, { defaultModel?: string }> = {};
+let runnerConfig:
+  | {
+      timeoutMs?: number;
+      maxBufferBytes?: number;
+      postFinalGraceMs?: number;
+      forceKillDelayMs?: number;
+    }
+  | undefined;
+if (config.agents) {
+  for (const [key, value] of Object.entries(config.agents)) {
+    if (key === 'runner') {
+      runnerConfig = value as typeof runnerConfig;
+    } else {
+      defaultModels[key] = value as { defaultModel?: string };
+    }
+  }
+}
+
 const agentRunner = createAgentRunner({
   execLocal,
   execLocalStreaming,
   terminateChildProcess,
-  defaultModels: config.agents,
+  defaultModels,
+  agentTimeoutMs: runnerConfig?.timeoutMs,
+  agentMaxBuffer: runnerConfig?.maxBufferBytes,
+  postFinalGraceMs: runnerConfig?.postFinalGraceMs,
+  forceKillDelayMs: runnerConfig?.forceKillDelayMs,
+  logger: logger.child('agent-runner'),
 });
 
 // Register built-in agents
@@ -35,7 +64,7 @@ for (const agent of listAgents()) {
   agentRunner.registerAgent(agent);
 }
 
-const eventBus = createEventBus();
+const eventBus = createEventBus(logger.child('events'));
 
 const pluginSystem = createPluginSystem({
   agentRunner,
@@ -45,10 +74,15 @@ const pluginSystem = createPluginSystem({
 
 const enqueue = pluginSystem.enqueue;
 
-const orchestrator = createOrchestrator({ eventBus, agentRunner, enqueue });
+const orchestrator = createOrchestrator({
+  eventBus,
+  agentRunner,
+  enqueue,
+  logger: logger.child('orchestrator'),
+});
 orchestrator.start();
 
-const { app, coreController } = createServer(config, observability, config.agents || {}, agentRunner, enqueue);
+const { app, coreController } = createServer(config, observability, defaultModels, agentRunner, enqueue);
 
 const PORT = config.port || 3001;
 
@@ -73,7 +107,7 @@ app.listen(PORT, async () => {
     path: string;
     prefixedPath: string;
     pluginName: string;
-    operationMetadata?: any;
+    operationMetadata?: OperationMetadata;
   }> = [];
 
   const coreRoutes = getRegisteredRoutes(coreController);
@@ -88,7 +122,7 @@ app.listen(PORT, async () => {
   }
 
   for (const ctrl of pluginControllers) {
-    const pluginName = (ctrl as any).__pluginName || 'unknown-plugin';
+    const pluginName = pluginSystem.getPluginNameForController(ctrl) || 'unknown-plugin';
     const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
     const routes = getRegisteredRoutes(ctrl);
     for (const r of routes) {

@@ -32,6 +32,7 @@
   "dependencies": {
     "@agent-detective/core": "workspace:*",
     "@agent-detective/observability": "workspace:*",
+    "@agent-detective/process-utils": "workspace:*",
     "zod": "catalog:",
     "@scalar/express-api-reference": "^0.9.9",
     "@scalar/openapi-types": "^0.7.0",

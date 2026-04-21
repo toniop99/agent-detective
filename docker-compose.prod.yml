@@ -6,6 +6,9 @@
 # Jira and other secrets: use environment variables (see docs/docker.md) or a
 # compose override file; this file does not require Docker "secrets" files.
 
+include:
+  - docker-compose.env-shared.yml
+
 services:
   agent-detective:
     build:
@@ -21,19 +24,7 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./plugins:/app/plugins:ro
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - AGENT=${AGENT:-opencode}
-      - MODEL=${MODEL:-}
-      - AGENTS_OPENCODE_MODEL=${AGENTS_OPENCODE_MODEL:-}
-      - AGENTS_CLAUDE_MODEL=${AGENTS_CLAUDE_MODEL:-}
-      - AGENTS_GEMINI_MODEL=${AGENTS_GEMINI_MODEL:-}
-      - REPO_CONTEXT_GIT_LOG_MAX_COMMITS=${REPO_CONTEXT_GIT_LOG_MAX_COMMITS:-50}
-      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
-      - JIRA_EMAIL=${JIRA_EMAIL:-}
-      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+    environment: *agent-detective-env
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/api/health | grep -q '\"status\"' || exit 1"]

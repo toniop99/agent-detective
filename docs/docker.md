@@ -58,11 +58,11 @@ Environment variables (see also [configuration.md](configuration.md) and `config
 | `IMAGE_NAME` | Image name/tag (default `agent-detective:latest`) |
 | `AGENTS` | Build-arg when building: comma-separated agents to `npm install -g` in the image |
 | `AGENT` | Default agent id (e.g. `opencode`) |
-| `MODEL` | Default model for the selected agent |
 | `LOG_LEVEL` | Aliased to `OBSERVABILITY_LOG_LEVEL` when the latter is unset (`debug` \| `info` \| `warn` \| `error`) |
-| `AGENTS_*_MODEL` | Model overrides per agent |
-| `REPO_CONTEXT_GIT_LOG_MAX_COMMITS` | Merged into local-repos plugin `repoContext.gitLogMaxCommits` when that plugin is listed in config |
-| `JIRA_*` | Jira adapter credentials when that plugin is listed in config (`JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL`) |
+| `AGENTS_*_MODEL` | Model overrides per agent (see [configuration.md](configuration.md)) |
+| `AGENTS_RUNNER_*`, `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | See [configuration.md](configuration.md#core-env-whitelist) |
+| `REPO_CONTEXT_*`, `SUMMARY_MAX_OUTPUT_CHARS`, `JIRA_*` | As in [configuration.md](configuration.md#plugin-env-whitelist-first-party) |
+| `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` | Jira adapter when that plugin is listed in config |
 
 **Jira secrets:** pass `JIRA_API_TOKEN`, `JIRA_EMAIL`, and `JIRA_BASE_URL` in the environment (`.env` next to compose, CI variables, or your orchestrator). This repository’s compose file does **not** require Docker Swarm-style secret files.
 

@@ -273,6 +273,10 @@ packages/
 │   ├── tsconfig.build.json
 │   └── dist/                    # Built output for npm
 │
+├── core/                         # @agent-detective/core (OpenAPI / controller utilities)
+│   ├── src/
+│   └── package.json
+│
 ├── process-utils/               # Shared process utilities (exec, pty)
 │   ├── src/index.ts            # Process execution helpers
 │   └── package.json
@@ -304,13 +308,12 @@ packages/
 │
 └── observability/              # Logging, metrics, tracing, health
     ├── src/
-    │   ├── index.ts           # Main export
     │   ├── config.ts          # Configuration
     │   ├── logger.ts          # Structured logging
     │   ├── metrics.ts         # Prometheus metrics
     │   ├── tracing.ts         # Distributed tracing
     │   ├── health.ts          # Health checks
     │   ├── middleware.ts      # HTTP middleware
-    │   └── index.ts
+    │   └── index.ts           # Main export
     └── package.json
 ```

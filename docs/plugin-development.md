@@ -104,7 +104,8 @@ my-plugin/
 ```
 
 > **Note:** `experimentalDecorators` and `emitDecoratorMetadata` are required for OpenAPI decorators to work properly.
-```
+
+Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins should use a **semver** range and depend on the npm release of `@agent-detective/types`.
 
 ---
 

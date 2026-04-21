@@ -35,13 +35,10 @@ const jiraWebhookBehaviorSchema = z.object({
   events: z.partialRecord(jiraWebhookEventTypeSchema, jiraEventConfigSchema.partial()).optional(),
 });
 
-const DEFAULT_WEBHOOK_PATH = '/plugins/agent-detective-jira-adapter/webhook/jira';
-
 /** Zod schema for Jira adapter plugin options (single source of truth for validation and docs). */
 export const jiraAdapterOptionsSchema = z
   .object({
     enabled: z.boolean().default(true),
-    webhookPath: z.string().default(DEFAULT_WEBHOOK_PATH),
     mockMode: z.boolean().default(true),
     baseUrl: z.string().optional(),
     email: z.string().optional(),
@@ -81,7 +78,18 @@ export const jiraAdapterOptionsSchema = z
       })
       .optional(),
     webhookBehavior: jiraWebhookBehaviorSchema.default(DEFAULT_WEBHOOK_BEHAVIOR),
+    /**
+     * Per-(issue, repo) minimum spacing for automatic (non–trigger-phrase) analysis.
+     * Default 10 minutes — see handlers/index.ts.
+     */
+    autoAnalysisCooldownMs: z.number().int().min(0).default(10 * 60_000),
+    /**
+     * Per-issue minimum spacing between "missing label" reminder comments.
+     * Default 60 seconds.
+     */
+    missingLabelsReminderCooldownMs: z.number().int().min(0).default(60_000),
   })
+  .strict()
   .superRefine((data, ctx) => {
     if (data.mockMode !== false) return;
     const missing: string[] = [];

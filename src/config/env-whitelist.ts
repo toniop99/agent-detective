@@ -41,22 +41,21 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
   if (process.env.AGENT) {
     config.agent = process.env.AGENT;
   }
-  if (process.env.MODEL) {
-    config.model = process.env.MODEL;
-  }
 
   const agentModelEnvVars = ['AGENTS_OPENCODE_MODEL', 'AGENTS_CLAUDE_MODEL', 'AGENTS_GEMINI_MODEL'] as const;
   for (const envVar of agentModelEnvVars) {
     const raw = process.env[envVar];
     if (!raw) continue;
     const agentId = envVar.replace('AGENTS_', '').replace('_MODEL', '').toLowerCase();
+    if (agentId === 'runner') continue;
     if (!config.agents) {
       config.agents = {};
     }
     if (!config.agents[agentId]) {
-      config.agents[agentId] = {};
+      config.agents[agentId] = { defaultModel: raw };
+    } else {
+      (config.agents[agentId] as { defaultModel?: string }).defaultModel = raw;
     }
-    config.agents[agentId].defaultModel = raw;
   }
 
   // Optional: any AGENTS_<id>_MODEL where <id> is uppercase letters/digits
@@ -64,14 +63,16 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
     const m = /^AGENTS_([A-Z0-9]+)_MODEL$/.exec(key);
     if (!m || !value) continue;
     const agentId = m[1]!.toLowerCase();
+    if (agentId === 'runner') continue;
     if (agentModelEnvVars.includes(key as (typeof agentModelEnvVars)[number])) continue;
     if (!config.agents) {
       config.agents = {};
     }
     if (!config.agents[agentId]) {
-      config.agents[agentId] = {};
+      config.agents[agentId] = { defaultModel: value };
+    } else {
+      (config.agents[agentId] as { defaultModel?: string }).defaultModel = value;
     }
-    config.agents[agentId].defaultModel = value;
   }
 
   if (process.env.DOCS_AUTH_REQUIRED === 'true' || process.env.DOCS_AUTH_REQUIRED === 'false') {
@@ -79,6 +80,51 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
   }
   if (process.env.DOCS_API_KEY) {
     config.docsApiKey = process.env.DOCS_API_KEY;
+  }
+
+  const parseMs = (raw: string | undefined): number | undefined => {
+    if (raw === undefined || raw === '') return undefined;
+    const n = parseInt(raw, 10);
+    return !Number.isNaN(n) && n >= 0 ? n : undefined;
+  };
+  const parseBytes = (raw: string | undefined): number | undefined => {
+    if (raw === undefined || raw === '') return undefined;
+    const n = parseInt(raw, 10);
+    return !Number.isNaN(n) && n > 0 ? n : undefined;
+  };
+
+  const t = parseMs(process.env.AGENTS_RUNNER_TIMEOUT_MS);
+  const buf = parseBytes(process.env.AGENTS_RUNNER_MAX_BUFFER_BYTES);
+  const grace = parseMs(process.env.AGENTS_RUNNER_POST_FINAL_GRACE_MS);
+  const forceKill = parseMs(process.env.AGENTS_RUNNER_FORCE_KILL_DELAY_MS);
+  if (t !== undefined || buf !== undefined || grace !== undefined || forceKill !== undefined) {
+    if (!config.agents) {
+      config.agents = {};
+    }
+    const runnerPath = 'runner' as const;
+    if (!config.agents[runnerPath]) {
+      (config.agents as Record<string, unknown>)[runnerPath] = {};
+    }
+    const runner = config.agents[runnerPath] as Record<string, number | undefined>;
+    if (t !== undefined) runner.timeoutMs = t;
+    if (buf !== undefined) runner.maxBufferBytes = buf;
+    if (grace !== undefined) runner.postFinalGraceMs = grace;
+    if (forceKill !== undefined) runner.forceKillDelayMs = forceKill;
+  }
+
+  const obsExclude = process.env.OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS;
+  if (obsExclude !== undefined && obsExclude !== '') {
+    if (!config.observability) {
+      config.observability = {};
+    }
+    const obs = config.observability as Record<string, unknown>;
+    if (!obs.requestLogger) {
+      obs.requestLogger = {};
+    }
+    (obs.requestLogger as { excludePaths: string[] }).excludePaths = obsExclude
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 }
 
@@ -105,6 +151,69 @@ export function applyPluginEnvWhitelist(config: AppConfig): void {
       const opts = getExistingPluginOptions(config, LOCAL_REPOS_PACKAGE);
       if (opts) {
         setNested(opts, ['repoContext', 'gitLogMaxCommits'], n);
+      }
+    }
+  }
+
+  const gitTimeout = process.env.REPO_CONTEXT_GIT_COMMAND_TIMEOUT_MS;
+  if (gitTimeout !== undefined && gitTimeout !== '') {
+    const n = parseInt(gitTimeout, 10);
+    if (!Number.isNaN(n) && n > 0) {
+      const opts = getExistingPluginOptions(config, LOCAL_REPOS_PACKAGE);
+      if (opts) {
+        setNested(opts, ['repoContext', 'gitCommandTimeoutMs'], n);
+      }
+    }
+  }
+
+  const gitMaxBuf = process.env.REPO_CONTEXT_GIT_MAX_BUFFER_BYTES;
+  if (gitMaxBuf !== undefined && gitMaxBuf !== '') {
+    const n = parseInt(gitMaxBuf, 10);
+    if (!Number.isNaN(n) && n > 0) {
+      const opts = getExistingPluginOptions(config, LOCAL_REPOS_PACKAGE);
+      if (opts) {
+        setNested(opts, ['repoContext', 'gitMaxBufferBytes'], n);
+      }
+    }
+  }
+
+  const diffFromRef = process.env.REPO_CONTEXT_DIFF_FROM_REF;
+  if (diffFromRef && diffFromRef.trim()) {
+    const opts = getExistingPluginOptions(config, LOCAL_REPOS_PACKAGE);
+    if (opts) {
+      setNested(opts, ['repoContext', 'diffFromRef'], diffFromRef.trim());
+    }
+  }
+
+  const maxOut = process.env.SUMMARY_MAX_OUTPUT_CHARS;
+  if (maxOut !== undefined && maxOut !== '') {
+    const n = parseInt(maxOut, 10);
+    if (!Number.isNaN(n) && n > 0) {
+      const opts = getExistingPluginOptions(config, LOCAL_REPOS_PACKAGE);
+      if (opts) {
+        setNested(opts, ['summaryGeneration', 'maxOutputChars'], n);
+      }
+    }
+  }
+
+  const jiraAutoCd = process.env.JIRA_AUTO_ANALYSIS_COOLDOWN_MS;
+  if (jiraAutoCd !== undefined && jiraAutoCd !== '') {
+    const n = parseInt(jiraAutoCd, 10);
+    if (!Number.isNaN(n) && n >= 0) {
+      const opts = getExistingPluginOptions(config, JIRA_PACKAGE);
+      if (opts) {
+        opts.autoAnalysisCooldownMs = n;
+      }
+    }
+  }
+
+  const jiraRemCd = process.env.JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS;
+  if (jiraRemCd !== undefined && jiraRemCd !== '') {
+    const n = parseInt(jiraRemCd, 10);
+    if (!Number.isNaN(n) && n >= 0) {
+      const opts = getExistingPluginOptions(config, JIRA_PACKAGE);
+      if (opts) {
+        opts.missingLabelsReminderCooldownMs = n;
       }
     }
   }

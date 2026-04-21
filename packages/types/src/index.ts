@@ -72,6 +72,12 @@ export interface Logger {
 
 export interface BuildRepoContextOptions {
   maxCommits?: number;
+  /** When set, git subcommands log warnings through this instead of the console. */
+  logger?: Pick<Logger, 'warn' | 'error'>;
+  gitCommandTimeoutMs?: number;
+  gitMaxBufferBytes?: number;
+  /** `from` ref for `git diff` when that command is used (default `HEAD~5`). */
+  diffFromRef?: string;
 }
 
 export interface Commit {
@@ -268,7 +274,6 @@ export interface StreamingOutput extends AgentOutput {
 export interface Agent {
   id: string;
   label: string;
-  backend?: 'app-server';
   needsPty?: boolean;
   mergeStderr?: boolean;
   command?: string;

@@ -26,7 +26,7 @@ import { ReposController } from './repos-controller.js';
 import { createRepoAnalyzer } from './analyzer.js';
 import * as z from 'zod';
 import { localReposPluginOptionsSchema } from './options-schema.js';
-import { zodToPluginSchema } from './zod-to-plugin-schema.js';
+import { zodToPluginSchema } from '@agent-detective/core';
 
 export { localReposPluginOptionsSchema } from './options-schema.js';
 
@@ -51,7 +51,12 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
 
       const summary = await generateSummary(repo.path, summaryGeneration || {}, agentRunner, logger);
 
-      const commits = await gitLog(repo.path, { maxCommits: repoContext?.gitLogMaxCommits });
+      const commits = await gitLog(repo.path, {
+        maxCommits: repoContext?.gitLogMaxCommits,
+        logger,
+        commandTimeoutMs: repoContext?.gitCommandTimeoutMs,
+        maxBufferBytes: repoContext?.gitMaxBufferBytes,
+      });
 
       results.push({
         name: repo.name,
@@ -124,12 +129,18 @@ const localReposPlugin: Plugin = {
       },
     };
 
+    const pluginLogger = extContext.logger;
+
     const localReposService: LocalReposService = {
       localRepos,
       buildRepoContext: (repoPath: string, opts?: BuildRepoContextOptions) => {
         return buildRepoContext(repoPath, {
           ...opts,
           maxCommits: repoContextOptions?.gitLogMaxCommits ?? opts?.maxCommits,
+          gitCommandTimeoutMs: repoContextOptions?.gitCommandTimeoutMs ?? opts?.gitCommandTimeoutMs,
+          gitMaxBufferBytes: repoContextOptions?.gitMaxBufferBytes ?? opts?.gitMaxBufferBytes,
+          diffFromRef: repoContextOptions?.diffFromRef ?? opts?.diffFromRef,
+          logger: opts?.logger ?? pluginLogger,
         });
       },
       formatRepoContextForPrompt: formatRepoContextForPrompt as (context: unknown) => string,

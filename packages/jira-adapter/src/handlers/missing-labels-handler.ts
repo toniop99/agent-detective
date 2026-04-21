@@ -1,3 +1,4 @@
+import type { Logger } from '@agent-detective/types';
 import type { JiraClient } from '../jira-client.js';
 import type { JiraTaskInfo } from '../types.js';
 import { stampComment } from '../comment-trigger.js';
@@ -8,6 +9,7 @@ export interface MissingLabelsHandlerDeps {
   messageTemplate?: string;
   /** Phrase the reminder should tell the user to post to retry analysis. */
   triggerPhrase: string;
+  logger?: Logger;
 }
 
 /**
@@ -61,8 +63,8 @@ export async function handleMissingLabels(
     taskInfo.key,
     deps.triggerPhrase
   );
-  console.warn(
-    `Jira webhook: ${taskInfo.key} has no label matching a configured repo — asking reporter to add one of [${availableLabels.join(', ')}] and comment "${deps.triggerPhrase}"`
+  deps.logger?.warn(
+    `Jira webhook: ${taskInfo.key} has no label matching a configured repo — asking reporter to add one of [${availableLabels.join(', ')}] and comment "${deps.triggerPhrase}"`,
   );
   await deps.jiraClient.addComment(taskInfo.key, stampComment(body));
 }

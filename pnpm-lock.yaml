@@ -47,6 +47,9 @@ importers:
       '@agent-detective/observability':
         specifier: workspace:*
         version: link:packages/observability
+      '@agent-detective/process-utils':
+        specifier: workspace:*
+        version: link:packages/process-utils
       '@scalar/express-api-reference':
         specifier: ^0.9.9
         version: 0.9.9
@@ -108,6 +111,9 @@ importers:
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

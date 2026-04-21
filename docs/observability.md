@@ -2,6 +2,8 @@
 
 The `@agent-detective/observability` package provides structured logging, metrics, tracing, and health checks for the agent-detective application.
 
+**Main app (Express):** routes are under **`/api`**, e.g. **`GET /api/metrics`**, **`GET /api/health`**. The JSON `status` field is **`ok`**, **`degraded`**, or **`unhealthy`** (not a generic `"healthy"` string).
+
 ## Overview
 
 Observability is a first-class concern in agent-detective. The package provides:
@@ -44,7 +46,7 @@ const obs = createObservability({
   },
   metrics: {
     enabled: true,
-    endpoint: '/metrics'
+    endpoint: '/api/metrics'
   },
   tracing: {
     enabled: true,

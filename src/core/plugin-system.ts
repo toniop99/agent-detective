@@ -34,6 +34,7 @@ export function sanitizePluginName(name: string): string {
 function createPrefixedApp(
   app: import('express').Application,
   pluginName: string,
+  log: PluginContext['logger'],
 ): import('express').Application {
   const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
 
@@ -53,7 +54,7 @@ function createPrefixedApp(
             return (target as any).use(path, ...handlers);
           }
           if (path.startsWith('/plugins/')) {
-            console.warn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
+            log.warn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
           }
           const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,7 +85,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     events,
   } = context;
 
-  const defaultQueue: TaskQueue = initialTaskQueue ?? createMemoryTaskQueue();
+  const defaultQueue: TaskQueue = initialTaskQueue ?? createMemoryTaskQueue(logger);
 
   let activeQueue: TaskQueue = defaultQueue;
 
@@ -107,6 +108,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
   const pluginControllers: object[] = [];
+  /** Maps plugin-registered OpenAPI controller instances to their owning plugin `name`. */
+  const pluginNameByController = new WeakMap<object, string>();
   const servicesRegistry = new Map<string, unknown>();
   const capabilitiesRegistry = new Set<string>();
 
@@ -190,13 +193,15 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         registerTaskQueue: sharedContext?.registerTaskQueue || registerTaskQueue,
       };
 
-      const prefixedApp = createPrefixedApp(app, plugin.name);
+      const prefixedApp = createPrefixedApp(app, plugin.name, logger);
       const result = await plugin.register(prefixedApp, pluginContext);
 
       if (result) {
         const ctrls = Array.isArray(result) ? result : [result];
         for (const ctrl of ctrls) {
-          (ctrl as any).__pluginName = plugin.name;
+          if (typeof ctrl === 'object' && ctrl !== null) {
+            pluginNameByController.set(ctrl, plugin.name);
+          }
         }
         pluginControllers.push(...ctrls);
       }
@@ -346,11 +351,16 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return [...pluginControllers];
   }
 
+  function getPluginNameForController(controller: object): string | undefined {
+    return pluginNameByController.get(controller);
+  }
+
   return {
     loadPlugin,
     loadAll,
     getLoadedPlugins,
     getControllers,
+    getPluginNameForController,
     enqueue: enqueueDelegate,
   };
 }

@@ -1,7 +1,9 @@
-import type { EventBus, EventBusHandler } from '@agent-detective/types';
+import type { EventBus, EventBusHandler, Logger } from '@agent-detective/types';
 
 export class AsyncEventBus implements EventBus {
   private handlers = new Map<string, EventBusHandler[]>();
+
+  constructor(private readonly log: Pick<Logger, 'error'> = console) {}
 
   /**
    * Register a listener for an event.
@@ -37,7 +39,7 @@ export class AsyncEventBus implements EventBus {
       try {
         void handler(...args);
       } catch (err) {
-        console.error(`Error in event handler for ${event}:`, err);
+        this.log.error(`Error in event handler for ${event}: ${(err as Error).message}`);
       }
     }
   }
@@ -52,7 +54,9 @@ export class AsyncEventBus implements EventBus {
       try {
         return await handler(...args);
       } catch (err) {
-        console.error(`Error in async event handler for ${event}:`, err);
+        this.log.error(
+          `Error in async event handler for ${event}: ${err instanceof Error ? err.message : String(err)}`,
+        );
         return null;
       }
     });
@@ -61,6 +65,6 @@ export class AsyncEventBus implements EventBus {
   }
 }
 
-export function createEventBus(): EventBus {
-  return new AsyncEventBus();
+export function createEventBus(log?: Pick<Logger, 'error'>): EventBus {
+  return new AsyncEventBus(log);
 }

@@ -29,7 +29,7 @@ export interface CoreApiControllerDeps {
   enqueue?: EnqueueFn;
   observability: Observability;
   config: {
-    adapters?: Record<string, unknown>;
+    plugins?: Array<{ package?: string }>;
   };
 }
 
@@ -59,14 +59,17 @@ export class CoreApiController {
     example: {
       name: 'agent-detective',
       version: '0.1.0',
-      adapters: ['jira'],
+      plugins: ['@agent-detective/local-repos-plugin', '@agent-detective/jira-adapter'],
     },
   })
   getServerInfo(_req: Request, res: Response) {
+    const plugins = (this.config?.plugins ?? [])
+      .map((p) => p.package)
+      .filter((p): p is string => Boolean(p));
     res.json({
       name: 'agent-detective',
       version: '0.1.0',
-      adapters: Object.keys(this.config?.adapters || {}),
+      plugins,
     });
   }
 
@@ -129,13 +132,13 @@ export class CoreApiController {
 
   @Get('/queue/status')
   @Summary('Queue status')
-  @Description('Returns the current status of the task queue')
+  @Description('In-process task queue: serializes work per task key. No depth metrics exposed yet.')
   @Tags(CORE_PLUGIN_TAG)
   @OpenApiResponse(200, 'Success', {
-    example: { status: 'ok', message: 'Queue status not yet implemented' },
+    example: { status: 'ok', backend: 'memory' },
   })
   getQueueStatus(_req: Request, res: Response) {
-    res.json({ status: 'ok', message: 'Queue status not yet implemented' });
+    res.json({ status: 'ok', backend: 'memory' });
   }
 
   @Post('/agent/run')

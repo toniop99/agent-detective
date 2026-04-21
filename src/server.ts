@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import express, { type Application, type Request, type Response } from 'express';
+import express, { type Application, type Request, type RequestHandler, type Response } from 'express';
 import type {
   AgentRunner,
   EnqueueFn,
@@ -33,18 +33,25 @@ export function createServer(
 
   app.use(express.json());
 
+  const obsCfg = (config as { observability?: { requestLogger?: { excludePaths?: string[] } } })
+    .observability;
+  const excludePaths = obsCfg?.requestLogger?.excludePaths ?? ['/api/health', '/api/metrics'];
+
   app.use(createRequestLogger({
     logger: observability.logger,
     tracing: observability.tracing,
     metrics: observability.metrics,
-    excludePaths: ['/api/health', '/api/metrics'],
+    excludePaths,
   }));
 
   app.get('/', (_req: Request, res: Response) => {
+    const pluginPackages = (config.plugins ?? [])
+      .map((e) => e.package)
+      .filter((p): p is string => Boolean(p));
     res.json({
       name: 'agent-detective',
       version: '0.1.0',
-      adapters: Object.keys(config.adapters || {}),
+      plugins: pluginPackages,
     });
   });
 
@@ -54,7 +61,7 @@ export function createServer(
     enqueue: _enqueue,
     observability,
     config: {
-      adapters: config.adapters,
+      plugins: config.plugins,
     },
   });
 
@@ -89,12 +96,8 @@ export function setupDocs(
 
     const spec = generateSpecFromRoutes(allRoutes);
 
-    const apiRefMiddleware = apiReference({
-      content: spec,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return apiRefMiddleware(req as any, res as any, next);
+    const apiRefMiddleware = apiReference({ content: spec }) as RequestHandler;
+    return apiRefMiddleware(req, res, next);
   });
 
   observability.logger.info('API documentation available at /docs');

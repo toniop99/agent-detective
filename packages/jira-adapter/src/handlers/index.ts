@@ -17,9 +17,10 @@ import {
   isOwnComment,
   stampComment,
 } from '../comment-trigger.js';
+import { jiraAdapterOptionsSchema } from '../options-schema.js';
 
-const DEFAULT_MAX_REPOS_PER_ISSUE = 5;
-const DEFAULT_RETRY_TRIGGER_PHRASE = '#agent-detective analyze';
+/** Options defaults from the Zod schema (single source of truth for handler fallbacks). */
+const jiraHandlerDefaults = jiraAdapterOptionsSchema.parse({});
 
 /**
  * Last line of defense against a webhook-echo loop: once we post a
@@ -36,7 +37,6 @@ const DEFAULT_RETRY_TRIGGER_PHRASE = '#agent-detective analyze';
  * second time around, but orders of magnitude larger than the webhook
  * round-trip that drives the pathological loop.
  */
-const MISSING_LABELS_REMINDER_WINDOW_MS = 60_000;
 const recentMissingLabelsReminders = new Map<string, number>();
 
 /**
@@ -62,7 +62,6 @@ const recentMissingLabelsReminders = new Map<string, number>();
  * re-tag an issue later the same day) still fire, but orders of
  * magnitude larger than the webhook round-trip that causes the loop.
  */
-const ANALYSIS_COOLDOWN_WINDOW_MS = 10 * 60_000;
 const recentAnalysisRuns = new Map<string, number>();
 
 function analysisKey(issueKey: string, repoName: string): string {
@@ -72,35 +71,45 @@ function analysisKey(issueKey: string, repoName: string): string {
 function shouldSkipAutoAnalysis(
   issueKey: string,
   repoName: string,
-  now: number
+  now: number,
+  config: JiraAdapterConfig
 ): { skip: boolean; ageMs?: number } {
+  const windowMs = config.autoAnalysisCooldownMs ?? jiraHandlerDefaults.autoAnalysisCooldownMs;
   const last = recentAnalysisRuns.get(analysisKey(issueKey, repoName));
-  if (last !== undefined && now - last < ANALYSIS_COOLDOWN_WINDOW_MS) {
+  if (last !== undefined && now - last < windowMs) {
     return { skip: true, ageMs: now - last };
   }
   return { skip: false };
 }
 
-function recordAnalysisRun(issueKey: string, repoName: string, now: number): void {
+function recordAnalysisRun(
+  issueKey: string,
+  repoName: string,
+  now: number,
+  config: JiraAdapterConfig
+): void {
+  const windowMs = config.autoAnalysisCooldownMs ?? jiraHandlerDefaults.autoAnalysisCooldownMs;
   recentAnalysisRuns.set(analysisKey(issueKey, repoName), now);
   for (const [key, ts] of recentAnalysisRuns) {
-    if (now - ts > ANALYSIS_COOLDOWN_WINDOW_MS * 3) recentAnalysisRuns.delete(key);
+    if (now - ts > windowMs * 3) recentAnalysisRuns.delete(key);
   }
 }
 
-function shouldPostReminder(issueKey: string, now: number): boolean {
+function shouldPostReminder(issueKey: string, now: number, config: JiraAdapterConfig): boolean {
+  const windowMs = config.missingLabelsReminderCooldownMs ?? jiraHandlerDefaults.missingLabelsReminderCooldownMs;
   const last = recentMissingLabelsReminders.get(issueKey);
-  if (last !== undefined && now - last < MISSING_LABELS_REMINDER_WINDOW_MS) {
+  if (last !== undefined && now - last < windowMs) {
     return false;
   }
   return true;
 }
 
-function recordReminderPosted(issueKey: string, now: number): void {
+function recordReminderPosted(issueKey: string, now: number, config: JiraAdapterConfig): void {
+  const windowMs = config.missingLabelsReminderCooldownMs ?? jiraHandlerDefaults.missingLabelsReminderCooldownMs;
   recentMissingLabelsReminders.set(issueKey, now);
   // Opportunistic GC so the map doesn't grow forever in long-lived processes.
   for (const [key, ts] of recentMissingLabelsReminders) {
-    if (now - ts > MISSING_LABELS_REMINDER_WINDOW_MS * 10) {
+    if (now - ts > windowMs * 10) {
       recentMissingLabelsReminders.delete(key);
     }
   }
@@ -178,6 +187,7 @@ export async function routeToHandler(
       const acknowledgeDeps: AcknowledgeHandlerDeps = {
         jiraClient,
         config,
+        logger: context.logger,
       };
       const message = eventConfig.acknowledgmentMessage || getDefaultAcknowledgmentMessage();
       await handleAcknowledge(taskInfo, message, acknowledgeDeps);
@@ -188,6 +198,7 @@ export async function routeToHandler(
     default: {
       const ignoreDeps: IgnoreHandlerDeps = {
         webhookEvent,
+        logger: context.logger,
       };
       await handleIgnore(taskInfo, ignoreDeps);
       return;
@@ -306,7 +317,7 @@ function shouldTreatCommentAsRetry(
     return false;
   }
 
-  const phrase = config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE;
+  const phrase = config.retryTriggerPhrase || jiraHandlerDefaults.retryTriggerPhrase;
   if (!hasTriggerPhrase(comment.body, phrase)) {
     logger?.debug?.(
       `jira-adapter: ${issueKey} comment_created does not contain trigger phrase ("${phrase}") — ignoring.`
@@ -327,25 +338,28 @@ async function postMissingLabelsReminder(
 ): Promise<void> {
   const { config, jiraClient, logger } = context;
   const now = Date.now();
-  if (!shouldPostReminder(taskInfo.key, now)) {
+  if (!shouldPostReminder(taskInfo.key, now, config)) {
     const last = recentMissingLabelsReminders.get(taskInfo.key) ?? now;
+    const win =
+      config.missingLabelsReminderCooldownMs ?? jiraHandlerDefaults.missingLabelsReminderCooldownMs;
     logger?.warn(
       `jira-adapter: suppressing duplicate missing-labels reminder for ${taskInfo.key} ` +
         `(last posted ${Math.round((now - last) / 1000)}s ago, window=${Math.round(
-          MISSING_LABELS_REMINDER_WINDOW_MS / 1000
+          win / 1000
         )}s). This usually means a comment_created webhook echoing our own ` +
         `reminder slipped past own-comment detection — check that the reminder ` +
         `comment still renders the "Posted by agent-detective" footer in Jira.`
     );
     return;
   }
-  const triggerPhrase = config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE;
+  const triggerPhrase = config.retryTriggerPhrase || jiraHandlerDefaults.retryTriggerPhrase;
   await handleMissingLabels(taskInfo, matcher.listConfiguredLabels(), {
     jiraClient,
     messageTemplate: config.missingLabelsMessage,
     triggerPhrase,
+    logger,
   });
-  recordReminderPosted(taskInfo.key, now);
+  recordReminderPosted(taskInfo.key, now, config);
 }
 
 /**
@@ -364,7 +378,7 @@ async function fanOutAnalysis(
   const { config, jiraClient, events, logger } = context;
 
   let reposToAnalyze: MatchedRepo[] = [...currentMatches];
-  const cap = config.maxReposPerIssue ?? DEFAULT_MAX_REPOS_PER_ISSUE;
+  const cap = config.maxReposPerIssue ?? jiraHandlerDefaults.maxReposPerIssue;
   let skippedByCap: MatchedRepo[] = [];
   if (cap > 0 && reposToAnalyze.length > cap) {
     skippedByCap = reposToAnalyze.slice(cap);
@@ -387,17 +401,18 @@ async function fanOutAnalysis(
     const skippedByCooldown: MatchedRepo[] = [];
     const allowed: MatchedRepo[] = [];
     for (const repo of reposToAnalyze) {
-      const check = shouldSkipAutoAnalysis(taskInfo.key, repo.name, now);
+      const check = shouldSkipAutoAnalysis(taskInfo.key, repo.name, now, config);
       if (check.skip) {
         skippedByCooldown.push(repo);
+        const cd = config.autoAnalysisCooldownMs ?? jiraHandlerDefaults.autoAnalysisCooldownMs;
         logger?.warn(
           `jira-adapter: suppressing auto-analysis of ${taskInfo.key}:${repo.name} ` +
             `(ran ${Math.round((check.ageMs ?? 0) / 1000)}s ago, window=${Math.round(
-              ANALYSIS_COOLDOWN_WINDOW_MS / 1000
+              cd / 1000
             )}s). This is the circuit breaker for webhook echo loops — if ` +
             `it keeps tripping, check your Jira Automation rule scope and ` +
             `the event classifier log line above. An explicit "` +
-            `${config.retryTriggerPhrase || DEFAULT_RETRY_TRIGGER_PHRASE}" ` +
+            `${config.retryTriggerPhrase || jiraHandlerDefaults.retryTriggerPhrase}" ` +
             `comment bypasses this cooldown.`
         );
       } else {
@@ -431,7 +446,7 @@ async function fanOutAnalysis(
 
   for (const match of reposToAnalyze) {
     if (!options.bypassCooldown) {
-      recordAnalysisRun(taskInfo.key, match.name, now);
+      recordAnalysisRun(taskInfo.key, match.name, now, config);
     }
     events.emit(StandardEvents.TASK_CREATED, {
       id: buildIssueRepoTaskId(taskInfo.key, match.name),
