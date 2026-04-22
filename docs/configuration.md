@@ -19,7 +19,7 @@ These variables override or extend the merged JSON when set:
 |----------|--------|
 | `PORT` | HTTP listen port (integer). |
 | `AGENT` | Default agent id (e.g. `opencode`). |
-| `AGENTS_OPENCODE_MODEL`, `AGENTS_CLAUDE_MODEL`, `AGENTS_GEMINI_MODEL` | Per-agent default model. |
+| `AGENTS_OPENCODE_MODEL`, `AGENTS_CLAUDE_MODEL`, `AGENTS_CURSOR_MODEL` | Per-agent default model. |
 | `AGENTS_<ID>_MODEL` | Any agent id in uppercase letters/digits (e.g. `AGENTS_OPENCODE_MODEL`). |
 | `AGENTS_RUNNER_TIMEOUT_MS` | `agents.runner.timeoutMs` (agent child process + exec timeout, ms). |
 | `AGENTS_RUNNER_MAX_BUFFER_BYTES` | `agents.runner.maxBufferBytes` |
@@ -28,6 +28,8 @@ These variables override or extend the merged JSON when set:
 | `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | Comma-separated paths; merged into `observability.requestLogger.excludePaths` (default logs skip `/api/health` and `/api/metrics`). |
 | `DOCS_AUTH_REQUIRED` | `true` / `false` — require `X-API-KEY` for `/docs`. |
 | `DOCS_API_KEY` | API key value when docs auth is enabled. |
+
+`RunAgentOptions` (orchestrator, Core API) supports **`threadId`**: passed to each agent’s shell command for session resume (opencode, claude, cursor). For HTTP, set `options.threadId` on `POST /api/agent/run` or `context.threadId` on `POST /api/events`.
 
 ## Observability log level
 

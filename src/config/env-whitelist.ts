@@ -46,7 +46,7 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
     config.agent = process.env.AGENT;
   }
 
-  const agentModelEnvVars = ['AGENTS_OPENCODE_MODEL', 'AGENTS_CLAUDE_MODEL', 'AGENTS_GEMINI_MODEL'] as const;
+  const agentModelEnvVars = ['AGENTS_OPENCODE_MODEL', 'AGENTS_CLAUDE_MODEL', 'AGENTS_CURSOR_MODEL'] as const;
   for (const envVar of agentModelEnvVars) {
     const raw = process.env[envVar];
     if (!raw) continue;

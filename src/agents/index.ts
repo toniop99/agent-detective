@@ -1,23 +1,20 @@
 import { execSync } from 'node:child_process';
-import codex from './codex.js';
 import claude from './claude.js';
-import gemini from './gemini.js';
+import cursor from './cursor.js';
 import opencode from './opencode.js';
 import type { Agent } from '../core/types.js';
 
 const agents = new Map<string, Agent>([
-  [codex.id, codex],
   [claude.id, claude],
-  [gemini.id, gemini],
+  [cursor.id, cursor],
   [opencode.id, opencode],
 ]);
 
 export const DEFAULT_AGENT = opencode.id;
 
-export const AGENT_CODEX = codex.id;
 export const AGENT_CLAUDE = claude.id;
+export const AGENT_CURSOR = cursor.id;
 export const AGENT_OPENCODE = opencode.id;
-export const AGENT_GEMINI = gemini.id;
 
 export function normalizeAgent(value: string | undefined | null): string {
   if (!value) return DEFAULT_AGENT;

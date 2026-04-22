@@ -116,7 +116,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            AGENTS=opencode,claude,gemini
+            AGENTS=opencode,claude
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

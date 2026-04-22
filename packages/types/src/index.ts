@@ -170,6 +170,10 @@ export interface RunAgentOptions {
    * analysis, where the agent must never modify the target repository.
    */
   readOnly?: boolean;
+  /**
+   * Conversation / session id for CLIs that support resume (opencode, claude, cursor, etc.).
+   */
+  threadId?: string;
 }
 
 export interface StopRunResult {
@@ -395,6 +399,7 @@ export interface AgentRunRequest {
     model?: string;
     repoPath?: string | null;
     cwd?: string;
+    threadId?: string;
   };
 }
 

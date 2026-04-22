@@ -108,6 +108,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       onProgress,
       readOnly,
       timeoutMs: runTimeoutMs,
+      threadId,
     } = runOptions;
 
     const effectiveAgentId = overrideAgentId || 'opencode';
@@ -177,6 +178,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         emitProgress,
         readOnly,
         timeoutMs: runTimeoutMs,
+        threadId: threadId && String(threadId).trim() ? String(threadId).trim() : undefined,
       });
 
       run.settled = true;
@@ -209,6 +211,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       emitProgress,
       readOnly,
       timeoutMs: shellTimeoutMs,
+      threadId,
     }: {
       prompt: string;
       cwd: string;
@@ -223,6 +226,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       emitProgress: (payload: string[]) => void;
       readOnly?: boolean;
       timeoutMs?: number;
+      threadId?: string;
     }
   ): Promise<string> {
     const effectiveTimeoutMs =
@@ -237,6 +241,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       model: effectiveModel,
       thinking: undefined,
       readOnly,
+      threadId,
     }) || `${agent.command} ${promptExpression}`;
 
     const command = [

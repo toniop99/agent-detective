@@ -282,7 +282,7 @@ The repository includes two workflows:
 ```bash
 # Build locally
 docker build --target production \
-  --build-arg AGENTS="opencode,claude,gemini" \
+  --build-arg AGENTS="opencode,claude" \
   -t ghcr.io/toniop99/agent-detective:latest .
 
 # Login to ghcr.io
@@ -315,11 +315,11 @@ docker build --target production -t agent-detective .
 
 # Build with multiple agents
 docker build --target production \
-  --build-arg AGENTS="opencode,claude,gemini" \
+  --build-arg AGENTS="opencode,claude" \
   -t agent-detective:multi .
 
-# Available agents: opencode, claude, gemini
-# Note: codex is not available in Docker (requires VS Code extension)
+# Available agents for AGENTS build-arg: opencode, claude (npm global).
+# Cursor Agent CLI (in-app id: cursor) is not installed via npm; see docs/cursor-agent.md.
 ```
 
 ### Docker Image Structure
