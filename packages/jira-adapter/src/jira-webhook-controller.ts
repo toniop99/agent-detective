@@ -228,6 +228,10 @@ export interface ResolvedWebhookEvent {
  *
  * Automation emits `issue_generic` for most ordinary field changes, so we
  * map it to `jira:issue_updated` to match operator expectations.
+ *
+ * @see {@link https://support.atlassian.com/cloud-automation/docs/issue-data-automation-format-payload-for-send-web-request/ Automation format payload reference}
+ * @see {@link https://support.atlassian.com/cloud-automation/docs/issue-data-jira-format-payload-for-send-web-request-action/ Jira format payload reference}
+ * @see {@link https://developer.atlassian.com/cloud/jira/service-desk/automation-webhooks/ Jira Service Management automation webhooks}
  */
 const AUTOMATION_EVENT_ALIASES: Record<string, string> = {
   issue_created: 'jira:issue_created',

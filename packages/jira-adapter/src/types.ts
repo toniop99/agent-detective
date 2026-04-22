@@ -106,6 +106,19 @@ import type { Version3Models } from 'jira.js';
 type JiraSdkUser = Version3Models.User;
 type JiraSdkProject = Version3Models.Project;
 
+/**
+ * jira.js is a REST API client used by this adapter for operations like
+ * `getIssue`, `addComment`, and `updateIssue`. It does NOT provide utilities
+ * for parsing webhook payloads.
+ *
+ * Webhook payload handling is implemented directly using the Atlassian REST API
+ * response shapes. See:
+ * @see {@link https://support.atlassian.com/cloud-automation/docs/issue-data-automation-format-payload-for-send-web-request/ Automation format}
+ * @see {@link https://support.atlassian.com/cloud-automation/docs/issue-data-jira-format-payload-for-send-web-request-action/ Jira format}
+ * @see {@link https://developer.atlassian.com/cloud/jira/service-desk/automation-webhooks/ JSM automation webhooks}
+ * @see {@link https://support.atlassian.com/cloud-automation/docs/jira-smart-values-issues/ Smart values reference}
+ */
+
 export interface JiraDescription {
   content?: Array<{
     content?: Array<{ text?: string }>;
@@ -127,6 +140,25 @@ export type JiraUser = Partial<JiraSdkUser>;
  */
 export type JiraProject = Partial<JiraSdkProject>;
 
+/**
+ * Webhook issue shape — based on the Jira REST API issue resource.
+ *
+ * Two distinct webhook payload formats exist (see webhook-handler.ts):
+ *
+ * 1. **Envelope format** (native Jira webhooks + Automation "Jira format"):
+ *    `{ issue: JiraIssue, user?, timestamp? }` — the issue is wrapped in an
+ *    envelope with optional user/timestamp metadata.
+ *
+ * 2. **Bare-issue format** (Automation "Automation format"):
+ *    `JiraIssue` at the top level, as emitted when the body template expands
+ *    `{{issue}}` directly. In this format `id` is always a JSON number, not
+ *    a string. The issue is subsequently wrapped in `normalizeWebhookShape()`.
+ *
+ * The `changelog` field differs between formats:
+ *  - Envelope: uses `changelog.items[]` (field-level deltas from native webhooks)
+ *  - Bare-issue: uses `changelog.histories[]` (the issue's full changelog page,
+ *    as returned by `{{issue}}.changelog` smart value — different shape!)
+ */
 export interface JiraIssue {
   self?: string;
   id?: string;

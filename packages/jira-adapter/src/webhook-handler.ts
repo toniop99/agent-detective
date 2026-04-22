@@ -6,13 +6,26 @@ import { routeToHandler, HandlerContext } from './handlers/index.js';
 /**
  * Describes which shape the incoming webhook payload had before any
  * normalization we performed.
- *   - 'envelope':   `{ issue, user, timestamp }` (native Jira webhooks,
- *                   Automation "Jira format")
- *   - 'bare-issue': the issue object directly at the top level, with keys
- *                   like `{ self, id, key, fields, ... }` — this is what
- *                   Automation's "Automation format" default body template
- *                   emits, since it expands `{{issue}}` without a wrapper.
- *   - 'unknown':    neither shape recognized; passed through untouched.
+ *
+ * Jira Automation can send webhooks in two distinct formats (see
+ * {@link https://support.atlassian.com/cloud-automation/docs/issue-data-automation-format-payload-for-send-web-request/ Automation format}
+ * and
+ * {@link https://support.atlassian.com/cloud-automation/docs/issue-data-jira-format-payload-for-send-web-request-action/ Jira format}):
+ *
+ *   - 'envelope':   `{ issue, user, timestamp }` — native Jira webhooks and
+ *                    Automation "Jira format". The issue is wrapped in an
+ *                    envelope with metadata at the top level.
+ *   - 'bare-issue':  The issue object directly at the top level, with keys
+ *                    like `{ self, id, key, fields, ... }` — this is what
+ *                    Automation's "Automation format" default body template
+ *                    emits, since it expands `{{issue}}` without a wrapper.
+ *                    Note: in this format `id` is always a JSON number, not
+ *                    a string.
+ *   - 'unknown':     neither shape recognized; passed through untouched.
+ *
+ * Note: jira.js is a REST API client and does not provide webhook payload
+ * parsing utilities. Webhook payload handling is implemented directly using
+ * the Atlassian REST API response shapes documented in the links above.
  */
 export type WebhookPayloadShape = 'envelope' | 'bare-issue' | 'unknown';
 

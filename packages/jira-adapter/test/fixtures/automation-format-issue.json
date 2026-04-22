@@ -1,0 +1,80 @@
+{
+  "_description": "Automation format (bare-issue) payload - issue expanded at top level by {{issue}} smart value",
+  "_see": [
+    "https://support.atlassian.com/cloud-automation/docs/issue-data-automation-format-payload-for-send-web-request/",
+    "https://support.atlassian.com/cloud-automation/docs/jira-smart-values-issues/"
+  ],
+  "self": "https://example.atlassian.net/rest/api/2/issue/10045",
+  "id": 10045,
+  "key": "KAN-123",
+  "changelog": {
+    "startAt": 0,
+    "maxResults": 0,
+    "total": 0,
+    "histories": null
+  },
+  "fields": {
+    "statuscategorychangedate": "2024-01-15T10:30:00.000+0000",
+    "issuetype": {
+      "self": "https://example.atlassian.net/rest/api/2/issuetype/10001",
+      "id": "10001",
+      "description": "A bug in the system",
+      "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10313?size=medium",
+      "name": "Bug",
+      "subtask": false,
+      "fields": null,
+      "statuses": [],
+      "hierarchyLevel": 0
+    },
+    "project": {
+      "self": "https://example.atlassian.net/rest/api/2/project/10000",
+      "id": "10000",
+      "key": "KAN",
+      "name": "Kanban Project",
+      "avatarUrls": {
+        "48x48": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=medium",
+        "24x24": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=small",
+        "16x16": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=xsmall",
+        "32x32": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=xsmall"
+      }
+    },
+    "labels": ["frontend", "urgent"],
+    "summary": "Login button not working on mobile",
+    "description": "The login button does not respond to taps on mobile devices",
+    "priority": {
+      "self": "https://example.atlassian.net/rest/api/2/priority/1",
+      "id": "1",
+      "name": "Highest",
+      "iconUrl": "https://example.atlassian.net/images/icons/priorities/highest.svg"
+    },
+    "status": {
+      "self": "https://example.atlassian.net/rest/api/2/status/1",
+      "description": "The issue is open",
+      "iconUrl": "https://example.atlassian.net/images/icons/statuses/open.png",
+      "name": "Open",
+      "id": "1",
+      "statusCategory": {
+        "self": "https://example.atlassian.net/rest/api/2/statuscategory/2",
+        "id": 2,
+        "key": "new",
+        "name": "To Do"
+      }
+    },
+    "assignee": {
+      "self": "https://example.atlassian.net/rest/api/2/user?accountId=aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "accountId": "aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "displayName": "Jane Developer",
+      "emailAddress": "jane@example.com",
+      "active": true
+    },
+    "reporter": {
+      "self": "https://example.atlassian.net/rest/api/2/user?accountId=bbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "accountId": "bbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "displayName": "John Reporter",
+      "emailAddress": "john@example.com",
+      "active": true
+    },
+    "created": 1705312200000,
+    "updated": 1705315800000
+  }
+}

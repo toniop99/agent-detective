@@ -113,6 +113,64 @@ describe('webhook-handler envelope validation', () => {
     assert.equal(result.status, 'queued');
     assert.equal(result.taskId, 'KAN-7');
   });
+
+  it('accepts Automation format with numeric id and full fields (issue_data_automation_format payload)', async () => {
+    const { handleWebhook } = createJiraWebhookHandler(createNoopContext());
+    const result = await handleWebhook(
+      {
+        self: 'https://example.atlassian.net/rest/api/2/issue/10045',
+        id: 10045,
+        key: 'KAN-123',
+        changelog: { startAt: 0, maxResults: 0, total: 0, histories: null },
+        fields: {
+          statuscategorychangedate: '2024-01-15T10:30:00.000+0000',
+          issuetype: {
+            self: 'https://example.atlassian.net/rest/api/2/issuetype/10001',
+            id: '10001',
+            description: 'A bug in the system',
+            name: 'Bug',
+            subtask: false,
+          },
+          project: {
+            self: 'https://example.atlassian.net/rest/api/2/project/10000',
+            id: '10000',
+            key: 'KAN',
+            name: 'Kanban Project',
+          },
+          labels: ['frontend', 'urgent'],
+          summary: 'Login button not working on mobile',
+          description: 'The login button does not respond to taps on mobile devices',
+          priority: {
+            self: 'https://example.atlassian.net/rest/api/2/priority/1',
+            id: '1',
+            name: 'Highest',
+          },
+          status: {
+            self: 'https://example.atlassian.net/rest/api/2/status/1',
+            name: 'Open',
+            statusCategory: { id: 2, key: 'new', name: 'To Do' },
+          },
+          assignee: {
+            accountId: 'aaaaaaaaaaaaaaaaaaaaaaaaaa',
+            displayName: 'Jane Developer',
+            emailAddress: 'jane@example.com',
+            active: true,
+          },
+          reporter: {
+            accountId: 'bbbbbbbbbbbbbbbbbbbbbbbbbb',
+            displayName: 'John Reporter',
+            emailAddress: 'john@example.com',
+            active: true,
+          },
+          created: 1705312200000,
+          updated: 1705315800000,
+        },
+      },
+      'jira:issue_created'
+    );
+    assert.equal(result.status, 'queued');
+    assert.equal(result.taskId, 'KAN-123');
+  });
 });
 
 describe('normalizeWebhookShape', () => {
