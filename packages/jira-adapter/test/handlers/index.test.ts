@@ -8,7 +8,14 @@ import {
 import type { HandlerContext } from '../../src/handlers/index.js';
 import type { JiraAdapterConfig, JiraTaskInfo } from '../../src/types.js';
 import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
-import { StandardEvents, REPO_MATCHER_SERVICE, type RepoMatcher } from '@agent-detective/types';
+import {
+  PR_WORKFLOW_SERVICE,
+  REPO_MATCHER_SERVICE,
+  StandardEvents,
+  type PrWorkflowInput,
+  type PrWorkflowService,
+  type RepoMatcher,
+} from '@agent-detective/types';
 
 interface MockComment {
   issueKey: string;
@@ -632,6 +639,110 @@ describe('Handler Registry', () => {
 
       assert.equal(emittedEvents.length, 0);
       assert.equal(mockComments.length, 0);
+    });
+  });
+
+  describe('comment_created → PR workflow', () => {
+    function makePrPayload(body: string) {
+      return {
+        comment: {
+          body,
+          author: { accountId: 'user-reporter', emailAddress: 'reporter@example.com' },
+        },
+      };
+    }
+
+    it('pr trigger phrase + matching label → calls PrWorkflowService, no analysis tasks', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      const prCalls: PrWorkflowInput[] = [];
+      const mockPr: PrWorkflowService = {
+        startPrWorkflow(input: PrWorkflowInput) {
+          prCalls.push(input);
+        },
+      };
+      services.set(PR_WORKFLOW_SERVICE, mockPr);
+      const context = createMockContext(analyzeConfig);
+
+      await routeToHandler(
+        makePrPayload(
+          '#agent-detective pr this error is related to authentication.php in commit 751b957'
+        ),
+        makeTaskInfo({ key: 'PR-1', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(emittedEvents.length, 0);
+      assert.equal(prCalls.length, 1);
+      assert.equal(prCalls[0].issueKey, 'PR-1');
+      assert.equal(prCalls[0].match.name, 'web-app');
+      assert.equal(prCalls[0].match.path, '/repos/web-app');
+      assert.equal(
+        prCalls[0].prCommentContext,
+        'this error is related to authentication.php in commit 751b957'
+      );
+    });
+
+    it('pr trigger without pr-pipeline service → posts install hint', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      const context = createMockContext(analyzeConfig);
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr'),
+        makeTaskInfo({ key: 'PR-2', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(emittedEvents.length, 0);
+      assert.equal(mockComments.length, 1);
+      assert.match(mockComments[0].text, /pr-pipeline/);
+    });
+
+    it('both pr and analyze phrases in comment → PR wins (no analysis task)', async () => {
+      registerMatcher([{ name: 'api', path: '/repos/api' }]);
+      const prCalls: PrWorkflowInput[] = [];
+      const mockPr: PrWorkflowService = {
+        startPrWorkflow(input: PrWorkflowInput) {
+          prCalls.push(input);
+        },
+      };
+      services.set(PR_WORKFLOW_SERVICE, mockPr);
+      const context = createMockContext(analyzeConfig);
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr and #agent-detective analyze'),
+        makeTaskInfo({ key: 'PR-3', labels: ['api'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(emittedEvents.length, 0);
+      assert.equal(prCalls.length, 1);
+    });
+
+    it('pr trigger + no matching label → missing-labels reminder, no startPrWorkflow', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      const prCalls: PrWorkflowInput[] = [];
+      const mockPr: PrWorkflowService = {
+        startPrWorkflow(input: PrWorkflowInput) {
+          prCalls.push(input);
+        },
+      };
+      services.set(PR_WORKFLOW_SERVICE, mockPr);
+      const context = createMockContext(analyzeConfig);
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr'),
+        makeTaskInfo({ key: 'PR-4', labels: ['bug'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(prCalls.length, 0);
+      assert.equal(emittedEvents.length, 0);
+      assert.equal(mockComments.length, 1);
+      assert.match(mockComments[0].text, /web-app/);
     });
   });
 

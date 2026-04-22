@@ -346,6 +346,43 @@ export const StandardEvents = {
   TASK_FAILED: 'task:failed',
 } as const;
 
+/**
+ * Jira-adapter–agnostic hook for the PR workflow (implemented by
+ * `@agent-detective/pr-pipeline`). The Jira plugin resolves this at runtime; do
+ * not import the implementation from `@agent-detective/types`.
+ */
+export const PR_WORKFLOW_SERVICE = 'pr-workflow' as const;
+
+/** Minimal Jira client surface for posting follow-up comments from the PR module. */
+export interface PrJiraClient {
+  addComment(issueIdOrKey: string, body: string): Promise<void>;
+}
+
+/**
+ * What the Jira handler passes to {@link PrWorkflowService.startPrWorkflow}. The
+ * service should enqueue and run git + agent + host API asynchronously.
+ */
+export interface PrWorkflowInput {
+  issueKey: string;
+  issueSummary: string;
+  taskDescription: string;
+  projectKey: string;
+  labels: string[];
+  match: { name: string; path: string };
+  jira: PrJiraClient;
+  /** Merged with PR-specific instructions for the write-capable agent. */
+  analysisPrompt?: string;
+  /**
+   * Text from the Jira **comment** with the `prTriggerPhrase` removed (whitespace
+   * normalized), so operators can add hints after `#agent-detective pr ...`.
+   */
+  prCommentContext?: string;
+}
+
+export interface PrWorkflowService {
+  startPrWorkflow(input: PrWorkflowInput): void | Promise<void>;
+}
+
 export interface AgentRunRequest {
   agentId: string;
   prompt: string;

@@ -14,6 +14,8 @@ import type {
   LocalReposService,
   TechStackDetectionConfig,
   SummaryGenerationConfig,
+  RepoConfig,
+  RepoVcsConfig,
 } from './types.js';
 import { matchRepoByLabels, matchAllReposByLabels } from './repo-matcher.js';
 import { validateRepos, hasValidationErrors } from './validate.js';
@@ -144,6 +146,9 @@ const localReposPlugin: Plugin = {
         });
       },
       formatRepoContextForPrompt: formatRepoContextForPrompt as (context: unknown) => string,
+      getSourceRepoConfig(name: string) {
+        return options.repos.find((r) => r.name === name);
+      },
     };
 
     context.registerService<LocalReposService>('@agent-detective/local-repos-plugin', localReposService);
@@ -192,4 +197,6 @@ export type {
   LocalReposService,
   TechStackDetectionConfig,
   SummaryGenerationConfig,
+  RepoConfig,
+  RepoVcsConfig,
 };

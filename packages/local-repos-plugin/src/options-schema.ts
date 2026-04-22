@@ -1,10 +1,21 @@
 import { z } from 'zod';
 
+const repoVcsConfigSchema = z
+  .object({
+    provider: z.enum(['github', 'bitbucket']),
+    owner: z.string().min(1),
+    name: z.string().min(1),
+  })
+  .strict();
+
 const repoConfigSchema = z.object({
   name: z.string(),
   path: z.string(),
   description: z.string().optional(),
   techStack: z.array(z.string()).optional(),
+  prBaseBranch: z.string().min(1).optional(),
+  prBranchPrefix: z.string().optional(),
+  vcs: repoVcsConfigSchema.optional(),
 });
 
 const techStackDetectionSchema = z

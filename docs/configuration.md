@@ -47,8 +47,66 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | `REPO_CONTEXT_GIT_MAX_BUFFER_BYTES` | `options.repoContext.gitMaxBufferBytes` |
 | `REPO_CONTEXT_DIFF_FROM_REF` | `options.repoContext.diffFromRef` (e.g. `HEAD~5`) |
 | `SUMMARY_MAX_OUTPUT_CHARS` | `options.summaryGeneration.maxOutputChars` |
+| `GITHUB_TOKEN`, `GH_TOKEN` | `options.githubToken` on `@agent-detective/pr-pipeline` (if that plugin is listed). `GITHUB_TOKEN` wins over `GH_TOKEN`, then file. At **runtime** the same order applies. |
+| `BITBUCKET_TOKEN` | `options.bitbucketToken` on pr-pipeline (access token; env overrides file). |
+| `BITBUCKET_USERNAME`, `BITBUCKET_APP_PASSWORD` | `options.bitbucketUsername` / `options.bitbucketAppPassword` (app password; env overrides file). Ignored if a Bitbucket access token is set. |
 
-For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-manual-e2e.md](jira-manual-e2e.md).
+For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-manual-e2e.md](jira-manual-e2e.md). For **Jira → pull request** (pr-pipeline), see [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md).
+
+## PR pipeline (`@agent-detective/pr-pipeline`)
+
+Jira comment (default phrase `#agent-detective pr`, configurable as `prTriggerPhrase` on the Jira plugin) can trigger an **isolated git worktree**, a **write-mode** agent run, **commit + push**, and a **pull request** on **GitHub** or **Bitbucket Cloud** — when `vcs` is set on the matching local-repos repo and credentials are available.
+
+**Extra context in the same comment:** any text in the Jira comment **after removing the first occurrence of the PR trigger phrase** (case-insensitive) is passed to the agent as *Additional context from the Jira comment* (e.g. file paths, commit hashes, or a short error description), in addition to the issue description. Example: `#agent-detective pr this error is related to the changes in authentication.php in commit 751b957`.
+
+**Precedence (always):** values from **environment variables** override the same keys in **merged JSON** (`default.json` + `local.json`) for both the [plugin env merge](#plugin-env-whitelist-first-party) at load time and, for tokens, the [runtime resolution](#host-credentials-precedence) used when the job runs. Prefer secrets in **env** in production; use `config/local.json` (gitignored) for local dev if you accept file-based secrets.
+
+### Host credentials precedence
+
+| Secret | First wins | Then | Then |
+|--------|------------|------|------|
+| GitHub token | `GITHUB_TOKEN` | `GH_TOKEN` | `plugins[].options.githubToken` for `@agent-detective/pr-pipeline` |
+| Bitbucket access token (preferred for CI) | `BITBUCKET_TOKEN` | | `options.bitbucketToken` in JSON for pr-pipeline |
+| Bitbucket app password (alternative) | `BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD` | | `bitbucketUsername` + `bitbucketAppPassword` in JSON |
+
+**If a Bitbucket access token is set, app-password options are not used** (smaller, token-shaped secret; matches [Atlassian: using access tokens](https://support.atlassian.com/bitbucket-cloud/docs/using-access-tokens/)).
+
+Empty or whitespace-only values are ignored; the next source in the chain is used.
+
+**Bitbucket — access token API / Git (when `BITBUCKET_TOKEN` or `bitbucketToken` is set):** REST calls use a `Bearer` token. Git uses `x-token-auth` as the username and the token in the URL (see [using access tokens](https://support.atlassian.com/bitbucket-cloud/docs/using-access-tokens/)). Use a **repository** or **workspace access token** with *pull request* (write) scope for opening PRs.
+
+**Bitbucket — app password (when no access token is set):** [app password](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) plus your Bitbucket **account username**; REST uses HTTP Basic, Git uses username + password in the URL.
+
+**Per-repo `vcs`** (under `local-repos` `repos[]`) selects the host; **branch prefix and base** can be set per repo (`prBranchPrefix`, `prBaseBranch`).
+
+- GitHub: `"vcs": { "provider": "github", "owner": "my-org", "name": "my-repo" }`
+- Bitbucket: `"vcs": { "provider": "bitbucket", "owner": "<workspace>", "name": "<repo-slug>" }`
+
+### End-to-end flow
+
+```mermaid
+flowchart LR
+  A[Jira: comment with PR phrase] --> B[Jira adapter: match labels to repos]
+  B --> C[pr-pipeline: enqueue]
+  C --> D[Worktree from base branch]
+  D --> E[Agent write in worktree]
+  E --> F[Commit]
+  F --> G{prDryRun?}
+  G -->|yes| H[Jira: dry-run summary]
+  G -->|no| I{host}
+  I -->|github| J[push + GitHub API PR]
+  I -->|bitbucket| K[push + Bitbucket API PR]
+  J --> L[Jira: PR link]
+  K --> L
+```
+
+1. A matching **label** maps the issue to a **local-repos** entry (`path` + optional `vcs` / `prBaseBranch` / `prBranchPrefix`).  
+2. The pipeline creates a **temporary worktree**, runs the **agent** with the Jira text, **commits** if there are changes.  
+3. If **`prDryRun`** is true (default in `config/default.json`), it posts a Jira note only (no push).  
+4. If not dry-run, it **pushes** to `origin` on the chosen host and **opens a PR** using the **resolved tokens** above.  
+5. A **Jira comment** includes the PR URL or an error.
+
+Option reference: [docs/generated/plugin-options.md](generated/plugin-options.md) (block **@agent-detective/pr-pipeline**, anchor `pr-pipeline`).
 
 ## Validation
 

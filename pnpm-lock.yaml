@@ -209,6 +209,34 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/pr-pipeline:
+    dependencies:
+      '@agent-detective/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agent-detective/local-repos-plugin':
+        specifier: workspace:*
+        version: link:../local-repos-plugin
+      '@agent-detective/process-utils':
+        specifier: workspace:*
+        version: link:../process-utils
+      '@agent-detective/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/process-utils:
     devDependencies:
       '@types/node':

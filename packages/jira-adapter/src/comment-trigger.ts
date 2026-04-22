@@ -67,6 +67,23 @@ export function hasTriggerPhrase(body: string, phrase: string): boolean {
   return body.toLowerCase().includes(phrase.toLowerCase());
 }
 
+/**
+ * Returns the comment body with the first **case-insensitive** occurrence of
+ * `triggerPhrase` removed, then internal whitespace collapsed to single spaces.
+ * Use to pass free-form operator context after a trigger (e.g. after
+ * `#agent-detective pr` with a file name or commit hash).
+ * Empty string if the phrase is not found, `body` is empty, or nothing remains.
+ */
+export function extraTextOutsideTriggerPhrase(body: string, triggerPhrase: string): string {
+  if (!body?.trim() || !triggerPhrase) return '';
+  const lowerBody = body.toLowerCase();
+  const lowerPhrase = triggerPhrase.toLowerCase();
+  const idx = lowerBody.indexOf(lowerPhrase);
+  if (idx < 0) return '';
+  const rest = body.slice(0, idx) + body.slice(idx + triggerPhrase.length);
+  return rest.replace(/\s+/g, ' ').trim();
+}
+
 export interface CommentAuthor {
   accountId?: string;
   emailAddress?: string;

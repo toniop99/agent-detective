@@ -62,7 +62,16 @@
           }
         }
       }
+    },
+    {
+      "package": "@agent-detective/pr-pipeline",
+      "options": {
+        "prBranchPrefix": "hotfix/",
+        "prTitleTemplate": "[{{key}}] {{summary}}",
+        "prDryRun": true
+      }
     }
   ],
-  "_jira_secrets": "Prefer env: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (see docs/configuration.md). Cooldowns: JIRA_AUTO_ANALYSIS_COOLDOWN_MS, JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS."
+  "_jira_secrets": "Prefer env: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (see docs/configuration.md). Cooldowns: JIRA_AUTO_ANALYSIS_COOLDOWN_MS, JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS.",
+  "_pr_secrets": "PR pipeline: prefer env — GITHUB_TOKEN or GH_TOKEN; Bitbucket access token BITBUCKET_TOKEN (or app password: BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD). File: githubToken, bitbucketToken, bitbucketUsername, bitbucketAppPassword on @agent-detective/pr-pipeline. Env overrides file. See docs/configuration.md (PR pipeline section)."
 }

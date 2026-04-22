@@ -90,6 +90,14 @@
           }
         }
       }
+    },
+    {
+      "package": "@agent-detective/pr-pipeline",
+      "options": {
+        "prBranchPrefix": "hotfix/",
+        "prTitleTemplate": "[{{key}}] {{summary}}",
+        "prDryRun": true
+      }
     }
   ]
 }

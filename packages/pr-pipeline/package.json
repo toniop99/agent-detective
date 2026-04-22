@@ -1,0 +1,37 @@
+{
+  "name": "@agent-detective/pr-pipeline",
+  "version": "0.1.0",
+  "description": "Jira-triggered agent PR creation (GitHub and Bitbucket Cloud)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@agent-detective/core": "workspace:*",
+    "@agent-detective/local-repos-plugin": "workspace:*",
+    "@agent-detective/process-utils": "workspace:*",
+    "@agent-detective/types": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "license": "MIT"
+}

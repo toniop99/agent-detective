@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from '../packages/jira-adapter/src/options-schema.js';
 import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/src/options-schema.js';
+import { prPipelineOptionsSchema } from '../packages/pr-pipeline/src/options-schema.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outPath = join(__dirname, '..', 'docs', 'generated', 'plugin-options.md');
@@ -20,6 +21,7 @@ const jira = z.toJSONSchema(jiraAdapterOptionsSchema, { target: 'draft-7' }) as 
 const localRepos = z.toJSONSchema(localReposPluginOptionsSchema, {
   target: 'draft-7',
 }) as Record<string, unknown>;
+const prPipeline = z.toJSONSchema(prPipelineOptionsSchema, { target: 'draft-7' }) as Record<string, unknown>;
 
 const body = `# Generated plugin option schemas
 
@@ -29,12 +31,13 @@ Source files:
 
 - \`packages/jira-adapter/src/options-schema.ts\`
 - \`packages/local-repos-plugin/src/options-schema.ts\`
+- \`packages/pr-pipeline/src/options-schema.ts\`
 
 ${block('@agent-detective/jira-adapter', 'jira-adapter', jira)}${block(
   '@agent-detective/local-repos-plugin',
   'local-repos-plugin',
   localRepos
-)}
+)}${block('@agent-detective/pr-pipeline', 'pr-pipeline', prPipeline)}
 `;
 
 mkdirSync(dirname(outPath), { recursive: true });

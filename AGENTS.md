@@ -11,6 +11,7 @@ TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main 
 - `@agent-detective/process-utils` — Process helpers
 - `@agent-detective/local-repos-plugin` — Repository + `RepoMatcher` service
 - `@agent-detective/jira-adapter` — Jira integration
+- `@agent-detective/pr-pipeline` — Jira comment PR workflow (worktree, push, GitHub PR)
 
 ## Configuration
 

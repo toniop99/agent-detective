@@ -2,12 +2,16 @@ import type { AppConfig } from './schema.js';
 
 const JIRA_PACKAGE = '@agent-detective/jira-adapter';
 const LOCAL_REPOS_PACKAGE = '@agent-detective/local-repos-plugin';
+const PR_PIPELINE_PACKAGE = '@agent-detective/pr-pipeline';
 
 function getExistingPluginOptions(
   config: AppConfig,
   packageName: string
 ): Record<string, unknown> | null {
-  const entry = config.plugins?.find((p) => p.package === packageName);
+  if (!Array.isArray(config.plugins)) {
+    return null;
+  }
+  const entry = config.plugins.find((p) => p.package === packageName);
   if (!entry) return null;
   if (!entry.options) {
     entry.options = {};
@@ -215,6 +219,24 @@ export function applyPluginEnvWhitelist(config: AppConfig): void {
       if (opts) {
         opts.missingLabelsReminderCooldownMs = n;
       }
+    }
+  }
+
+  const prPipelineOpts = getExistingPluginOptions(config, PR_PIPELINE_PACKAGE);
+  if (prPipelineOpts) {
+    if (process.env.GITHUB_TOKEN) {
+      prPipelineOpts.githubToken = process.env.GITHUB_TOKEN;
+    } else if (process.env.GH_TOKEN) {
+      prPipelineOpts.githubToken = process.env.GH_TOKEN;
+    }
+    if (process.env.BITBUCKET_TOKEN) {
+      prPipelineOpts.bitbucketToken = process.env.BITBUCKET_TOKEN;
+    }
+    if (process.env.BITBUCKET_USERNAME) {
+      prPipelineOpts.bitbucketUsername = process.env.BITBUCKET_USERNAME;
+    }
+    if (process.env.BITBUCKET_APP_PASSWORD) {
+      prPipelineOpts.bitbucketAppPassword = process.env.BITBUCKET_APP_PASSWORD;
     }
   }
 }
