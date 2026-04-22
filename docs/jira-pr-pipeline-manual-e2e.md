@@ -12,6 +12,8 @@ This guide walks through testing **Jira-triggered pull request creation** end to
 | **Git** | Optional context only | **Worktree, commit, push**, host REST API to open a PR |
 | **Config** | Jira + local-repos | Jira + local-repos + **pr-pipeline** + per-repo **`vcs`**, **tokens** |
 
+The `userPrompt` assembled in [`run-pr-workflow.ts`](../packages/pr-pipeline/src/run-pr-workflow.ts) tells the agent to **solve the Jira issue with concrete code changes** (best effort when the full scope is unclear), then sets **environment and constraints** (temporary worktree, minimal reviewable diffs, pipeline will commit).
+
 If `@agent-detective/pr-pipeline` is not loaded, the Jira handler posts a short comment telling you to add the plugin; analysis behavior is unchanged.
 
 ## Prerequisites (local machine)

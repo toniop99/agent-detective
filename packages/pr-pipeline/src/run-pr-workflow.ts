@@ -113,20 +113,29 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     const userPrompt = [
       `Jira: ${issueKey} — ${issueSummary}`,
       ``,
-      `Issue description (may contain markup):`,
+      `## Your task`,
+      ``,
+      `- You must **try to solve** this Jira issue with **concrete code changes** in this repository (bugfix, feature, or refactor that addresses the request). Do not deliver analysis or explanation only—this automation produces a **pull request** with real file edits.`,
+      `- If the full fix is too large, ambiguous, or blocked, do **best effort**: a partial fix, a narrow scoped change, or the smallest set of edits that clearly moves toward resolution. Avoid leaving the working tree unchanged when a reasonable code change is still possible.`,
+      `- The pipeline will **commit** whatever is in the working tree and open a PR. The goal is a change set a human can review as an **attempted solution** to the issue, not a narrative report.`,
+      ``,
+      `## Issue description (may contain markup)`,
       String(taskDescription || '').slice(0, 20_000),
       ``,
       ...(commentCtx
         ? [
-            `## Additional context from the Jira comment (operator, after the PR trigger phrase):`,
+            `## Additional context from the Jira comment (operator, after the PR trigger phrase)`,
             commentCtx,
             ``,
           ]
         : []),
-      `You are on branch ${branchName} (from base ${prBase}) in a temporary worktree. Make minimal, reviewable code changes. Leave the working tree with changes ready to commit; the pipeline will commit and open a PR.`,
-      analysisPrompt ? `## Extra instructions from operator:\n${analysisPrompt}` : '',
-    ]
-      .join('\n');
+      ...(analysisPrompt ? [`## Extra instructions from operator`, analysisPrompt, ``] : []),
+      `## Environment and constraints`,
+      ``,
+      `- You are on branch \`${branchName}\` (from base \`${prBase}\`) in a **temporary git worktree**; edit only here.`,
+      `- Prefer **minimal, reviewable** diffs; avoid unrelated refactors when they do not help solve the issue.`,
+      `- Leave the working tree with changes **ready to commit**; the pipeline will run \`git commit\` and open the PR.`,
+    ].join('\n');
 
     const dryRunNote = options.prDryRun ? ' **Dry run** — no push or host PR will be created.' : '';
     await jira
