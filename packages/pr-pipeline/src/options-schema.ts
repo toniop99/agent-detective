@@ -45,6 +45,13 @@ export const prPipelineOptionsSchema = z
      * by `BITBUCKET_APP_PASSWORD` when set. Ignored when a Bitbucket access token is set.
      */
     bitbucketAppPassword: z.string().min(1).optional(),
+    /**
+     * When true (default), install dependencies in the worktree before running the
+     * agent so that commands like `pnpm run typecheck` work correctly. Detected from
+     * lock files: pnpm-lock.yaml → pnpm install, package-lock.json → npm install,
+     * yarn.lock → yarn install, composer.lock → composer install, go.mod → go mod download.
+     */
+    worktreeInstallDeps: z.boolean().default(true),
   })
   .strict();
 
