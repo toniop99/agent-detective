@@ -7,6 +7,16 @@ const saved = { ...process.env };
 
 const defaults = prPipelineOptionsSchema.parse({});
 
+describe('prPipelineOptionsSchema', () => {
+  it('defaults enabled to true', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).enabled, true);
+  });
+
+  it('accepts enabled: false', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({ enabled: false }).enabled, false);
+  });
+});
+
 beforeEach(() => {
   for (const k of Object.keys(process.env)) {
     if (k.startsWith('GITHUB_') || k === 'GH_TOKEN' || k.startsWith('BITBUCKET_')) {

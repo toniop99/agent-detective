@@ -3,6 +3,8 @@ import { z } from 'zod';
 /** Options for the PR-pipeline plugin (Jira + git + VCS). */
 export const prPipelineOptionsSchema = z
   .object({
+    /** When false, the plugin loads but does not register the PR workflow service. */
+    enabled: z.boolean().default(true),
     /**
      * Prepended to the Jira issue key for the git feature branch, e.g. `hotfix/`
      * + `LLO-12` => `hotfix/LLO-12`.

@@ -26,6 +26,11 @@ const prPipelinePlugin: Plugin = {
       return;
     }
     const options = parsed.data;
+    if (!options.enabled) {
+      log?.info(`Plugin ${PLUGIN} is disabled`);
+      return;
+    }
+
     const localRepos = ctx.getService<LocalReposService>('@agent-detective/local-repos-plugin');
 
     const service: PrWorkflowService = {

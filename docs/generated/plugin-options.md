@@ -364,6 +364,10 @@ Anchor: `pr-pipeline`
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "enabled": {
+      "default": true,
+      "type": "boolean"
+    },
     "prBranchPrefix": {
       "default": "hotfix/",
       "type": "string"
@@ -394,6 +398,7 @@ Anchor: `pr-pipeline`
     }
   },
   "required": [
+    "enabled",
     "prBranchPrefix",
     "prTitleTemplate",
     "prDryRun"

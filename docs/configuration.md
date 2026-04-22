@@ -57,6 +57,8 @@ For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-
 
 Jira comment (default phrase `#agent-detective pr`, configurable as `prTriggerPhrase` on the Jira plugin) can trigger an **isolated git worktree**, a **write-mode** agent run, **commit + push**, and a **pull request** on **GitHub** or **Bitbucket Cloud** — when `vcs` is set on the matching local-repos repo and credentials are available.
 
+Set **`enabled`: false** in this plugin’s `options` to keep the pr-pipeline entry in config but not register the PR workflow (same idea as the Jira adapter’s `enabled` flag).
+
 **Extra context in the same comment:** any text in the Jira comment **after removing the first occurrence of the PR trigger phrase** (case-insensitive) is passed to the agent as *Additional context from the Jira comment* (e.g. file paths, commit hashes, or a short error description), in addition to the issue description. Example: `#agent-detective pr this error is related to the changes in authentication.php in commit 751b957`.
 
 **Precedence (always):** values from **environment variables** override the same keys in **merged JSON** (`default.json` + `local.json`) for both the [plugin env merge](#plugin-env-whitelist-first-party) at load time and, for tokens, the [runtime resolution](#host-credentials-precedence) used when the job runs. Prefer secrets in **env** in production; use `config/local.json` (gitignored) for local dev if you accept file-based secrets.
