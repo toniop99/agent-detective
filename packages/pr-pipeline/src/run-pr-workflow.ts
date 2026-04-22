@@ -110,6 +110,28 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
 
     await execLocal('git', ['-C', mainPath, 'worktree', 'add', '-B', branchName, workPath, baseRef], GIT);
 
+    if (options.worktreeInstallDeps) {
+      const lockFiles: Array<{ file: string; cmd: string[] }> = [
+        { file: 'pnpm-lock.yaml', cmd: ['pnpm', 'install', '--frozen-lockfile'] },
+        { file: 'package-lock.json', cmd: ['npm', 'install', '--ignore-scripts'] },
+        { file: 'yarn.lock', cmd: ['yarn', 'install', '--ignore-scripts'] },
+        { file: 'composer.lock', cmd: ['composer', 'install', '--no-dev'] },
+        { file: 'go.mod', cmd: ['go', 'mod', 'download'] },
+      ];
+      for (const { file, cmd } of lockFiles) {
+        try {
+          await execLocal('test', ['-f', join(workPath, file)], { timeout: 10_000 });
+          logger.info(`pr-pipeline: ${cmd[0]} install detected (${file}) in ${match.name}`);
+          await execLocal(cmd[0], cmd.slice(1), { timeout: 300_000, maxBuffer: 20 * 1024 * 1024, cwd: workPath }).catch((e) => {
+            logger.warn(`pr-pipeline: ${cmd[0]} install in worktree failed (non-fatal): ${(e as Error).message}`);
+          });
+          break;
+        } catch {
+          // lock file not present; try next
+        }
+      }
+    }
+
     const userPrompt = [
       `Jira: ${issueKey} — ${issueSummary}`,
       ``,
