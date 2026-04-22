@@ -159,6 +159,11 @@ export interface RunAgentOptions {
   onProgress?: (messages: string[]) => void;
   onFinal?: (text: string) => void | Promise<void>;
   /**
+   * Override the process-wide agent subprocess timeout (ms) for this run.
+   * When omitted, `agents.runner.timeoutMs` from app config applies.
+   */
+  timeoutMs?: number;
+  /**
    * When true, the agent is instructed (via CLI flags / env vars that the
    * specific agent adapter knows how to emit) to disable write/edit/shell
    * tools. Used for investigation-only workflows such as Jira incident

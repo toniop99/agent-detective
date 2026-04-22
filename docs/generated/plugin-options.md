@@ -380,6 +380,11 @@ Anchor: `pr-pipeline`
       "default": true,
       "type": "boolean"
     },
+    "prAgentTimeoutMs": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
     "githubToken": {
       "type": "string",
       "minLength": 1

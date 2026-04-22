@@ -21,6 +21,11 @@ export const prPipelineOptionsSchema = z
      */
     prDryRun: z.boolean().default(true),
     /**
+     * Subprocess timeout (ms) for the write-mode agent step in this workflow only.
+     * When omitted, the app-wide `agents.runner.timeoutMs` applies (default 120_000).
+     */
+    prAgentTimeoutMs: z.number().int().positive().optional(),
+    /**
      * GitHub personal access token (classic or fine-grained) for `git push` and
      * REST. Overridden by `GITHUB_TOKEN` or `GH_TOKEN` when set.
      */

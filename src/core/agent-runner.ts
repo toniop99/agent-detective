@@ -107,6 +107,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       onFinal,
       onProgress,
       readOnly,
+      timeoutMs: runTimeoutMs,
     } = runOptions;
 
     const effectiveAgentId = overrideAgentId || 'opencode';
@@ -175,6 +176,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         emitFinal,
         emitProgress,
         readOnly,
+        timeoutMs: runTimeoutMs,
       });
 
       run.settled = true;
@@ -206,6 +208,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       emitFinal,
       emitProgress,
       readOnly,
+      timeoutMs: shellTimeoutMs,
     }: {
       prompt: string;
       cwd: string;
@@ -219,8 +222,11 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       emitFinal: (text: string) => void;
       emitProgress: (payload: string[]) => void;
       readOnly?: boolean;
+      timeoutMs?: number;
     }
   ): Promise<string> {
+    const effectiveTimeoutMs =
+      typeof shellTimeoutMs === 'number' && shellTimeoutMs > 0 ? shellTimeoutMs : agentTimeoutMs;
     const promptBase64 = Buffer.from(prompt, 'utf8').toString('base64');
     const promptExpression = '"$PROMPT"';
     const effectiveModel = model || defaultModels?.[agent.id]?.defaultModel || agent.defaultModel;
@@ -253,7 +259,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       let streamedOutput = '';
 
       await execLocalStreaming('bash', ['-lc', commandToRun], {
-        timeout: agentTimeoutMs,
+        timeout: effectiveTimeoutMs,
         maxBuffer: agentMaxBuffer,
         cwd,
         onSpawn: (child: ChildProcess) => {
@@ -280,7 +286,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       return '';
     } else {
       const output = await execLocal('bash', ['-lc', commandToRun], {
-        timeout: agentTimeoutMs,
+        timeout: effectiveTimeoutMs,
         maxBuffer: agentMaxBuffer,
         cwd,
       });

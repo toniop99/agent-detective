@@ -128,12 +128,24 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     ]
       .join('\n');
 
+    const dryRunNote = options.prDryRun ? ' **Dry run** — no push or host PR will be created.' : '';
+    await jira
+      .addComment(
+        issueKey,
+        stampJiraPr(
+          `**pr-pipeline** (${match.name}): running the coding agent in a worktree on \`${branchName}\` (base: \`${prBase}\`).${dryRunNote} ` +
+            `This often takes several minutes; a follow-up comment will be posted when it finishes.`
+        )
+      )
+      .catch((e) => logger.warn(`pr-pipeline: could not post 'started' Jira comment: ${(e as Error).message}`));
+
     const taskId = `pr-${issueKey}-${idSuffix}`;
     const out = await agentRunner.runAgentForChat(taskId, userPrompt, {
       agentId: 'opencode',
       cwd: workPath,
       repoPath: workPath,
       readOnly: false,
+      ...(options.prAgentTimeoutMs !== undefined ? { timeoutMs: options.prAgentTimeoutMs } : {}),
     });
 
     const status = await execLocal('git', ['-C', workPath, 'status', '--porcelain'], GIT);
