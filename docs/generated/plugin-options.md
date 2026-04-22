@@ -6,6 +6,7 @@ Source files:
 
 - `packages/jira-adapter/src/options-schema.ts`
 - `packages/local-repos-plugin/src/options-schema.ts`
+- `packages/pr-pipeline/src/options-schema.ts`
 
 ### @agent-detective/jira-adapter
 
@@ -51,6 +52,11 @@ Anchor: `jira-adapter`
     },
     "retryTriggerPhrase": {
       "default": "#agent-detective analyze",
+      "type": "string",
+      "minLength": 1
+    },
+    "prTriggerPhrase": {
+      "default": "#agent-detective pr",
       "type": "string",
       "minLength": 1
     },
@@ -163,6 +169,7 @@ Anchor: `jira-adapter`
     "analysisReadOnly",
     "maxReposPerIssue",
     "retryTriggerPhrase",
+    "prTriggerPhrase",
     "webhookBehavior",
     "autoAnalysisCooldownMs",
     "missingLabelsReminderCooldownMs"
@@ -199,6 +206,39 @@ Anchor: `local-repos-plugin`
             "items": {
               "type": "string"
             }
+          },
+          "prBaseBranch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prBranchPrefix": {
+            "type": "string"
+          },
+          "vcs": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "bitbucket"
+                ]
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "provider",
+              "owner",
+              "name"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -310,6 +350,63 @@ Anchor: `local-repos-plugin`
   },
   "required": [
     "repos"
+  ],
+  "additionalProperties": false
+}
+```
+
+### @agent-detective/pr-pipeline
+
+Anchor: `pr-pipeline`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "default": true,
+      "type": "boolean"
+    },
+    "prBranchPrefix": {
+      "default": "hotfix/",
+      "type": "string"
+    },
+    "prTitleTemplate": {
+      "default": "[{{key}}] {{summary}}",
+      "type": "string"
+    },
+    "prDryRun": {
+      "default": true,
+      "type": "boolean"
+    },
+    "prAgentTimeoutMs": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "githubToken": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bitbucketToken": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bitbucketUsername": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bitbucketAppPassword": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "enabled",
+    "prBranchPrefix",
+    "prTitleTemplate",
+    "prDryRun"
   ],
   "additionalProperties": false
 }

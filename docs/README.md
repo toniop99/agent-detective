@@ -52,6 +52,10 @@ The core is **source-agnostic**: plugins normalize external events into a shared
 
 [jira-manual-e2e.md](jira-manual-e2e.md)
 
+## Agents (shell CLIs)
+
+- [cursor-agent.md](cursor-agent.md) — Cursor Agent CLI (`agent` binary, in-app id `cursor`)
+
 ## Development
 
 [development.md](development.md) — pnpm, Turbo, `build` / `build:app`, tests.

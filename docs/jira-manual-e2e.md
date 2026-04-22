@@ -246,9 +246,7 @@ flag to the agent runner, and the **opencode** adapter turns it into a stricter
   *soft* layer complementing the hard tool-permission layer.
 - You can confirm it's active by looking at the startup log for an analysis
   task: **`Agent start task=KAN-N agent=opencode repo=/… readOnly=true`**.
-- Read-only mode is opencode-specific today. If you route analysis through
-  another agent (`claude`, `codex`, `gemini`), add equivalent flag handling in
-  that agent's `buildCommand` before relying on this guarantee.
+- **opencode** and **cursor** map `readOnly` into their CLIs (opencode: `OPENCODE_PERMISSION` deny-list; cursor: `--mode=ask`). **claude** does not map `readOnly` in its adapter; do not treat analysis as tool-safe if you switch the default agent to `claude` without additional hardening.
 
 ## Smoke test without Jira Cloud
 
@@ -285,5 +283,6 @@ JIRA_WEBHOOK_URL=https://your-tunnel.example/plugins/agent-detective-jira-adapte
 ## Related docs
 
 - [configuration.md](configuration.md) — config merge and env whitelist  
+- [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md) — manual test of Jira comment → PR pipeline (worktree, push, GitHub/Bitbucket)  
 - [docker.md](docker.md) — running in containers  
 - [development.md](development.md) — local dev and `mockMode` overview  

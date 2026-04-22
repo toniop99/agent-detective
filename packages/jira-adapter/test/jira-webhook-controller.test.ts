@@ -204,6 +204,31 @@ describe('resolveWebhookEvent precedence', () => {
     assert.equal(r.event, 'jira:issue_created');
   });
 
+  it('infers jira:comment_created when Automation sends bare {{issue}} with fields.comment.comments', () => {
+    const r = resolveWebhookEvent(
+      mkReq({
+        body: {
+          key: 'KAN-18',
+          fields: {
+            summary: 's',
+            comment: {
+              comments: [
+                {
+                  body: '#agent-detective pr',
+                  author: { accountId: 'u1', emailAddress: 'a@example.com' },
+                },
+              ],
+            },
+          },
+          changelog: { startAt: 0, maxResults: 100, total: 0, histories: [] },
+        },
+      })
+    );
+    assert.equal(r.source, 'payload.shape');
+    assert.equal(r.event, 'jira:comment_created');
+    assert.match(r.reason ?? '', /fields\.comment\.comments non-empty/);
+  });
+
   it('infers jira:comment_created when a comment object is present (takes precedence over changelog)', () => {
     const r = resolveWebhookEvent(
       mkReq({

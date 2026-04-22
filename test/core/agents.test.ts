@@ -2,8 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import opencodeAgent from '../../src/agents/opencode.js';
 import claudeAgent from '../../src/agents/claude.js';
-import codexAgent from '../../src/agents/codex.js';
-import geminiAgent from '../../src/agents/gemini.js';
+import cursorAgent from '../../src/agents/cursor.js';
 import {
   normalizeAgent,
   isKnownAgent,
@@ -165,79 +164,59 @@ describe('agents', () => {
     });
   });
 
-  describe('codex agent', () => {
-    it('builds command with default args', () => {
-      const cmd = codexAgent.buildCommand!({
-        prompt: 'Hello world',
-        promptExpression: '"$PROMPT"',
-        model: undefined,
-        thinking: undefined,
-      });
-      assert.ok(cmd.includes('codex'));
-      assert.ok(cmd.includes('exec'));
-      assert.ok(cmd.includes('--json'));
-      assert.ok(cmd.includes('--skip-git-repo-check'));
-    });
-
-    it('builds command with custom model', () => {
-      const cmd = codexAgent.buildCommand!({
-        prompt: 'Hello world',
-        promptExpression: '"$PROMPT"',
-        model: 'gpt-4',
-        thinking: undefined,
-      });
-      assert.ok(cmd.includes('--model'));
-      assert.ok(cmd.includes('gpt-4'));
-    });
-
-    it('builds resume command with threadId', () => {
-      const cmd = codexAgent.buildCommand!({
-        prompt: 'Continue',
-        promptExpression: '"$PROMPT"',
-        threadId: 'session-456',
-        model: undefined,
-        thinking: undefined,
-      });
-      assert.ok(cmd.includes('resume'));
-      assert.ok(cmd.includes('session-456'));
-    });
-
-    it('parses JSON output with final message', () => {
-      const output = JSON.stringify({
-        type: 'item.completed',
-        item: { type: 'message', text: 'Codex response', channel: 'final' },
-      });
-      const parsed = codexAgent.parseOutput!(output);
-      assert.ok(parsed.text.includes('Codex response'));
-      assert.ok(parsed.sawJson);
-    });
-
-    it('parses streaming output', () => {
-      const output = JSON.stringify({
-        type: 'item.completed',
-        item: { type: 'message', text: 'Streaming', channel: 'final' },
-      });
-      const parsed = codexAgent.parseStreamingOutput!(output);
-      assert.ok(parsed.sawFinal);
-      assert.ok(parsed.commentaryMessages);
-    });
-  });
-
-  describe('gemini agent', () => {
-    it('has required properties', () => {
-      assert.ok(geminiAgent.id);
-      assert.ok(geminiAgent.label);
-      assert.ok(geminiAgent.command);
-    });
-
-    it('builds command', () => {
-      const cmd = geminiAgent.buildCommand!({
+  describe('cursor agent', () => {
+    it('builds command with default model and json output', () => {
+      const cmd = cursorAgent.buildCommand!({
         prompt: 'Hello',
         promptExpression: '"$PROMPT"',
         model: undefined,
         thinking: undefined,
       });
-      assert.ok(cmd.includes('gemini'));
+      assert.ok(cmd.startsWith('agent '));
+      assert.ok(cmd.includes('-p'));
+      assert.ok(cmd.includes('--output-format'));
+      assert.ok(cmd.includes('json'));
+      assert.ok(cmd.includes('--model'));
+      assert.ok(cmd.includes('gpt-5.2'));
+    });
+
+    it('adds readOnly via --mode=ask', () => {
+      const cmd = cursorAgent.buildCommand!({
+        prompt: 'Read only',
+        promptExpression: '"$PROMPT"',
+        readOnly: true,
+        model: 'gpt-5.2',
+        thinking: undefined,
+      });
+      assert.ok(cmd.includes('--mode=ask'));
+    });
+
+    it('adds --resume for threadId', () => {
+      const cmd = cursorAgent.buildCommand!({
+        prompt: 'Cont',
+        promptExpression: '"$PROMPT"',
+        threadId: 'c6b62c6f-7ead-4fd6-9922-e952131177ff',
+        model: 'gpt-5.2',
+        thinking: undefined,
+      });
+      assert.ok(cmd.includes('--resume'));
+      assert.ok(cmd.includes('c6b62c6f-7ead-4fd6-9922-e952131177ff'));
+    });
+
+    it('parses JSON result from Cursor Agent CLI', () => {
+      const output = JSON.stringify({
+        type: 'result',
+        subtype: 'success',
+        is_error: false,
+        duration_ms: 1234,
+        duration_api_ms: 1234,
+        result: 'Full assistant text',
+        session_id: 'c6b62c6f-7ead-4fd6-9922-e952131177ff',
+      });
+      const parsed = cursorAgent.parseOutput!(output);
+      assert.equal(parsed.text, 'Full assistant text');
+      assert.equal(parsed.threadId, 'c6b62c6f-7ead-4fd6-9922-e952131177ff');
+      assert.ok(parsed.sawJson);
     });
   });
 
@@ -262,8 +241,7 @@ describe('agents', () => {
     it('isKnownAgent returns true for known agents', () => {
       assert.ok(isKnownAgent('opencode'));
       assert.ok(isKnownAgent('claude'));
-      assert.ok(isKnownAgent('codex'));
-      assert.ok(isKnownAgent('gemini'));
+      assert.ok(isKnownAgent('cursor'));
     });
 
     it('isKnownAgent returns false for unknown agents', () => {
@@ -290,12 +268,11 @@ describe('agents', () => {
 
     it('listAgents returns all agents', () => {
       const agents = listAgents();
-      assert.ok(agents.length >= 4);
-      const ids = agents.map((a) => a.id);
-      assert.ok(ids.includes('opencode'));
-      assert.ok(ids.includes('claude'));
-      assert.ok(ids.includes('codex'));
-      assert.ok(ids.includes('gemini'));
+      assert.equal(agents.length, 3);
+      const ids = new Set(agents.map((a) => a.id));
+      assert.ok(ids.has('opencode'));
+      assert.ok(ids.has('claude'));
+      assert.ok(ids.has('cursor'));
     });
 
     it('isAgentInstalled checks command availability', () => {

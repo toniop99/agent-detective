@@ -151,9 +151,8 @@ agent-detective/
 │   ├── agents/                       # AI agent integrations
 │   │   ├── index.ts                  # Agent registry
 │   │   ├── opencode.ts
-│   │   ├── codex.ts
 │   │   ├── claude.ts
-│   │   ├── gemini.ts
+│   │   ├── cursor.ts
 │   │   └── utils.ts
 │   ├── server.ts                     # Express server (+ Core API endpoints)
 │   └── index.ts                      # Bootstrap

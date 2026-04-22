@@ -159,12 +159,21 @@ export interface RunAgentOptions {
   onProgress?: (messages: string[]) => void;
   onFinal?: (text: string) => void | Promise<void>;
   /**
+   * Override the process-wide agent subprocess timeout (ms) for this run.
+   * When omitted, `agents.runner.timeoutMs` from app config applies.
+   */
+  timeoutMs?: number;
+  /**
    * When true, the agent is instructed (via CLI flags / env vars that the
    * specific agent adapter knows how to emit) to disable write/edit/shell
    * tools. Used for investigation-only workflows such as Jira incident
    * analysis, where the agent must never modify the target repository.
    */
   readOnly?: boolean;
+  /**
+   * Conversation / session id for CLIs that support resume (opencode, claude, cursor, etc.).
+   */
+  threadId?: string;
 }
 
 export interface StopRunResult {
@@ -346,6 +355,43 @@ export const StandardEvents = {
   TASK_FAILED: 'task:failed',
 } as const;
 
+/**
+ * Jira-adapter–agnostic hook for the PR workflow (implemented by
+ * `@agent-detective/pr-pipeline`). The Jira plugin resolves this at runtime; do
+ * not import the implementation from `@agent-detective/types`.
+ */
+export const PR_WORKFLOW_SERVICE = 'pr-workflow' as const;
+
+/** Minimal Jira client surface for posting follow-up comments from the PR module. */
+export interface PrJiraClient {
+  addComment(issueIdOrKey: string, body: string): Promise<void>;
+}
+
+/**
+ * What the Jira handler passes to {@link PrWorkflowService.startPrWorkflow}. The
+ * service should enqueue and run git + agent + host API asynchronously.
+ */
+export interface PrWorkflowInput {
+  issueKey: string;
+  issueSummary: string;
+  taskDescription: string;
+  projectKey: string;
+  labels: string[];
+  match: { name: string; path: string };
+  jira: PrJiraClient;
+  /** Merged with PR-specific instructions for the write-capable agent. */
+  analysisPrompt?: string;
+  /**
+   * Text from the Jira **comment** with the `prTriggerPhrase` removed (whitespace
+   * normalized), so operators can add hints after `#agent-detective pr ...`.
+   */
+  prCommentContext?: string;
+}
+
+export interface PrWorkflowService {
+  startPrWorkflow(input: PrWorkflowInput): void | Promise<void>;
+}
+
 export interface AgentRunRequest {
   agentId: string;
   prompt: string;
@@ -353,6 +399,7 @@ export interface AgentRunRequest {
     model?: string;
     repoPath?: string | null;
     cwd?: string;
+    threadId?: string;
   };
 }
 

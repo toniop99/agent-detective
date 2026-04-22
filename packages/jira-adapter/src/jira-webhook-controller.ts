@@ -298,6 +298,32 @@ function detectChangelogActivity(changelog: unknown): { active: boolean; signal?
 }
 
 /**
+ * True when the REST issue payload embeds at least one comment under
+ * `fields.comment.comments` — typical when Automation sends "Automation
+ * format" `{{issue}}` after a comment was added. Top-level `comment` is
+ * handled separately; this covers the common case where only the expanded
+ * issue object is POSTed (no `webhookEvent`, no top-level `comment`).
+ */
+function hasNonEmptyIssueFieldsComments(body: Record<string, unknown>): boolean {
+  const issue =
+    body.issue && typeof body.issue === 'object' ? (body.issue as Record<string, unknown>) : null;
+  const fieldsFromIssue =
+    issue?.fields && typeof issue.fields === 'object'
+      ? (issue.fields as Record<string, unknown>)
+      : null;
+  const fieldsFromBare =
+    typeof body.key === 'string' && body.fields && typeof body.fields === 'object'
+      ? (body.fields as Record<string, unknown>)
+      : null;
+  const fields = fieldsFromIssue ?? fieldsFromBare;
+  if (!fields) return false;
+  const fc = fields.comment;
+  if (!fc || typeof fc !== 'object') return false;
+  const comments = (fc as Record<string, unknown>).comments;
+  return Array.isArray(comments) && comments.length > 0;
+}
+
+/**
  * Last-resort inference from the payload shape itself, used when none of the
  * explicit event sources (body.webhookEvent, issue_event_type_name,
  * eventTypeName, query.webhookEvent) is populated. This is the common case
@@ -307,6 +333,8 @@ function detectChangelogActivity(changelog: unknown): { active: boolean; signal?
  * Heuristics (only when the payload clearly represents an issue event):
  *   - a `comment` object is present                       → `jira:comment_created`
  *   - `changelog` shows activity (items / histories / total) → `jira:issue_updated`
+ *   - `issue.fields.comment.comments` is non-empty (bare or envelope issue) →
+ *     `jira:comment_created` (Automation `{{issue}}` after a comment)
  *   - otherwise, but the payload looks like an issue       → `jira:issue_created`
  *
  * `comment` wins over `changelog` because Jira Automation comment-event
@@ -344,6 +372,12 @@ function inferEventFromPayloadShape(
     return {
       event: 'jira:issue_updated',
       reason: `changelog activity (${changelogActivity.signal})`,
+    };
+  }
+  if (hasNonEmptyIssueFieldsComments(body)) {
+    return {
+      event: 'jira:comment_created',
+      reason: 'issue.fields.comment.comments non-empty (Automation bare-issue)',
     };
   }
   return { event: 'jira:issue_created', reason: 'issue shape, no changelog activity' };

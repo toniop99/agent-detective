@@ -44,6 +44,7 @@ export function createOrchestrator(deps: OrchestratorDeps) {
           model: task.context.model,
           cwd: task.context.cwd,
           readOnly: task.metadata?.readOnly === true,
+          threadId: task.context.threadId ?? undefined,
         });
 
         // 4. Emit completion

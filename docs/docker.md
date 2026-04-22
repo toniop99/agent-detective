@@ -14,7 +14,7 @@ The image copies **`pnpm-workspace.yaml`** (workspace is **`packages/*`** plus t
 | Target | Purpose |
 |--------|---------|
 | **`dev`** (default) | Installs the monorepo with pnpm; use with **bind mounts** for `src/` and `packages/` so `pnpm dev` hot-reloads. |
-| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents via build-arg **`AGENTS`**: **`opencode`** from **`opencode-ai`** ([OpenCode docs](https://opencode.ai/docs)), **`claude`** from [**`@anthropic-ai/claude-code`**](https://www.npmjs.com/package/@anthropic-ai/claude-code), **`gemini`** from [**`@google/gemini-cli`**](https://www.npmjs.com/package/@google/gemini-cli). |
+| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents via build-arg **`AGENTS`**: **`opencode`** from **`opencode-ai`** ([OpenCode docs](https://opencode.ai/docs)), **`claude`** from [**`@anthropic-ai/claude-code`**](https://www.npmjs.com/package/@anthropic-ai/claude-code). The **Cursor Agent CLI** (`agent` on `PATH`) is not installed in the default image — use the [official install script](https://cursor.com/docs/cli/installation) on the host or extend the image (see [cursor-agent.md](cursor-agent.md)). |
 
 ### Health checks
 

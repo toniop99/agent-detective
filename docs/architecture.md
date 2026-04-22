@@ -157,7 +157,7 @@ export default plugin;
      │
 6.   Prompt builder combines: issue info + repo context
      │
-7.   Agent runner executes prompt against opencode/codex
+7.   Agent runner executes prompt against the configured shell agent (opencode, claude, cursor, etc.)
      │
 8.   onFinalResponse(commentText) {
         │

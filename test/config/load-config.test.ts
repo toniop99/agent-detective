@@ -62,6 +62,46 @@ describe('loadConfig', () => {
     assert.deepStrictEqual(cfg.plugins, []);
   });
 
+  test('BITBUCKET_TOKEN merges over pr-pipeline bitbucketToken from file (env wins)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(
+      join(dir, 'default.json'),
+      JSON.stringify({
+        plugins: [
+          {
+            package: '@agent-detective/pr-pipeline',
+            options: { bitbucketToken: 'from-file', prDryRun: true },
+          },
+        ],
+      })
+    );
+    process.env.BITBUCKET_TOKEN = 'from-env';
+
+    const cfg = loadConfig({ configRoot: dir });
+    const p = cfg.plugins?.find((x) => x.package === '@agent-detective/pr-pipeline');
+    assert.strictEqual((p?.options as Record<string, unknown>)?.bitbucketToken, 'from-env');
+  });
+
+  test('GITHUB_TOKEN merges over pr-pipeline githubToken from file (env wins)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(
+      join(dir, 'default.json'),
+      JSON.stringify({
+        plugins: [
+          {
+            package: '@agent-detective/pr-pipeline',
+            options: { githubToken: 'from-file', prDryRun: true },
+          },
+        ],
+      })
+    );
+    process.env.GITHUB_TOKEN = 'from-env';
+
+    const cfg = loadConfig({ configRoot: dir });
+    const p = cfg.plugins?.find((x) => x.package === '@agent-detective/pr-pipeline');
+    assert.strictEqual((p?.options as Record<string, unknown>)?.githubToken, 'from-env');
+  });
+
   test('REPO_CONTEXT_GIT_LOG_MAX_COMMITS merges into local-repos plugin options', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
     writeFileSync(

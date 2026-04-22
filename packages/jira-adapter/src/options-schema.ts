@@ -66,6 +66,13 @@ export const jiraAdapterOptionsSchema = z
      */
     retryTriggerPhrase: z.string().min(1).default('#agent-detective analyze'),
     /**
+     * On `jira:comment_created` only, if the body contains this phrase (and not
+     * the adapter’s own comment), the PR workflow is triggered instead of
+     * read-only analysis. Requires `@agent-detective/pr-pipeline` and
+     * per-repo VCS in local-repos. PR phrase is checked before `retryTriggerPhrase`.
+     */
+    prTriggerPhrase: z.string().min(1).default('#agent-detective pr'),
+    /**
      * Identity of the Jira account the adapter posts as. Combined with the
      * hidden marker the adapter stamps on every comment, this is used to
      * ignore comments the adapter itself authored so result / reminder

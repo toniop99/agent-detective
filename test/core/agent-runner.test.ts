@@ -144,6 +144,27 @@ describe('agent-runner', () => {
 
       assert.equal(usedModel, 'default-model');
     });
+
+    it('passes threadId to buildCommand', async () => {
+      let usedThread: string | undefined;
+      const runner = createAgentRunner({
+        execLocal: async () => '',
+        execLocalStreaming: async () => '',
+        terminateChildProcess: () => {},
+      });
+      runner.registerAgent(
+        createMockAgent({
+          id: 'opencode',
+          buildCommand: (opts: { threadId?: string }) => {
+            usedThread = opts.threadId;
+            return 'test-cmd';
+          },
+        })
+      );
+
+      await runner.runAgentForChat('task-1', 'test prompt', { threadId: 'sess-abc' });
+      assert.equal(usedThread, 'sess-abc');
+    });
   });
 
   describe('stopActiveRun', () => {

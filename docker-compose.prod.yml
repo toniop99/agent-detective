@@ -15,7 +15,7 @@ services:
       context: .
       target: production
       args:
-        # Comma-separated CLI agents to pre-install in the image (opencode, claude, gemini)
+        # Comma-separated CLI agents to pre-install in the image (opencode, claude)
         AGENTS: ${AGENTS:-opencode}
     image: ${IMAGE_NAME:-agent-detective:latest}
     container_name: agent-detective

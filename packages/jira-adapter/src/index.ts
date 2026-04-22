@@ -69,6 +69,9 @@ const jiraAdapterPlugin: Plugin = {
     // apart on the ticket.
     context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: TaskEvent; result: string }) => {
       const { event, result } = payload;
+      if (event.metadata && (event.metadata as { workflow?: string }).workflow === 'pr') {
+        return;
+      }
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
         const matchedRepo =
           typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0

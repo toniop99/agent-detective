@@ -167,6 +167,7 @@ export class CoreApiController {
             model: { type: 'string' },
             repoPath: { type: 'string' },
             cwd: { type: 'string' },
+            threadId: { type: 'string', description: 'Session id for CLI resume' },
           },
         },
       },
@@ -230,6 +231,8 @@ export class CoreApiController {
           agentId,
           repoPath: options?.repoPath,
           cwd: options?.cwd,
+          model: options?.model,
+          threadId: options?.threadId,
           onProgress: (messages: string[]) => {
             for (const msg of messages) {
               const event: AgentProgressEvent = { type: 'progress', content: msg };
@@ -253,6 +256,8 @@ export class CoreApiController {
           agentId,
           repoPath: options?.repoPath,
           cwd: options?.cwd,
+          model: options?.model,
+          threadId: options?.threadId,
         });
         res.json({ taskId, output, sawJson: false });
       } catch (error) {
@@ -328,6 +333,7 @@ export class CoreApiController {
           await this.agentRunner!.runAgentForChat(taskId, body.message, {
             repoPath: body.context?.repoPath,
             cwd: body.context?.cwd || process.cwd(),
+            threadId: body.context?.threadId ?? undefined,
             onProgress: (messages: string[]) => {
               for (const msg of messages) {
                 res.write(`data: ${JSON.stringify({ type: 'progress', content: msg })}\n\n`);
@@ -350,6 +356,7 @@ export class CoreApiController {
           await this.agentRunner!.runAgentForChat(taskId, body.message, {
             repoPath: body.context?.repoPath,
             cwd: body.context?.cwd || process.cwd(),
+            threadId: body.context?.threadId ?? undefined,
           });
         });
         res.json({ taskId });

@@ -1,6 +1,8 @@
 import {
+  PR_WORKFLOW_SERVICE,
   StandardEvents,
   REPO_MATCHER_SERVICE,
+  type PrWorkflowService,
   type EventBus,
   type Logger,
   type MatchedRepo,
@@ -13,6 +15,7 @@ import { handleIgnore, IgnoreHandlerDeps } from './ignore-handler.js';
 import { handleMissingLabels } from './missing-labels-handler.js';
 import {
   extractCommentInfo,
+  extraTextOutsideTriggerPhrase,
   hasTriggerPhrase,
   isOwnComment,
   stampComment,
@@ -248,8 +251,31 @@ async function handleAnalyze(
   const isCommentCreated = normalizedEvent === 'jira:comment_created';
 
   if (isCommentCreated) {
-    const shouldRun = shouldTreatCommentAsRetry(rawPayload, config, logger, taskInfo.key);
-    if (!shouldRun) return;
+    const mode = getCommentMode(rawPayload, config, logger, taskInfo.key);
+    if (mode === 'none') {
+      return;
+    }
+    if (mode === 'pr') {
+      const repos = matcher.matchAllByLabels(taskInfo.labels);
+      if (repos.length === 0) {
+        await postMissingLabelsReminder(taskInfo, matcher, context);
+        return;
+      }
+      const prPhrase = config.prTriggerPhrase ?? jiraHandlerDefaults.prTriggerPhrase;
+      const comment = extractCommentInfo(rawPayload);
+      const prCommentContext = comment?.body
+        ? extraTextOutsideTriggerPhrase(comment.body, prPhrase)
+        : '';
+      await fanOutPr(
+        repos,
+        taskInfo,
+        context,
+        eventConfig,
+        prCommentContext
+      );
+      return;
+    }
+    // mode === 'analyze' — continue
   } else if (!isCreate) {
     // Any other event routed to `analyze` (e.g. a custom rule pointing
     // `jira:issue_updated` back at analyze) matches on current labels only —
@@ -285,50 +311,55 @@ async function handleAnalyze(
   });
 }
 
+type CommentMode = 'none' | 'pr' | 'analyze';
+
 /**
- * Decides whether a `jira:comment_created` event should trigger a retry:
- *
- *   - Comment must be extractable (body present).
- *   - Comment must NOT be adapter-authored (marker or `jiraUser` match).
- *   - Body must contain `retryTriggerPhrase` (case-insensitive substring).
- *
- * Any failure logs at `debug` and returns `false`. Success logs at `info`
- * so operators can confirm the trigger fired against a specific comment.
+ * On `jira:comment_created`, classifies the comment: `pr` if `prTriggerPhrase`
+ * matches, else `analyze` if `retryTriggerPhrase` matches, else `none`.
+ * PR phrase wins when both are present. Ignores own / adapter comments.
  */
-function shouldTreatCommentAsRetry(
+function getCommentMode(
   rawPayload: unknown,
   config: JiraAdapterConfig,
   logger: Logger | undefined,
   issueKey: string
-): boolean {
+): CommentMode {
   const comment = extractCommentInfo(rawPayload);
   if (!comment) {
     logger?.debug?.(
-      `jira-adapter: ${issueKey} comment_created payload had no extractable comment body — ignoring.`
+      `jira-adapter: ${issueKey} comment_created had no extractable body — no trigger.`
     );
-    return false;
+    return 'none';
   }
 
   const ownUser = config.jiraUser;
   if (isOwnComment(comment.body, comment.author, ownUser)) {
     logger?.debug?.(
-      `jira-adapter: ${issueKey} comment_created authored by adapter (marker or jiraUser match) — ignoring to avoid loop.`
+      `jira-adapter: ${issueKey} comment is adapter-authored — ignoring.`
     );
-    return false;
+    return 'none';
   }
 
-  const phrase = config.retryTriggerPhrase || jiraHandlerDefaults.retryTriggerPhrase;
-  if (!hasTriggerPhrase(comment.body, phrase)) {
-    logger?.debug?.(
-      `jira-adapter: ${issueKey} comment_created does not contain trigger phrase ("${phrase}") — ignoring.`
+  const prPhrase = config.prTriggerPhrase ?? jiraHandlerDefaults.prTriggerPhrase;
+  if (hasTriggerPhrase(comment.body, prPhrase)) {
+    logger?.info(
+      `jira-adapter: ${issueKey} prTriggerPhrase matched — PR workflow.`
     );
-    return false;
+    return 'pr';
   }
 
-  logger?.info(
-    `jira-adapter: ${issueKey} comment_created contains trigger phrase ("${phrase}") — re-running label match.`
+  const analyzePhrase = config.retryTriggerPhrase || jiraHandlerDefaults.retryTriggerPhrase;
+  if (hasTriggerPhrase(comment.body, analyzePhrase)) {
+    logger?.info(
+      `jira-adapter: ${issueKey} retryTriggerPhrase matched — re-running label match.`
+    );
+    return 'analyze';
+  }
+
+  logger?.debug?.(
+    `jira-adapter: ${issueKey} comment did not match prTriggerPhrase or retryTriggerPhrase.`
   );
-  return true;
+  return 'none';
 }
 
 async function postMissingLabelsReminder(
@@ -470,6 +501,73 @@ async function fanOutAnalysis(
         readOnly,
         matchedRepo: match.name,
       },
+    });
+  }
+}
+
+/**
+ * Queue PR workflow jobs (write-mode agent, git, host PR) via
+ * `PR_WORKFLOW_SERVICE` when the pr-pipeline plugin is installed.
+ */
+async function fanOutPr(
+  currentMatches: readonly MatchedRepo[],
+  taskInfo: JiraTaskInfo,
+  context: HandlerContext,
+  eventConfig: JiraEventConfig,
+  prCommentContext: string
+): Promise<void> {
+  const { config, jiraClient, logger, getService } = context;
+
+  let repos = [...currentMatches];
+  const cap = config.maxReposPerIssue ?? jiraHandlerDefaults.maxReposPerIssue;
+  let skippedByCap: MatchedRepo[] = [];
+  if (cap > 0 && repos.length > cap) {
+    skippedByCap = repos.slice(cap);
+    repos = repos.slice(0, cap);
+  }
+
+  if (repos.length > 1 || skippedByCap.length > 0) {
+    try {
+      await jiraClient.addComment(
+        taskInfo.key,
+        stampComment(
+          `Starting **PR** workflow for: ${repos.map((r) => `\`${r.name}\``).join(', ')}. ` +
+            (skippedByCap.length
+              ? `Skipped by cap: ${skippedByCap.map((r) => r.name).join(', ')}.`
+              : '')
+        )
+      );
+    } catch (err) {
+      logger?.warn(`jira-adapter: fanOutPr ack failed: ${(err as Error).message}`);
+    }
+  }
+
+  const pr = getService?.<PrWorkflowService>(PR_WORKFLOW_SERVICE) ?? null;
+  if (!pr) {
+    await jiraClient.addComment(
+      taskInfo.key,
+      stampComment(
+        '**pr-pipeline** is not loaded. Add `@agent-detective/pr-pipeline` to `plugins` in config (after Jira) to enable Jira comment PR creation.'
+      )
+    );
+    return;
+  }
+
+  for (const match of repos) {
+    pr.startPrWorkflow({
+      issueKey: taskInfo.key,
+      issueSummary: taskInfo.summary,
+      taskDescription: taskInfo.description,
+      projectKey: taskInfo.projectKey,
+      labels: taskInfo.labels,
+      match: { name: match.name, path: match.path },
+      jira: {
+        addComment: async (k, t) => {
+          await jiraClient.addComment(k, t);
+        },
+      },
+      analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
+      ...(prCommentContext ? { prCommentContext } : {}),
     });
   }
 }

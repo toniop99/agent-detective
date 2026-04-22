@@ -65,6 +65,12 @@ export interface JiraAdapterConfig {
    */
   retryTriggerPhrase?: string;
 
+  /**
+   * Comment-only trigger for the PR pipeline (`#agent-detective pr` by default).
+   * See `options-schema.ts`.
+   */
+  prTriggerPhrase?: string;
+
   /** See `options-schema.ts` — default 10 minutes. */
   autoAnalysisCooldownMs?: number;
 

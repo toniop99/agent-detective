@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   AGENT_DETECTIVE_MARKER,
   extractCommentInfo,
+  extraTextOutsideTriggerPhrase,
   hasTriggerPhrase,
   isOwnComment,
   stampComment,
@@ -81,6 +82,38 @@ describe('hasTriggerPhrase', () => {
   it('returns false for empty body or empty phrase', () => {
     assert.equal(hasTriggerPhrase('', '#agent-detective analyze'), false);
     assert.equal(hasTriggerPhrase('some text', ''), false);
+  });
+});
+
+describe('extraTextOutsideTriggerPhrase', () => {
+  const pr = '#agent-detective pr';
+
+  it('returns text after the trigger when the trigger is a prefix', () => {
+    assert.equal(
+      extraTextOutsideTriggerPhrase(
+        '#agent-detective pr this error is related to authentication.php in commit 751b957',
+        pr
+      ),
+      'this error is related to authentication.php in commit 751b957'
+    );
+  });
+
+  it('joins text before and after the trigger and normalizes spaces', () => {
+    assert.equal(
+      extraTextOutsideTriggerPhrase('Please check   #agent-detective pr   the auth file', pr),
+      'Please check the auth file'
+    );
+  });
+
+  it('is case-insensitive for locating the trigger', () => {
+    assert.equal(
+      extraTextOutsideTriggerPhrase('#AGENT-Detective PR hello', pr),
+      'hello'
+    );
+  });
+
+  it('returns empty when nothing is left', () => {
+    assert.equal(extraTextOutsideTriggerPhrase('  #agent-detective pr  ', pr), '');
   });
 });
 

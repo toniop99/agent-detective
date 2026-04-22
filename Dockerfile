@@ -26,10 +26,11 @@ RUN pnpm prune --prod
 # =============================================================================
 # Production — runtime image (no compile; uses pruned node_modules from builder)
 # =============================================================================
-# Build: docker build --target production --build-arg AGENTS=opencode,claude,gemini -t agent-detective:latest .
+# Build: docker build --target production --build-arg AGENTS=opencode,claude -t agent-detective:latest .
 # AGENTS=opencode → npm opencode-ai (binary: opencode). https://opencode.ai/docs
 # AGENTS=claude   → npm @anthropic-ai/claude-code (binary: claude). https://www.npmjs.com/package/@anthropic-ai/claude-code
-# AGENTS=gemini   → npm @google/gemini-cli (binary: gemini). https://www.npmjs.com/package/@google/gemini-cli
+# Cursor Agent CLI (binary: agent) is not installed here — it uses the official install script
+# (https://cursor.com/docs/cli/installation). Install on the host or extend this image.
 FROM node:24-bookworm AS production
 
 ARG AGENTS="opencode"
@@ -61,10 +62,6 @@ RUN set -eu; \
                 echo "Installing Claude Code CLI (npm: @anthropic-ai/claude-code)..."; \
                 npm install -g @anthropic-ai/claude-code; \
                 ;; \
-            gemini) \
-                echo "Installing Gemini CLI (npm: @google/gemini-cli)..."; \
-                npm install -g @google/gemini-cli; \
-                ;; \
             *) \
                 echo "Unknown agent: $1, skipping"; \
                 ;; \
@@ -85,9 +82,6 @@ RUN if echo ",${AGENTS}," | grep -q ',opencode,'; then \
     fi \
     && if echo ",${AGENTS}," | grep -q ',claude,'; then \
         su -s /bin/bash appuser -c 'command -v claude'; \
-    fi \
-    && if echo ",${AGENTS}," | grep -q ',gemini,'; then \
-        su -s /bin/bash appuser -c 'command -v gemini'; \
     fi
 
 USER appuser

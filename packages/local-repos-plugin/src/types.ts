@@ -1,10 +1,25 @@
 import type { Commit, BuildRepoContextOptions } from '@agent-detective/types';
 
+/** VCS for opening pull requests (see `@agent-detective/pr-pipeline`). */
+export type RepoVcsProvider = 'github' | 'bitbucket';
+
+export interface RepoVcsConfig {
+  provider: RepoVcsProvider;
+  /** For GitHub: `owner` + `name`; for Bitbucket Cloud: use `owner` = workspace, `name` = repo slug. */
+  owner: string;
+  name: string;
+}
+
 export interface RepoConfig {
   name: string;
   path: string;
   description?: string;
   techStack?: string[];
+  /** Base ref for the PR (e.g. `main`, `develop`). */
+  prBaseBranch?: string;
+  /** Per-repo override; falls back to pr-pipeline default (e.g. `hotfix/`). */
+  prBranchPrefix?: string;
+  vcs?: RepoVcsConfig;
 }
 
 export interface TechStackDetectionConfig {
@@ -69,6 +84,8 @@ export interface LocalReposService {
   localRepos: LocalReposContext;
   buildRepoContext: (repoPath: string, options?: BuildRepoContextOptions) => Promise<unknown>;
   formatRepoContextForPrompt: (context: unknown) => string;
+  /** Raw `repos[]` entry from plugin config (path, vcs, pr settings). */
+  getSourceRepoConfig(name: string): RepoConfig | undefined;
 }
 
 const DEFAULT_TECH_STACK_PATTERNS: Record<string, string[]> = {
