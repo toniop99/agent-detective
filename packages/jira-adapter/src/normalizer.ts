@@ -1,7 +1,22 @@
 import type { TaskEvent } from '@agent-detective/types';
 import type { JiraIssue, JiraDescription, JiraPayload } from './types.js';
+import { classifyWebhookEvent, type JiraEventCategory } from './webhook-handler.js';
 
-export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
+export { classifyWebhookEvent, type JiraEventCategory };
+
+export function isJiraPayload(value: unknown): value is JiraPayload {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Record<string, unknown>;
+  if (p.issue && typeof p.issue === 'object') return true;
+  if (typeof p.key === 'string' && p.fields && typeof p.fields === 'object') return true;
+  return false;
+}
+
+export function getEventCategory(event: string): JiraEventCategory {
+  return classifyWebhookEvent(event);
+}
+
+export function normalizeJiraPayload(payload: JiraPayload, event?: string): TaskEvent {
   const issue = payload.issue || ({} as JiraIssue);
 
   const id = issue.key || issue.id || String(Date.now());
@@ -10,6 +25,7 @@ export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
   const labels = issue.fields?.labels || [];
   const projectKey = issue.fields?.project?.key || '';
   const projectName = issue.fields?.project?.name || '';
+  const eventCategory: JiraEventCategory = event ? classifyWebhookEvent(event) : 'unknown';
 
   const metadata = {
     labels,
@@ -23,6 +39,7 @@ export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {
     created: issue.fields?.created ? String(issue.fields.created) : new Date().toISOString(),
     timestamp: payload.timestamp || Date.now(),
     webhookEvent: payload.webhookEvent || 'unknown',
+    eventCategory,
     user: payload.user ? {
       accountId: payload.user.accountId || null,
       displayName: payload.user.displayName || null,

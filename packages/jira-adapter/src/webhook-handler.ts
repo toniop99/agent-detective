@@ -16,6 +16,27 @@ import { routeToHandler, HandlerContext } from './handlers/index.js';
  */
 export type WebhookPayloadShape = 'envelope' | 'bare-issue' | 'unknown';
 
+/**
+ * Categorizes Jira webhook events into logical groups for routing.
+ * Native Jira webhooks use `jira:*` prefix; Automation uses short names.
+ */
+export type JiraEventCategory = 'issue' | 'comment' | 'worklog' | 'unknown';
+
+export function classifyWebhookEvent(event: string): JiraEventCategory {
+  if (!event) return 'unknown';
+  const normalized = event.toLowerCase();
+  if (normalized.startsWith('jira:comment') || normalized === 'issue_commented') {
+    return 'comment';
+  }
+  if (normalized.startsWith('jira:issue') || normalized.startsWith('issue_')) {
+    return 'issue';
+  }
+  if (normalized.startsWith('jira:worklog') || normalized.startsWith('worklog')) {
+    return 'worklog';
+  }
+  return 'unknown';
+}
+
 function detectPayloadShape(payload: Record<string, unknown>): WebhookPayloadShape {
   if (payload.issue && typeof payload.issue === 'object') return 'envelope';
   // Automation format expands `{{issue}}` at the top level, so it looks like
@@ -75,6 +96,8 @@ export function summarizeWebhookPayload(
   }
   const p = payload as Record<string, unknown>;
   const detectedShape = shape ?? detectPayloadShape(p);
+  const eventRaw = p.webhookEvent ?? p.issue_event_type_name ?? p.eventTypeName ?? null;
+  const detectedIssueEvent = typeof eventRaw === 'string' ? eventRaw : null;
   const issue =
     detectedShape === 'bare-issue'
       ? p
@@ -82,6 +105,7 @@ export function summarizeWebhookPayload(
   const fields = (issue?.fields ?? null) as Record<string, unknown> | null;
   return {
     shape: detectedShape,
+    eventCategory: detectedIssueEvent ? classifyWebhookEvent(detectedIssueEvent) : 'unknown',
     webhookEvent: p.webhookEvent ?? null,
     webhookEventType: typeof p.webhookEvent,
     // Alternate event-identifier keys emitted by Automation for Jira.
@@ -205,7 +229,7 @@ export function createJiraWebhookHandler(options: HandlerContext) {
       `Webhook payload accepted: ${JSON.stringify(summarizeWebhookPayload(payload, shape))}`
     );
 
-    const taskEvent = normalizeJiraPayload(envelope);
+    const taskEvent = normalizeJiraPayload(envelope, webhookEvent);
 
     const taskInfo = extractTaskInfo(envelope, taskEvent, webhookEvent);
 
