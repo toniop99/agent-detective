@@ -12,6 +12,48 @@ import type { JiraWebhookResponse } from './webhook-types.js';
 import type { Logger } from '@agent-detective/types';
 import { JiraWebhookPayloadError } from './webhook-handler.js';
 
+/**
+ * Jira Webhook Payload Normalization
+ * ====================================
+ *
+ * This module handles incoming Jira webhook payloads from multiple sources:
+ *
+ * **Sources:**
+ * - Native Jira Platform webhooks (System → WebHooks)
+ * - Jira Automation "Automation format" (issue_event_type_name)
+ * - Jira Automation "Jira format" (webhookEvent via URL query param)
+ * - Jira Service Management automation webhooks
+ *
+ * **Relevant Atlassian Documentation:**
+ * - Jira Platform Webhooks:
+ *   https://developer.atlassian.com/cloud/jira/platform/webhooks/
+ * - Jira Automation Webhooks (Jira Service Management):
+ *   https://developer.atlassian.com/cloud/jira/service-desk/automation-webhooks/
+ * - Jira Smart Values (for Automation payload structure):
+ *   https://support.atlassian.com/cloud-automation/docs/jira-smart-values-issues/
+ * - Issue Data (Automation format) for Send Web Request:
+ *   https://support.atlassian.com/cloud-automation/docs/issue-data-automation-format-payload-for-send-web-request/
+ * - Issue Data (Jira format) for Send Web Request:
+ *   https://support.atlassian.com/cloud-automation/docs/issue-data-jira-format-payload-for-send-web-request-action/
+ *
+ * **Package Note:**
+ * The `jira.js` package (catalog:) is a Jira REST API client used for
+ * operations like posting comments and fetching issue details. It does NOT
+ * provide webhook payload parsing utilities — webhook interpretation is
+ * implemented here based on the Atlassian documentation links above.
+ *
+ * **Payload Shapes:**
+ * - Envelope:   `{ issue, user, timestamp, webhookEvent }` (native Jira, Jira format)
+ * - Bare-issue: `{ key, fields, ... }` (Automation format with {{issue}})
+ *
+ * **Event Detection Precedence:**
+ * 1. body.webhookEvent          (native Jira webhooks)
+ * 2. body.issue_event_type_name (Automation "Automation format")
+ * 3. body.eventTypeName        (alternative casing)
+ * 4. query.webhookEvent        (Jira format URL override)
+ * 5. payload.shape inference    (changelog/comment detection)
+ */
+
 type JiraWebhookHandler = ReturnType<typeof import('./webhook-handler.js').createJiraWebhookHandler>;
 
 const PLUGIN_TAG = '@agent-detective/jira-adapter';
