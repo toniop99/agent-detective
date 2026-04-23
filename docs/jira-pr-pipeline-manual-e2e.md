@@ -82,10 +82,17 @@ Work from `config/local.json` (see [config/local.example.json](../config/local.e
 
 - **`prDryRun: true`** (default in [default.json](../config/default.json)) — **no** `git push`, **no** host API PR; a Jira comment describes what **would** happen. Use this first.
 - **`prBranchPrefix`**, **`prTitleTemplate`** — see [plugin-options.md](generated/plugin-options.md) (pr-pipeline block).
+- **`worktreeSetupCommands`** — array of shell commands run in the worktree (cwd = worktree root) after checkout and before the agent. Use them to install dependencies, copy gitignored files, or run any repo-specific setup. The token `{{mainPath}}` is replaced with the absolute path of the source repo. Each command is run via `sh -c`; failures are logged as warnings and do not abort the workflow. Example:
+  ```json
+  “worktreeSetupCommands”: [
+    “composer install --no-dev”,
+    “cp {{mainPath}}/docker/.env docker/.env”
+  ]
+  ```
 - **Secrets** (env overrides file; see “Host credentials precedence” in [configuration.md](configuration.md))  
   - **GitHub:** `GITHUB_TOKEN` or `GH_TOKEN`, or `githubToken` in config.  
-  - **Bitbucket access token:** `BITBUCKET_TOKEN` or `bitbucketToken`.  
-  - **Bitbucket app password:** `BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD`, or the matching options.
+  - **Bitbucket (recommended — new API token):** `BITBUCKET_USERNAME` (your Bitbucket username, not email) + `BITBUCKET_EMAIL` (your email, for REST API) + `BITBUCKET_APP_PASSWORD` (the API token value from *Personal settings → API tokens*). Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`.  
+  - **Bitbucket (legacy — workspace/repo access token):** `BITBUCKET_TOKEN` or `bitbucketToken`. Uses `x-token-auth` for Git; only for older token types.
 
 Only when **`prDryRun`** is **false** and **credentials** + **`vcs`** are valid will the app push and call the host API. Wrong or missing `vcs` / tokens produce a **Jira comment** explaining what to set (not a generic 500 in most cases).
 

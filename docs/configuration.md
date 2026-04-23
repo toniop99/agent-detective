@@ -70,16 +70,25 @@ Set **`enabled`: false** in this plugin’s `options` to keep the pr-pipeline en
 | Secret | First wins | Then | Then |
 |--------|------------|------|------|
 | GitHub token | `GITHUB_TOKEN` | `GH_TOKEN` | `plugins[].options.githubToken` for `@agent-detective/pr-pipeline` |
-| Bitbucket access token (preferred for CI) | `BITBUCKET_TOKEN` | | `options.bitbucketToken` in JSON for pr-pipeline |
-| Bitbucket app password (alternative) | `BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD` | | `bitbucketUsername` + `bitbucketAppPassword` in JSON |
+| Bitbucket legacy access token (`x-token-auth`) | `BITBUCKET_TOKEN` | | `options.bitbucketToken` in JSON for pr-pipeline |
+| Bitbucket username + credential (API token or app password) | `BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD` | | `bitbucketUsername` + `bitbucketAppPassword` in JSON |
 
-**If a Bitbucket access token is set, app-password options are not used** (smaller, token-shaped secret; matches [Atlassian: using access tokens](https://support.atlassian.com/bitbucket-cloud/docs/using-access-tokens/)).
+**If `BITBUCKET_TOKEN` is set, the username+credential path is not used.**
 
 Empty or whitespace-only values are ignored; the next source in the chain is used.
 
-**Bitbucket — access token API / Git (when `BITBUCKET_TOKEN` or `bitbucketToken` is set):** REST calls use a `Bearer` token. Git uses `x-token-auth` as the username and the token in the URL (see [using access tokens](https://support.atlassian.com/bitbucket-cloud/docs/using-access-tokens/)). Use a **repository** or **workspace access token** with *pull request* (write) scope for opening PRs.
+**Bitbucket — new API token (recommended):** Bitbucket now issues **API tokens** under *Personal settings → API tokens*. These use your Bitbucket **username** + the token value as HTTP Basic credentials — the same format as the old app passwords. Set:
+```
+BITBUCKET_USERNAME=<your-bitbucket-username>   # not your email
+BITBUCKET_APP_PASSWORD=<your-api-token>
+```
+The token needs these scopes:
+- `read:repository:bitbucket` — read repo contents
+- `write:repository:bitbucket` — git push
+- `read:pullrequest:bitbucket` — required by the Bitbucket PR API even when only creating PRs
+- `write:pullrequest:bitbucket` — create pull requests
 
-**Bitbucket — app password (when no access token is set):** [app password](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) plus your Bitbucket **account username**; REST uses HTTP Basic, Git uses username + password in the URL.
+**Bitbucket — legacy access token (when `BITBUCKET_TOKEN` or `bitbucketToken` is set):** REST calls use `Bearer` and Git uses `x-token-auth` in the URL. This is for older workspace/repository access tokens, not the new API tokens.
 
 **Per-repo `vcs`** (under `local-repos` `repos[]`) selects the host; **branch prefix and base** can be set per repo (`prBranchPrefix`, `prBaseBranch`).
 
@@ -105,7 +114,7 @@ flowchart LR
 ```
 
 1. A matching **label** maps the issue to a **local-repos** entry (`path` + optional `vcs` / `prBaseBranch` / `prBranchPrefix`).  
-2. The pipeline creates a **temporary worktree**, runs the **agent** with the Jira text, **commits** if there are changes.  
+2. The pipeline creates a **temporary worktree**, runs any **`worktreeSetupCommands`** (install deps, copy gitignored files, etc.), runs the **agent** with the Jira text, **commits** if there are changes. The agent used is determined by `prAgent` (plugin option) → app-level `agent` config / `AGENT` env var → `opencode` (default).  
 3. If **`prDryRun`** is true (default in `config/default.json`), it posts a Jira note only (no push).  
 4. If not dry-run, it **pushes** to `origin` on the chosen host and **opens a PR** using the **resolved tokens** above.  
 5. A **Jira comment** includes the PR URL or an error.

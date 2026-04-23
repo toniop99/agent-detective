@@ -201,9 +201,9 @@ export function createJiraWebhookHandler(options: HandlerContext) {
 
     // One-line audit trail so operators can confirm the real webhook shape
     // matches what our schema declares (event type, id/key types, field keys).
-    handlerContext.logger?.info(
-      `Webhook payload accepted: ${JSON.stringify(summarizeWebhookPayload(payload, shape))}`
-    );
+    // handlerContext.logger?.info(
+    //   `Webhook payload accepted: ${JSON.stringify(summarizeWebhookPayload(payload, shape))}`
+    // );
 
     const taskEvent = normalizeJiraPayload(envelope);
 

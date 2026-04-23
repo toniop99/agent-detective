@@ -11,8 +11,9 @@ function firstNonEmpty(...vals: (string | undefined)[]): string | undefined {
 /**
  * Host credentials: **environment first**, then plugin options (JSON).
  * - GitHub: `GITHUB_TOKEN` → `GH_TOKEN` → `options.githubToken`
- * - Bitbucket access token: `BITBUCKET_TOKEN` → `options.bitbucketToken` (over app password)
- * - Bitbucket app password: `BITBUCKET_USERNAME` / `BITBUCKET_APP_PASSWORD` → `options.*`
+ * - Bitbucket access token (old workspace/repo tokens, x-token-auth): `BITBUCKET_TOKEN` → `options.bitbucketToken`
+ * - Bitbucket new API token: `BITBUCKET_USERNAME` (for Git) + `BITBUCKET_EMAIL` (for REST) + `BITBUCKET_APP_PASSWORD` (token value)
+ * - Bitbucket old app password: `BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD` (email falls back to username)
  */
 export function resolveGithubToken(options: PrPipelineOptions): string | undefined {
   return firstNonEmpty(
@@ -24,11 +25,12 @@ export function resolveGithubToken(options: PrPipelineOptions): string | undefin
 
 export type BitbucketAuth =
   | { mode: 'token'; token: string }
-  | { mode: 'appPassword'; username: string; appPassword: string };
+  | { mode: 'appPassword'; username: string; email: string; appPassword: string };
 
 /**
  * Prefer **access token** (env or file) for Bearer API + `x-token-auth` Git URL;
- * otherwise **app password** (username + password) for Basic + embedded credentials in URL.
+ * otherwise **username + credential** for Basic auth. `email` is used for REST API calls
+ * (required by new Bitbucket API tokens); falls back to `username` if unset (old app passwords).
  */
 export function resolveBitbucketAuth(options: PrPipelineOptions): BitbucketAuth | undefined {
   const token = firstNonEmpty(process.env.BITBUCKET_TOKEN, options.bitbucketToken);
@@ -41,7 +43,8 @@ export function resolveBitbucketAuth(options: PrPipelineOptions): BitbucketAuth 
     options.bitbucketAppPassword
   );
   if (username && appPassword) {
-    return { mode: 'appPassword', username, appPassword };
+    const email = firstNonEmpty(process.env.BITBUCKET_EMAIL, options.bitbucketEmail) ?? username;
+    return { mode: 'appPassword', username, email, appPassword };
   }
   return undefined;
 }

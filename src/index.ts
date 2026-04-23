@@ -5,7 +5,7 @@ import { createServer, loadConfig, setupDocs } from './server.js';
 import { createPluginSystem, sanitizePluginName } from './core/plugin-system.js';
 import { createAgentRunner } from './core/agent-runner.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
-import { getAgentLabel, listAgents } from './agents/index.js';
+import { getAgentLabel, listAgents, normalizeAgent } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
 import {
   generateSpecFromRoutes,
@@ -57,6 +57,7 @@ const agentRunner = createAgentRunner({
   postFinalGraceMs: runnerConfig?.postFinalGraceMs,
   forceKillDelayMs: runnerConfig?.forceKillDelayMs,
   logger: logger.child('agent-runner'),
+  defaultAgentId: normalizeAgent(config.agent),
 });
 
 // Register built-in agents

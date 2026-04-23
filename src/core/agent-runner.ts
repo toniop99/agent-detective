@@ -25,6 +25,8 @@ interface CreateAgentRunnerOptions {
   defaultTimeZone?: string;
   /** Defaults to `console` when omitted (e.g. unit tests). */
   logger?: Pick<Logger, 'info' | 'warn' | 'error'>;
+  /** Agent to use when no `agentId` is passed to `runAgentForChat`. Defaults to `'opencode'`. */
+  defaultAgentId?: string;
 }
 
 interface ActiveRun {
@@ -45,6 +47,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     postFinalGraceMs = 30000,
     forceKillDelayMs = 1000,
     logger: log = console,
+    defaultAgentId,
   } = options;
 
   const agents = new Map<string, Agent>();
@@ -111,7 +114,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       threadId,
     } = runOptions;
 
-    const effectiveAgentId = overrideAgentId || 'opencode';
+    const effectiveAgentId = overrideAgentId || defaultAgentId || 'opencode';
     const agent = agents.get(effectiveAgentId);
     if (!agent) {
       throw new Error(`Unknown agent: ${effectiveAgentId}. Ensure it is registered.`);

@@ -380,6 +380,10 @@ Anchor: `pr-pipeline`
       "default": true,
       "type": "boolean"
     },
+    "prAgent": {
+      "type": "string",
+      "minLength": 1
+    },
     "prAgentTimeoutMs": {
       "type": "integer",
       "exclusiveMinimum": 0,
@@ -397,16 +401,28 @@ Anchor: `pr-pipeline`
       "type": "string",
       "minLength": 1
     },
+    "bitbucketEmail": {
+      "type": "string",
+      "minLength": 1
+    },
     "bitbucketAppPassword": {
       "type": "string",
       "minLength": 1
+    },
+    "worktreeSetupCommands": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [
     "enabled",
     "prBranchPrefix",
     "prTitleTemplate",
-    "prDryRun"
+    "prDryRun",
+    "worktreeSetupCommands"
   ],
   "additionalProperties": false
 }

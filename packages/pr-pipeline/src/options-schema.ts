@@ -21,6 +21,11 @@ export const prPipelineOptionsSchema = z
      */
     prDryRun: z.boolean().default(true),
     /**
+     * Agent to use for the coding step (e.g. `'claude'`, `'cursor'`, `'opencode'`).
+     * When omitted, the app-wide `agent` config (or `AGENT` env var) applies.
+     */
+    prAgent: z.string().min(1).optional(),
+    /**
      * Subprocess timeout (ms) for the write-mode agent step in this workflow only.
      * When omitted, the app-wide `agents.runner.timeoutMs` applies (default 120_000).
      */
@@ -35,23 +40,33 @@ export const prPipelineOptionsSchema = z
      */
     bitbucketToken: z.string().min(1).optional(),
     /**
-     * Bitbucket Cloud **username** (not email) for HTTP Basic with an app
-     * password. Overridden by `BITBUCKET_USERNAME` when set. Ignored when
+     * Bitbucket Cloud **username** (not email) used in the Git push URL.
+     * Overridden by `BITBUCKET_USERNAME` when set. Ignored when
      * `bitbucketToken` / `BITBUCKET_TOKEN` is available.
      */
     bitbucketUsername: z.string().min(1).optional(),
     /**
-     * Bitbucket Cloud **app password** (create under Personal settings). Overridden
-     * by `BITBUCKET_APP_PASSWORD` when set. Ignored when a Bitbucket access token is set.
+     * Bitbucket Cloud **email address** used for REST API Basic auth.
+     * New Bitbucket API tokens require email for API calls but username for Git.
+     * When unset, `bitbucketUsername` is used as a fallback (works for old app passwords).
+     * Overridden by `BITBUCKET_EMAIL` when set.
+     */
+    bitbucketEmail: z.string().min(1).optional(),
+    /**
+     * Bitbucket Cloud **app password or API token** paired with `bitbucketUsername` / `bitbucketEmail`.
+     * New Bitbucket API tokens (Personal settings → API tokens): set this to the token value,
+     * `bitbucketUsername` to your Bitbucket username (for Git), and `bitbucketEmail` to your
+     * Bitbucket email (for REST API). Overridden by `BITBUCKET_APP_PASSWORD` when set.
+     * Ignored when a Bitbucket access token (`bitbucketToken` / `BITBUCKET_TOKEN`) is set.
      */
     bitbucketAppPassword: z.string().min(1).optional(),
     /**
-     * When true (default), install dependencies in the worktree before running the
-     * agent so that commands like `pnpm run typecheck` work correctly. Detected from
-     * lock files: pnpm-lock.yaml → pnpm install, package-lock.json → npm install,
-     * yarn.lock → yarn install, composer.lock → composer install, go.mod → go mod download.
+     * Shell commands executed in the worktree (cwd = worktree root) after checkout
+     * and before the agent runs. Use `{{mainPath}}` to reference the original repo.
+     * Each command runs via `sh -c`; failures are logged as warnings but do not
+     * abort the workflow.
      */
-    worktreeInstallDeps: z.boolean().default(true),
+    worktreeSetupCommands: z.array(z.string()).default([]),
   })
   .strict();
 

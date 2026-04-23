@@ -15,6 +15,20 @@ describe('prPipelineOptionsSchema', () => {
   it('accepts enabled: false', () => {
     assert.strictEqual(prPipelineOptionsSchema.parse({ enabled: false }).enabled, false);
   });
+
+  it('defaults worktreeSetupCommands to empty array', () => {
+    assert.deepStrictEqual(prPipelineOptionsSchema.parse({}).worktreeSetupCommands, []);
+  });
+
+  it('accepts worktreeSetupCommands as array of strings', () => {
+    const result = prPipelineOptionsSchema.parse({ worktreeSetupCommands: ['cp {{mainPath}}/.env .env'] });
+    assert.deepStrictEqual(result.worktreeSetupCommands, ['cp {{mainPath}}/.env .env']);
+  });
+
+  it('rejects worktreeInstallDeps (removed option)', () => {
+    const bad = prPipelineOptionsSchema.safeParse({ worktreeInstallDeps: true });
+    assert.ok(!bad.success);
+  });
 });
 
 beforeEach(() => {
@@ -80,7 +94,7 @@ describe('resolveBitbucketAuth', () => {
     assert.deepStrictEqual(r, { mode: 'token', token: 'from-env' });
   });
 
-  it('falls back to app password when no token', () => {
+  it('falls back to app password when no token, email falls back to username', () => {
     process.env.BITBUCKET_USERNAME = 'u-env';
     process.env.BITBUCKET_APP_PASSWORD = 'p-env';
     const r = resolveBitbucketAuth({
@@ -88,16 +102,34 @@ describe('resolveBitbucketAuth', () => {
       bitbucketUsername: 'u-file',
       bitbucketAppPassword: 'p-file',
     });
-    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'u-env', appPassword: 'p-env' });
+    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'u-env', email: 'u-env', appPassword: 'p-env' });
   });
 
-  it('uses file app password when env unset', () => {
+  it('uses BITBUCKET_EMAIL for REST when set', () => {
+    process.env.BITBUCKET_USERNAME = 'myuser';
+    process.env.BITBUCKET_EMAIL = 'me@example.com';
+    process.env.BITBUCKET_APP_PASSWORD = 'mytoken';
+    const r = resolveBitbucketAuth(defaults);
+    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'myuser', email: 'me@example.com', appPassword: 'mytoken' });
+  });
+
+  it('uses bitbucketEmail option when env unset', () => {
+    const r = resolveBitbucketAuth({
+      ...defaults,
+      bitbucketUsername: 'u',
+      bitbucketEmail: 'u@example.com',
+      bitbucketAppPassword: 'p',
+    });
+    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'u', email: 'u@example.com', appPassword: 'p' });
+  });
+
+  it('uses file app password when env unset, email falls back to username', () => {
     const r = resolveBitbucketAuth({
       ...defaults,
       bitbucketUsername: 'u',
       bitbucketAppPassword: 'p',
     });
-    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'u', appPassword: 'p' });
+    assert.deepStrictEqual(r, { mode: 'appPassword', username: 'u', email: 'u', appPassword: 'p' });
   });
 
   it('returns undefined when nothing is set', () => {

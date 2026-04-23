@@ -2,7 +2,7 @@ const BB_API = 'https://api.bitbucket.org/2.0';
 
 export type BitbucketPrAuth =
   | { type: 'bearer'; token: string }
-  | { type: 'basic'; username: string; appPassword: string };
+  | { type: 'basic'; email: string; appPassword: string };
 
 export interface CreateBitbucketPrParams {
   auth: BitbucketPrAuth;
@@ -20,7 +20,7 @@ function authHeader(a: BitbucketPrAuth): string {
   if (a.type === 'bearer') {
     return `Bearer ${a.token}`;
   }
-  const enc = Buffer.from(`${a.username}:${a.appPassword}`).toString('base64');
+  const enc = Buffer.from(`${a.email}:${a.appPassword}`).toString('base64');
   return `Basic ${enc}`;
 }
 

@@ -110,26 +110,12 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
 
     await execLocal('git', ['-C', mainPath, 'worktree', 'add', '-B', branchName, workPath, baseRef], GIT);
 
-    if (options.worktreeInstallDeps) {
-      const lockFiles: Array<{ file: string; cmd: string[] }> = [
-        { file: 'pnpm-lock.yaml', cmd: ['pnpm', 'install', '--frozen-lockfile'] },
-        { file: 'package-lock.json', cmd: ['npm', 'install', '--ignore-scripts'] },
-        { file: 'yarn.lock', cmd: ['yarn', 'install', '--ignore-scripts'] },
-        { file: 'composer.lock', cmd: ['composer', 'install', '--no-dev'] },
-        { file: 'go.mod', cmd: ['go', 'mod', 'download'] },
-      ];
-      for (const { file, cmd } of lockFiles) {
-        try {
-          await execLocal('test', ['-f', join(workPath, file)], { timeout: 10_000 });
-          logger.info(`pr-pipeline: ${cmd[0]} install detected (${file}) in ${match.name}`);
-          await execLocal(cmd[0], cmd.slice(1), { timeout: 300_000, maxBuffer: 20 * 1024 * 1024, cwd: workPath }).catch((e) => {
-            logger.warn(`pr-pipeline: ${cmd[0]} install in worktree failed (non-fatal): ${(e as Error).message}`);
-          });
-          break;
-        } catch {
-          // lock file not present; try next
-        }
-      }
+    for (const raw of options.worktreeSetupCommands) {
+      const cmd = raw.replaceAll('{{mainPath}}', mainPath);
+      logger.info(`pr-pipeline: worktree setup: ${cmd}`);
+      await execLocal('sh', ['-c', cmd], { timeout: 300_000, maxBuffer: 20 * 1024 * 1024, cwd: workPath }).catch((e) => {
+        logger.warn(`pr-pipeline: worktree setup command failed (non-fatal): ${(e as Error).message}`);
+      });
     }
 
     const userPrompt = [
@@ -163,7 +149,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
 
     const taskId = `pr-${issueKey}-${idSuffix}`;
     const out = await agentRunner.runAgentForChat(taskId, userPrompt, {
-      agentId: 'opencode',
+      ...(options.prAgent !== undefined ? { agentId: options.prAgent } : {}),
       cwd: workPath,
       repoPath: workPath,
       readOnly: false,
@@ -179,7 +165,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     await execLocal('git', ['-C', workPath, 'config', 'user.name', 'agent-detective'], GIT);
     await execLocal('git', ['-C', workPath, 'config', 'user.email', 'agent-detective@local'], GIT);
     await execLocal('git', ['-C', workPath, 'add', '-A'], GIT);
-    await execLocal('git', ['-C', workPath, 'commit', '-m', `fix(${issueKey}): ${issueSummary.slice(0, 80) || 'agent-detective'}`], GIT);
+    await execLocal('git', ['-C', workPath, 'commit', '--no-verify', '-m', `fix(${issueKey}): ${issueSummary.slice(0, 80) || 'agent-detective'}`], GIT);
 
     if (options.prDryRun) {
       let where: string;
@@ -216,12 +202,12 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         bb.mode === 'token'
           ? `https://x-token-auth:${encodeURIComponent(bb.token)}@bitbucket.org/${path}`
           : `https://${encodeURIComponent(bb.username)}:${encodeURIComponent(bb.appPassword)}@bitbucket.org/${path}`;
-      await execLocal('git', ['-C', workPath, 'push', '-u', pushUrl, `HEAD:refs/heads/${branchName}`], GIT);
+      await execLocal('git', ['-C', workPath, 'push', '--no-verify', '-u', pushUrl, `HEAD:refs/heads/${branchName}`], GIT);
       const pr = await createBitbucketPullRequest({
         auth:
           bb.mode === 'token'
             ? { type: 'bearer', token: bb.token }
-            : { type: 'basic', username: bb.username, appPassword: bb.appPassword },
+            : { type: 'basic', email: bb.email, appPassword: bb.appPassword },
         workspace: vcs.owner,
         repoSlug: vcs.name,
         title,
@@ -241,7 +227,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         throw new Error('pr-pipeline: internal: GitHub token missing after validation');
       }
       const pushUrl = `https://x-access-token:${encodeURIComponent(tokenGh)}@github.com/${encodeURIComponent(vcs.owner)}/${encodeURIComponent(vcs.name)}.git`;
-      await execLocal('git', ['-C', workPath, 'push', '-u', pushUrl, `HEAD:refs/heads/${branchName}`], GIT);
+      await execLocal('git', ['-C', workPath, 'push', '--no-verify', '-u', pushUrl, `HEAD:refs/heads/${branchName}`], GIT);
       const pr = await createGithubPullRequest({
         token: tokenGh,
         owner: vcs.owner,
@@ -264,7 +250,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     const msg = (err as Error).message;
     logger.error(`pr-pipeline: failed for ${issueKey} / ${match.name}: ${msg}`);
     await jira
-      .addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): failed — \`${msg}\``))
+      .addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): failed — \`${msg.slice(0, 3_000)}\``))
       .catch((e) => logger.error(String(e)));
   } finally {
     try {

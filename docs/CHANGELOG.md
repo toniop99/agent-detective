@@ -1,5 +1,16 @@
 # Changelog
 
+## Config (breaking) — pr-pipeline worktree setup
+
+- **`worktreeInstallDeps`** (boolean, previously defaulted to `true`) has been **removed**. Replace it with **`worktreeSetupCommands`** (array of shell strings, defaults to `[]`). Each command runs via `sh -c` with `cwd` set to the worktree root; the token `{{mainPath}}` expands to the source repo path. Failures are non-fatal (logged as warnings). Migration example:
+  ```json
+  "worktreeSetupCommands": [
+    "pnpm install --frozen-lockfile",
+    "cp {{mainPath}}/docker/.env docker/.env"
+  ]
+  ```
+  The old automatic lock-file detection (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, `composer.lock`, `go.mod`) is no longer performed; add the relevant install command explicitly if your repo needs it.
+
 ## Config (breaking)
 
 The following top-level and plugin fields were **removed** (they were ignored by older builds or unsafe to keep in JSON):
@@ -9,6 +20,14 @@ The following top-level and plugin fields were **removed** (they were ignored by
 - **jira-adapter:** `webhookPath` (path is fixed under `/plugins/.../webhook/jira`).
 
 **Jira credentials:** do not keep `apiToken` / `email` / `baseUrl` in committed example files; set **`JIRA_API_TOKEN`**, **`JIRA_EMAIL`**, **`JIRA_BASE_URL`** in production. Rotate any token that was ever in a local file.
+
+## pr-pipeline: configurable agent
+
+The PR pipeline no longer hardcodes `opencode` as the coding agent. Agent selection now follows a three-level precedence:
+
+1. **`prAgent`** option on `@agent-detective/pr-pipeline` (per-plugin override).
+2. App-level **`agent`** config field or **`AGENT`** env var (global default).
+3. `opencode` (built-in fallback, unchanged behaviour when nothing is set).
 
 ### New keys (defaults match previous hardcoded behavior)
 
