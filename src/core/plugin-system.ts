@@ -112,6 +112,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
   const pluginNameByController = new WeakMap<object, string>();
   const servicesRegistry = new Map<string, unknown>();
   const capabilitiesRegistry = new Set<string>();
+  const shutdownHooks: Array<() => void | Promise<void>> = [];
 
   function registerCapability(capability: string): void {
     capabilitiesRegistry.add(capability);
@@ -191,6 +192,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         registerCapability: sharedContext?.registerCapability || registerCapability,
         hasCapability: sharedContext?.hasCapability || hasCapability,
         registerTaskQueue: sharedContext?.registerTaskQueue || registerTaskQueue,
+        onShutdown: (fn) => shutdownHooks.push(fn),
       };
 
       const prefixedApp = createPrefixedApp(app, plugin.name, logger);
@@ -323,6 +325,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       registerCapability,
       hasCapability,
       registerTaskQueue,
+      onShutdown: (fn) => shutdownHooks.push(fn),
     };
 
     for (const name of loadOrder) {
@@ -355,6 +358,16 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return pluginNameByController.get(controller);
   }
 
+  async function shutdown(): Promise<void> {
+    for (const hook of shutdownHooks) {
+      try {
+        await hook();
+      } catch (err) {
+        logger.warn(`Plugin shutdown hook failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   return {
     loadPlugin,
     loadAll,
@@ -362,5 +375,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     getControllers,
     getPluginNameForController,
     enqueue: enqueueDelegate,
+    shutdown,
   };
 }

@@ -71,7 +71,7 @@ async function generateSummaryWithAgent(
   });
 
   const maxChars = config.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
-  return response.trim().slice(0, maxChars);
+  return response.text.trim().slice(0, maxChars);
 }
 
 async function generateFromReadme(repoPath: string, maxLines: number, maxChars: number): Promise<string> {

@@ -50,7 +50,7 @@ export function createOrchestrator(deps: OrchestratorDeps) {
         // 4. Emit completion
         eventBus.emit(StandardEvents.TASK_COMPLETED, {
           event: task,
-          result,
+          result: result.text,
         });
       } catch (err) {
         logger.error(

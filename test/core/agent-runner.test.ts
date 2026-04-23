@@ -80,7 +80,7 @@ describe('agent-runner', () => {
       runner.registerAgent(createMockAgent({ id: 'opencode', parseOutput: () => ({ text: '', sawJson: false }) }));
 
       const result = await runner.runAgentForChat('task-1', 'test prompt');
-      assert.equal(result, '');
+      assert.equal(result.text, '');
     });
 
     it('passes cwd option to execLocal', async () => {

@@ -154,13 +154,58 @@ describe('agents', () => {
     });
 
     it('parses streaming output', () => {
-      const output = JSON.stringify({
-        result: 'Streaming response',
-        session_id: 'stream-123',
-      });
+      const lines = [
+        JSON.stringify({ type: 'stream_event', session_id: '12345678-1234-5234-8234-123456789012', event: { type: 'content_block_start', content_block: { type: 'tool_use', name: 'Read' } } }),
+        JSON.stringify({ type: 'stream_event', session_id: '12345678-1234-5234-8234-123456789012', event: { type: 'content_block_start', content_block: { type: 'tool_use', name: 'Edit' } } }),
+        JSON.stringify({ type: 'result', result: 'Streaming response', session_id: '12345678-1234-5234-8234-123456789012' }),
+      ];
+      const output = lines.join('\n');
       const parsed = claudeAgent.parseStreamingOutput!(output);
       assert.ok(parsed.sawFinal);
-      assert.ok(parsed.text.includes('Streaming response'));
+      assert.equal(parsed.text, 'Streaming response');
+      assert.equal(parsed.threadId, '12345678-1234-5234-8234-123456789012');
+      assert.deepStrictEqual(parsed.commentaryMessages, ['Tool: Read', 'Tool: Edit']);
+    });
+
+    it('extracts usage metrics from result event', () => {
+      const lines = [
+        JSON.stringify({
+          type: 'result',
+          result: 'Done',
+          session_id: '12345678-1234-5234-8234-123456789012',
+          duration_ms: 66980,
+          duration_api_ms: 67725,
+          num_turns: 13,
+          total_cost_usd: 0.142,
+          usage: { input_tokens: 45200, output_tokens: 8100 },
+        }),
+      ];
+      const parsed = claudeAgent.parseOutput!(lines.join('\n'));
+      assert.equal(parsed.usage?.durationMs, 66980);
+      assert.equal(parsed.usage?.durationApiMs, 67725);
+      assert.equal(parsed.usage?.numTurns, 13);
+      assert.equal(parsed.usage?.totalCostUsd, 0.142);
+      assert.equal(parsed.usage?.inputTokens, 45200);
+      assert.equal(parsed.usage?.outputTokens, 8100);
+    });
+
+    it('extracts usage metrics from streaming output', () => {
+      const lines = [
+        JSON.stringify({ type: 'stream_event', session_id: '12345678-1234-5234-8234-123456789012', event: { type: 'content_block_start', content_block: { type: 'tool_use', name: 'Read' } } }),
+        JSON.stringify({
+          type: 'result',
+          result: 'Done',
+          session_id: '12345678-1234-5234-8234-123456789012',
+          duration_ms: 9306,
+          num_turns: 1,
+          usage: { input_tokens: 12300, output_tokens: 1200 },
+        }),
+      ];
+      const parsed = claudeAgent.parseStreamingOutput!(lines.join('\n'));
+      assert.equal(parsed.usage?.durationMs, 9306);
+      assert.equal(parsed.usage?.numTurns, 1);
+      assert.equal(parsed.usage?.inputTokens, 12300);
+      assert.equal(parsed.usage?.outputTokens, 1200);
     });
   });
 

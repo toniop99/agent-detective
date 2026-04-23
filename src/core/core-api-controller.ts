@@ -259,7 +259,7 @@ export class CoreApiController {
           model: options?.model,
           threadId: options?.threadId,
         });
-        res.json({ taskId, output, sawJson: false });
+        res.json({ taskId, output: output.text, sawJson: output.sawJson, threadId: output.threadId });
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
       }

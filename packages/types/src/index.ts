@@ -148,6 +148,8 @@ export interface PluginContext {
    * `context.enqueue` delegate, so switching the backend affects all task execution.
    */
   registerTaskQueue(queue: TaskQueue): void;
+  /** Register a callback to run during graceful shutdown (e.g. worktree cleanup). */
+  onShutdown(fn: () => void | Promise<void>): void;
 }
 
 export interface RunAgentOptions {
@@ -158,6 +160,8 @@ export interface RunAgentOptions {
   model?: string;
   onProgress?: (messages: string[]) => void;
   onFinal?: (text: string) => void | Promise<void>;
+  /** Called with each raw stdout chunk from the agent subprocess. */
+  onStdout?: (chunk: string) => void;
   /**
    * Override the process-wide agent subprocess timeout (ms) for this run.
    * When omitted, `agents.runner.timeoutMs` from app config applies.
@@ -181,10 +185,12 @@ export interface StopRunResult {
 }
 
 export interface AgentRunner {
-  runAgentForChat(taskId: string, prompt: string, options?: RunAgentOptions): Promise<string>;
+  runAgentForChat(taskId: string, prompt: string, options?: RunAgentOptions): Promise<AgentOutput>;
   stopActiveRun(taskId: string, contextKey?: string): Promise<StopRunResult>;
   registerAgent(agent: Agent): void;
   listAgents(): Promise<AgentInfo[]>;
+  /** Terminate all active agent child processes (called on app shutdown). */
+  shutdown(): void;
 }
 
 export interface ResolveRepoOptions {
@@ -269,10 +275,21 @@ export interface BuildCommandOptions {
   readOnly?: boolean;
 }
 
+export interface AgentUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalCostUsd?: number;
+  durationMs?: number;
+  durationApiMs?: number;
+  numTurns?: number;
+  wallTimeMs?: number;
+}
+
 export interface AgentOutput {
   text: string;
   threadId?: string;
   sawJson: boolean;
+  usage?: AgentUsage;
 }
 
 export interface StreamingOutput extends AgentOutput {

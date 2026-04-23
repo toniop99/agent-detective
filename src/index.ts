@@ -87,6 +87,18 @@ const { app, coreController } = createServer(config, observability, defaultModel
 
 const PORT = config.port || 3001;
 
+async function gracefulShutdown(signal: string) {
+  serverLogger.info(`Received ${signal}, shutting down...`);
+  const timeout = setTimeout(() => process.exit(1), 10_000);
+  timeout.unref();
+  await pluginSystem.shutdown();
+  agentRunner.shutdown();
+  clearTimeout(timeout);
+  process.exit(0);
+}
+process.on('SIGINT', () => { void gracefulShutdown('SIGINT'); });
+process.on('SIGTERM', () => { void gracefulShutdown('SIGTERM'); });
+
 app.listen(PORT, async () => {
   serverLogger.info('Server started', { port: PORT, listeningOn: `http://localhost:${PORT}` });
 

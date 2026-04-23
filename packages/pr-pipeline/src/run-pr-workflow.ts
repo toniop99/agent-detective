@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execLocal } from '@agent-detective/process-utils';
-import type { AgentRunner, Logger, PrWorkflowInput } from '@agent-detective/types';
+import type { AgentRunner, AgentOutput, AgentUsage, Logger, PrWorkflowInput } from '@agent-detective/types';
 import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 import { createBitbucketPullRequest } from './bitbucket-pr.js';
 import { createGithubPullRequest } from './github-pr.js';
@@ -12,6 +12,90 @@ import { stampJiraPr } from './stamp-jira.js';
 import type { PrPipelineOptions } from './options-schema.js';
 
 const GIT = { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 } as const;
+
+function fmtDuration(ms: number | undefined): string {
+  if (ms === undefined) return '—';
+  const s = Math.round(ms / 1000);
+  return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+}
+
+function fmtTokens(n: number | undefined): string {
+  if (n === undefined) return '—';
+  return n.toLocaleString('en-US');
+}
+
+function sumUsage(a: AgentUsage | undefined, b: AgentUsage | undefined): AgentUsage {
+  const add = (x?: number, y?: number) =>
+    x !== undefined || y !== undefined ? (x ?? 0) + (y ?? 0) : undefined;
+  return {
+    wallTimeMs: add(a?.wallTimeMs, b?.wallTimeMs),
+    durationMs: add(a?.durationMs, b?.durationMs),
+    durationApiMs: add(a?.durationApiMs, b?.durationApiMs),
+    numTurns: add(a?.numTurns, b?.numTurns),
+    inputTokens: add(a?.inputTokens, b?.inputTokens),
+    outputTokens: add(a?.outputTokens, b?.outputTokens),
+    totalCostUsd: add(a?.totalCostUsd, b?.totalCostUsd),
+  };
+}
+
+function buildAnalyticsBlock(writeOut: AgentOutput, summaryOut: AgentOutput | null): string {
+  const w = writeOut.usage;
+  const s = summaryOut?.usage;
+  const hasSummary = s !== undefined;
+  const total = hasSummary ? sumUsage(w, s) : w;
+  const hasDetailedMetrics = w?.durationMs !== undefined || w?.numTurns !== undefined || w?.inputTokens !== undefined;
+
+  if (!hasDetailedMetrics) {
+    return `**Analytics:** Wall time: ${fmtDuration(w?.wallTimeMs)}`;
+  }
+
+  const cols = hasSummary
+    ? ['Metric', 'Write', 'Summary', 'Total']
+    : ['Metric', 'Value'];
+
+  const row = (label: string, wVal: string, sVal: string, tVal: string) =>
+    hasSummary ? `| ${label} | ${wVal} | ${sVal} | ${tVal} |` : `| ${label} | ${wVal} |`;
+
+  const rows = [
+    row('Wall time', fmtDuration(w?.wallTimeMs), fmtDuration(s?.wallTimeMs), fmtDuration(total?.wallTimeMs)),
+    row('API time', fmtDuration(w?.durationApiMs), fmtDuration(s?.durationApiMs), fmtDuration(total?.durationApiMs)),
+    row('Turns', String(w?.numTurns ?? '—'), String(s?.numTurns ?? '—'), String(total?.numTurns ?? '—')),
+    row('Input tokens', fmtTokens(w?.inputTokens), fmtTokens(s?.inputTokens), fmtTokens(total?.inputTokens)),
+    row('Output tokens', fmtTokens(w?.outputTokens), fmtTokens(s?.outputTokens), fmtTokens(total?.outputTokens)),
+  ];
+
+  const sep = hasSummary ? '|--------|-------|---------|-------|' : '|--------|-------|';
+  const header = `| ${cols.join(' | ')} |`;
+
+  return ['**Analytics**', '', header, sep, ...rows].join('\n');
+}
+
+interface ActiveWorktree {
+  mainPath: string;
+  workPath: string;
+  branchName: string;
+}
+
+const activeWorktrees = new Set<ActiveWorktree>();
+
+export async function cleanupWorktrees(logger: Pick<Logger, 'info'>): Promise<void> {
+  if (activeWorktrees.size === 0) return;
+  logger.info(`pr-pipeline: cleaning up ${activeWorktrees.size} active worktree(s)...`);
+  for (const wt of activeWorktrees) {
+    logger.info(`pr-pipeline: removing worktree ${wt.workPath} (branch: ${wt.branchName})`);
+    try {
+      await execLocal('git', ['-C', wt.mainPath, 'worktree', 'remove', '--force', wt.workPath], GIT);
+    } catch { /* best effort */ }
+    try {
+      await rm(wt.workPath, { recursive: true, force: true });
+    } catch { /* best effort */ }
+    try {
+      await execLocal('git', ['-C', wt.mainPath, 'branch', '-D', wt.branchName], GIT);
+    } catch { /* best effort */ }
+  }
+  activeWorktrees.clear();
+  logger.info('pr-pipeline: worktree cleanup complete');
+}
 
 function sanitizeBranchKey(key: string): string {
   return key.replace(/[^A-Za-z0-9._/-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -96,6 +180,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
   const workPath = await mkdtemp(join(tmpdir(), `ad-pr-${issueKey.replace(/[^a-z0-9]+/gi, '-')}-`));
   const title = buildPrTitle(options.prTitleTemplate, issueKey, issueSummary);
   const idSuffix = randomBytes(4).toString('hex');
+  const wt: ActiveWorktree = { mainPath, workPath, branchName };
 
   try {
     await execLocal('git', ['-C', mainPath, 'fetch', 'origin'], GIT).catch((e) => {
@@ -109,6 +194,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     });
 
     await execLocal('git', ['-C', mainPath, 'worktree', 'add', '-B', branchName, workPath, baseRef], GIT);
+    activeWorktrees.add(wt);
 
     for (const raw of options.worktreeSetupCommands) {
       const cmd = raw.replaceAll('{{mainPath}}', mainPath);
@@ -154,11 +240,26 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       repoPath: workPath,
       readOnly: false,
       ...(options.prAgentTimeoutMs !== undefined ? { timeoutMs: options.prAgentTimeoutMs } : {}),
+      ...(options.prDebug
+        ? {
+            onProgress: (messages: string[]) => {
+              for (const msg of messages) {
+                logger.info(`pr-pipeline [${taskId}] agent: ${msg.slice(0, 500)}`);
+              }
+            },
+            onStdout: (chunk: string) => {
+              for (const line of chunk.split('\n')) {
+                const trimmed = line.trim();
+                if (trimmed) logger.info(`pr-pipeline [${taskId}] stdout: ${trimmed.slice(0, 500)}`);
+              }
+            },
+          }
+        : {}),
     });
 
     const status = await execLocal('git', ['-C', workPath, 'status', '--porcelain'], GIT);
     if (!status.trim()) {
-      await jira.addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): no file changes; agent output:\n\n${out.slice(0, 4_000)}`));
+      await jira.addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): no file changes; agent output:\n\n${out.text.slice(0, 4_000)}`));
       return;
     }
 
@@ -182,13 +283,66 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         issueKey,
         stampJiraPr(
           `**pr-pipeline** (${match.name}, **dry run**): would create branch \`${branchName}\` and open a PR ` +
-            `on ${where} (base: \`${prBase}\`).\n\n---\n\nAgent report (truncated):\n\n${out.slice(0, 3_000)}`
+            `on ${where} (base: \`${prBase}\`).\n\n---\n\nAgent report (truncated):\n\n${out.text.slice(0, 3_000)}`
         )
       );
       return;
     }
 
-    const prBody = `Automated for **${issueKey}** (agent-detective pr-pipeline).\n\n---\n\n${out.slice(0, 6_000)}`;
+    const diffStat = await execLocal('git', ['-C', workPath, 'diff', '--stat', 'HEAD~1'], GIT).catch(() => '');
+
+    let prSummary = '';
+    let summaryOut: AgentOutput | null = null;
+    if (out.threadId) {
+      logger.info(`pr-pipeline: requesting PR summary from agent (threadId=${out.threadId})`);
+      const summaryTaskId = `pr-summary-${issueKey}-${idSuffix}`;
+      const summaryPrompt = [
+        `You just made code changes for Jira issue ${issueKey}: ${issueSummary}.`,
+        ``,
+        `Write a concise pull request description (2-5 bullet points) summarising:`,
+        `- What you changed and why`,
+        `- Any important design decisions or trade-offs`,
+        `- Anything a reviewer should pay attention to`,
+        ``,
+        `Do not include the branch name, issue key, or generic boilerplate. Plain markdown only.`,
+      ].join('\n');
+      summaryOut = await agentRunner.runAgentForChat(summaryTaskId, summaryPrompt, {
+        ...(options.prAgent !== undefined ? { agentId: options.prAgent } : {}),
+        cwd: workPath,
+        repoPath: workPath,
+        readOnly: true,
+        threadId: out.threadId,
+      }).catch((e) => {
+        logger.warn(`pr-pipeline: summary agent call failed (non-fatal): ${(e as Error).message}`);
+        return null;
+      });
+      if (summaryOut?.text?.trim()) {
+        prSummary = summaryOut.text.trim();
+      }
+    }
+
+    const analyticsBlock = options.prAnalytics ? buildAnalyticsBlock(out, summaryOut) : null;
+
+    const prBody = [
+      `## ${issueKey}: ${issueSummary}`,
+      ``,
+      `Automated PR generated by **agent-detective pr-pipeline**.`,
+      ``,
+      `### Changes`,
+      '```',
+      diffStat.trim() || '(no diff stat available)',
+      '```',
+      ``,
+      ...(prSummary
+        ? [`### Summary`, ``, prSummary.slice(0, 6_000)]
+        : out.text.trim()
+        ? [`### Agent output`, ``, out.text.trim().slice(0, 6_000)]
+        : []),
+      ...(analyticsBlock ? [``, `---`, ``, analyticsBlock] : []),
+      ``,
+      `---`,
+      `*🤖 Generated with [agent-detective](https://github.com/toniop99/agent-detective)*`,
+    ].join('\n');
     if (!vcs) {
       throw new Error('pr-pipeline: internal: vcs missing after validation');
     }
@@ -218,7 +372,11 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       await jira.addComment(
         issueKey,
         stampJiraPr(
-          `**Pull request opened** (Bitbucket, ${match.name}): ${pr.htmlUrl}\n\n**Summary:** ${issueSummary}\n\n---\n\n_(Agent output length ${out.length} chars, truncated in PR body if needed.)_`
+          [
+            `**Pull request opened** (Bitbucket, ${match.name}): ${pr.htmlUrl}`,
+            ``,
+            `**Summary:** ${issueSummary}`
+          ].join('\n')
         )
       );
     } else if (vcs.provider === 'github') {
@@ -240,7 +398,12 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       await jira.addComment(
         issueKey,
         stampJiraPr(
-          `**Pull request opened** (${match.name}): ${pr.htmlUrl}\n\n**Summary:** ${issueSummary}\n\n---\n\n_(Agent output length ${out.length} chars, truncated in PR body if needed.)_`
+          [
+            `**Pull request opened** (${match.name}): ${pr.htmlUrl}`,
+            ``,
+            `**Summary:** ${issueSummary}`,
+            ...(analyticsBlock ? [``, analyticsBlock] : []),
+          ].join('\n')
         )
       );
     } else {
@@ -268,6 +431,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     } catch {
       /* branch may not exist or still used */
     }
+    activeWorktrees.delete(wt);
   }
 }
 

@@ -1,5 +1,5 @@
 import { shellQuote, wrapCommandWithPty } from './process.js';
-import type { RunAgentOptions, Agent, ChildProcess, AgentInfo, Logger } from './types.js';
+import type { RunAgentOptions, Agent, AgentOutput, ChildProcess, AgentInfo, Logger } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
@@ -100,7 +100,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     };
   }
 
-  async function runAgentForChat(taskId: string, prompt: string, runOptions: RunAgentOptions = {}): Promise<string> {
+  async function runAgentForChat(taskId: string, prompt: string, runOptions: RunAgentOptions = {}): Promise<AgentOutput> {
     const {
       contextKey,
       repoPath,
@@ -109,6 +109,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       model: modelOverride,
       onFinal,
       onProgress,
+      onStdout: callerOnStdout,
       readOnly,
       timeoutMs: runTimeoutMs,
       threadId,
@@ -171,7 +172,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
     };
 
     try {
-      const result: string = await runShellAgent(agent, {
+      const result: AgentOutput = await runShellAgent(agent, {
         prompt,
         cwd,
         model: modelOverride,
@@ -179,6 +180,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         run,
         emitFinal,
         emitProgress,
+        callerOnStdout,
         readOnly,
         timeoutMs: runTimeoutMs,
         threadId: threadId && String(threadId).trim() ? String(threadId).trim() : undefined,
@@ -186,7 +188,8 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
 
       run.settled = true;
       const elapsedMs = Date.now() - startedAt;
-      log.info(`Agent finished task=${taskId} durationMs=${elapsedMs}`);
+      result.usage = { ...result.usage, wallTimeMs: elapsedMs };
+      log.info(`Agent finished task=${taskId} durationMs=${elapsedMs}${result.threadId ? ` threadId=${result.threadId}` : ''}`);
 
       return result;
     } catch (err) {
@@ -212,6 +215,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       run,
       emitFinal,
       emitProgress,
+      callerOnStdout,
       readOnly,
       timeoutMs: shellTimeoutMs,
       threadId,
@@ -227,11 +231,12 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       run: ActiveRun;
       emitFinal: (text: string) => void;
       emitProgress: (payload: string[]) => void;
+      callerOnStdout?: (chunk: string) => void;
       readOnly?: boolean;
       timeoutMs?: number;
       threadId?: string;
     }
-  ): Promise<string> {
+  ): Promise<AgentOutput> {
     const effectiveTimeoutMs =
       typeof shellTimeoutMs === 'number' && shellTimeoutMs > 0 ? shellTimeoutMs : agentTimeoutMs;
     const promptBase64 = Buffer.from(prompt, 'utf8').toString('base64');
@@ -275,6 +280,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         },
         onStdout: (chunk: string) => {
           streamedOutput += chunk;
+          callerOnStdout?.(chunk);
           if (agent.parseStreamingOutput) {
             const partial = agent.parseStreamingOutput(streamedOutput);
             if (partial.commentaryMessages?.length) {
@@ -287,11 +293,8 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         },
       });
 
-      if (!run.finalEmitted) {
-        const parsed = agent.parseOutput?.(streamedOutput) || { text: streamedOutput, sawJson: false };
-        return parsed.text || streamedOutput;
-      }
-      return '';
+      const parsed = agent.parseOutput?.(streamedOutput) || { text: streamedOutput, sawJson: false };
+      return { text: parsed.text || streamedOutput, sawJson: parsed.sawJson, threadId: parsed.threadId, usage: parsed.usage };
     } else {
       const output = await execLocal('bash', ['-lc', commandToRun], {
         timeout: effectiveTimeoutMs,
@@ -303,7 +306,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       if (parsed.text) {
         emitFinal(parsed.text);
       }
-      return parsed.text || output;
+      return { text: parsed.text || output, sawJson: parsed.sawJson, threadId: parsed.threadId, usage: parsed.usage };
     }
   }
 
@@ -338,6 +341,14 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         });
       }
       return results;
+    },
+    shutdown: (): void => {
+      for (const [key, run] of activeRuns) {
+        if (!run.settled && run.child) {
+          log.info(`Shutting down active agent run: ${key}`);
+          terminateChildProcess?.(run.child, 'SIGTERM');
+        }
+      }
     },
   };
 }

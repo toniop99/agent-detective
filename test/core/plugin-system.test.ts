@@ -17,10 +17,11 @@ describe('Plugin System', () => {
   let pluginSystem: ReturnType<typeof createPluginSystem>;
 
   const createMockAgentRunner = (): AgentRunner => ({
-    runAgentForChat: async () => '',
+    runAgentForChat: async () => ({ text: '', sawJson: false }),
     stopActiveRun: async () => ({ status: 'idle' }),
     registerAgent: mock.fn(),
     listAgents: async () => [],
+    shutdown: () => {},
   });
 
   const createMockLogger = () => ({

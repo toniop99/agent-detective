@@ -31,6 +31,12 @@ export const prPipelineOptionsSchema = z
      */
     prAgentTimeoutMs: z.number().int().positive().optional(),
     /**
+     * When true, log each agent progress message (streamed stdout lines / commentary)
+     * at info level while the agent runs. Useful to confirm the agent is active and
+     * not frozen, especially for slow models like Claude. Default false.
+     */
+    prDebug: z.boolean().default(false),
+    /**
      * GitHub personal access token (classic or fine-grained) for `git push` and
      * REST. Overridden by `GITHUB_TOKEN` or `GH_TOKEN` when set.
      */
@@ -67,6 +73,13 @@ export const prPipelineOptionsSchema = z
      * abort the workflow.
      */
     worktreeSetupCommands: z.array(z.string()).default([]),
+    /**
+     * When true, append an analytics table to the Jira PR comment and PR body
+     * showing wall time, API time, agentic turns, and token counts.
+     * Metrics come from Claude's stream-json result event; non-Claude agents
+     * only show wall time. Default false.
+     */
+    prAnalytics: z.boolean().default(false),
   })
   .strict();
 

@@ -15,10 +15,11 @@ function createNoopEventBus(): EventBus {
 
 function createMockAgentRunner(): AgentRunner {
   return {
-    runAgentForChat: async () => '',
+    runAgentForChat: async () => ({ text: '', sawJson: false }),
     stopActiveRun: async () => ({ status: 'idle' }),
     registerAgent: mock.fn(),
     listAgents: async () => [],
+    shutdown: () => {},
   };
 }
 
