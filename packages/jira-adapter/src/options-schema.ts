@@ -95,6 +95,12 @@ export const jiraAdapterOptionsSchema = z
      * Default 60 seconds.
      */
     missingLabelsReminderCooldownMs: z.number().int().min(0).default(60_000),
+    /**
+     * When true, the adapter fetches all comments on the Jira issue before
+     * dispatching the PR workflow and passes human-authored ones (app comments
+     * excluded) to pr-pipeline as additional agent context.
+     */
+    fetchIssueComments: z.boolean().default(false),
   })
   .strict()
   .superRefine((data, ctx) => {

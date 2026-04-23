@@ -403,6 +403,12 @@ export interface PrWorkflowInput {
    * normalized), so operators can add hints after `#agent-detective pr ...`.
    */
   prCommentContext?: string;
+  /**
+   * Human-authored comments from the Jira ticket (app-authored excluded, oldest
+   * first), pre-formatted as `[timestamp] Author:\n<body>` strings. Populated
+   * by the jira-adapter when `fetchIssueComments` is enabled.
+   */
+  issueComments?: string[];
 }
 
 export interface PrWorkflowService {

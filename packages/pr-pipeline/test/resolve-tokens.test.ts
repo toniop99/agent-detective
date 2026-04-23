@@ -29,6 +29,14 @@ describe('prPipelineOptionsSchema', () => {
     const bad = prPipelineOptionsSchema.safeParse({ worktreeInstallDeps: true });
     assert.ok(!bad.success);
   });
+
+  it('defaults includeIssueComments to true', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).includeIssueComments, true);
+  });
+
+  it('accepts includeIssueComments: false', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({ includeIssueComments: false }).includeIssueComments, false);
+  });
 });
 
 beforeEach(() => {

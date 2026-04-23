@@ -307,4 +307,35 @@ describe('real-jira-client', () => {
     assert.equal(out[0]!.text, '<p>hi</p>');
     assert.ok(out[1]!.text.includes('doc'));
   });
+
+  it('getComments maps author fields to JiraCommentRecord', async () => {
+    const stub = createStubClient();
+    stub.nextGetCommentsResponse = {
+      comments: [
+        {
+          renderedBody: 'hello',
+          created: '2026-04-01T00:00:00Z',
+          author: {
+            accountId: 'acc-123',
+            emailAddress: 'alice@example.com',
+            displayName: 'Alice',
+          },
+        },
+        {
+          renderedBody: 'no author',
+          created: '2026-04-02T00:00:00Z',
+        },
+      ],
+    };
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    const out = await client.getComments('C-2');
+    assert.equal(out.length, 2);
+    assert.deepEqual(out[0]!.author, {
+      accountId: 'acc-123',
+      emailAddress: 'alice@example.com',
+      displayName: 'Alice',
+    });
+    assert.equal(out[1]!.author, undefined);
+  });
 });

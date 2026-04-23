@@ -7,6 +7,7 @@
 export interface JiraCommentRecord {
   text: string;
   createdAt: string;
+  author?: { accountId?: string; emailAddress?: string; displayName?: string };
 }
 
 export interface JiraIssueRecord {

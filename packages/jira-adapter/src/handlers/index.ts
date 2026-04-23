@@ -553,6 +553,24 @@ async function fanOutPr(
     return;
   }
 
+  let issueComments: string[] | undefined;
+  if (config.fetchIssueComments) {
+    try {
+      const allComments = await jiraClient.getComments(taskInfo.key);
+      const ownUser = config.jiraUser;
+      issueComments = allComments
+        .filter((c) => !isOwnComment(c.text, c.author ?? null, ownUser))
+        .map((c) => {
+          const who = c.author?.displayName || 'Unknown';
+          const text = c.text.slice(0, 2_000);
+          return `[${c.createdAt}] ${who}:\n${text}`;
+        })
+        .slice(-30);
+    } catch (err) {
+      logger?.warn(`jira-adapter: failed to fetch comments for ${taskInfo.key}: ${(err as Error).message}`);
+    }
+  }
+
   for (const match of repos) {
     pr.startPrWorkflow({
       issueKey: taskInfo.key,
@@ -568,6 +586,7 @@ async function fanOutPr(
       },
       analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
       ...(prCommentContext ? { prCommentContext } : {}),
+      ...(issueComments?.length ? { issueComments } : {}),
     });
   }
 }

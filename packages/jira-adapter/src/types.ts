@@ -90,6 +90,15 @@ export interface JiraAdapterConfig {
     accountId?: string;
     email?: string;
   };
+
+  /**
+   * When true, the adapter fetches all comments on the Jira issue before
+   * dispatching the PR workflow and passes human-authored ones (app comments
+   * excluded) to pr-pipeline as additional agent context.
+   *
+   * Default: false.
+   */
+  fetchIssueComments?: boolean;
 }
 
 export interface JiraTaskInfo {

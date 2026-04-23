@@ -1136,6 +1136,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 | `maxReposPerIssue` | Safety cap on fan-out when an issue's labels match multiple repos. Default `5`; `0` disables the cap. Extra matches are logged and noted in the acknowledgment. |
 | `retryTriggerPhrase` | Case-insensitive substring that, when found in a `jira:comment_created` body authored by a non-adapter user, kicks off a fresh label match. Default `#agent-detective analyze`. Pick something unlikely to appear in normal conversation — any matching comment runs analysis. |
 | `jiraUser.accountId` / `jiraUser.email` | Optional identity of the Jira account the adapter posts as. Used together with the visible *"Posted by agent-detective"* footer marker to filter out adapter-authored comments so the retry flow can't loop. Comments from this account are ignored even if the marker is stripped. |
+| `fetchIssueComments` | When `true`, the adapter fetches all comments on the Jira ticket at PR-trigger time and passes human-authored ones (app comments excluded) to pr-pipeline as additional agent context. Default `false`. |
 
 ##### Supported Event Types
 

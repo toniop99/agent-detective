@@ -122,7 +122,7 @@ export interface RunPrWorkflowDeps {
  */
 export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowDeps): Promise<void> {
   const { localRepos, agentRunner, options, logger } = deps;
-  const { issueKey, issueSummary, taskDescription, match, jira, analysisPrompt, prCommentContext } = input;
+  const { issueKey, issueSummary, taskDescription, match, jira, analysisPrompt, prCommentContext, issueComments } = input;
   const commentCtx = (prCommentContext || '').trim().slice(0, 12_000);
   const cfg = localRepos.getSourceRepoConfig(match.name);
   if (!cfg) {
@@ -204,12 +204,22 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       });
     }
 
+    const commentsBlock =
+      options.includeIssueComments && issueComments?.length
+        ? [
+            `## Jira ticket comments (oldest to newest, app-authored excluded):`,
+            issueComments.join('\n\n---\n\n'),
+            ``,
+          ]
+        : [];
+
     const userPrompt = [
       `Jira: ${issueKey} — ${issueSummary}`,
       ``,
       `Issue description (may contain markup):`,
       String(taskDescription || '').slice(0, 20_000),
       ``,
+      ...commentsBlock,
       ...(commentCtx
         ? [
             `## Additional context from the Jira comment (operator, after the PR trigger phrase):`,
@@ -221,7 +231,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       analysisPrompt ? `## Extra instructions from operator:\n${analysisPrompt}` : '',
     ]
       .join('\n');
-
+    console.log(userPrompt)
     const dryRunNote = options.prDryRun ? ' **Dry run** — no push or host PR will be created.' : '';
     await jira
       .addComment(

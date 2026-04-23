@@ -7,6 +7,7 @@ import {
 } from '../../src/handlers/index.js';
 import type { HandlerContext } from '../../src/handlers/index.js';
 import type { JiraAdapterConfig, JiraTaskInfo } from '../../src/types.js';
+import type { JiraCommentRecord } from '../../src/jira-client.js';
 import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
 import {
   PR_WORKFLOW_SERVICE,
@@ -25,7 +26,9 @@ interface MockComment {
 
 interface MockJiraClientForTest {
   comments: MockComment[];
+  issueComments: JiraCommentRecord[];
   addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
+  getComments(issueKey: string): Promise<JiraCommentRecord[]>;
 }
 
 function makeTaskInfo(overrides: Partial<JiraTaskInfo> = {}): JiraTaskInfo {
@@ -46,14 +49,18 @@ describe('Handler Registry', () => {
   let emittedEvents: Array<{ event: string; payload: any }>;
   let services: Map<string, unknown>;
 
+  let mockIssueComments: JiraCommentRecord[];
+
   beforeEach(() => {
     mockComments = [];
+    mockIssueComments = [];
     emittedEvents = [];
     services = new Map();
     __resetMissingLabelsReminderStateForTests();
     __resetAnalysisCooldownForTests();
     mockJiraClient = {
       comments: mockComments,
+      issueComments: mockIssueComments,
       async addComment(issueKey, commentText) {
         mockComments.push({
           issueKey,
@@ -61,6 +68,9 @@ describe('Handler Registry', () => {
           createdAt: new Date().toISOString(),
         });
         return { success: true, issueKey };
+      },
+      async getComments(_issueKey) {
+        return mockIssueComments;
       },
     };
   });
@@ -863,6 +873,88 @@ describe('Handler Registry', () => {
       assert.equal(emittedEvents.length, 3);
       assert.equal(mockComments.length, 1);
       assert.doesNotMatch(mockComments[0].text, /maxReposPerIssue/);
+    });
+  });
+
+  describe('PR workflow + fetchIssueComments', () => {
+    function makePrPayload(body: string) {
+      return {
+        comment: {
+          body,
+          author: { accountId: 'user-reporter', emailAddress: 'reporter@example.com' },
+        },
+      };
+    }
+
+    it('fetchIssueComments:true passes human comments to startPrWorkflow', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      mockIssueComments = [
+        { text: 'Please fix the login bug', createdAt: '2026-04-01T10:00:00Z', author: { displayName: 'Alice', accountId: 'alice-id' } },
+        { text: 'Also check the signup form', createdAt: '2026-04-02T10:00:00Z', author: { displayName: 'Bob', accountId: 'bob-id' } },
+      ];
+      const prCalls: PrWorkflowInput[] = [];
+      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      const config: JiraAdapterConfig = {
+        ...analyzeConfig,
+        fetchIssueComments: true,
+      };
+      const context = createMockContext(config);
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr'),
+        makeTaskInfo({ key: 'FIC-1', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(prCalls.length, 1);
+      assert.ok(Array.isArray(prCalls[0].issueComments));
+      assert.equal(prCalls[0].issueComments!.length, 2);
+      assert.ok(prCalls[0].issueComments![0].includes('Alice'));
+      assert.ok(prCalls[0].issueComments![1].includes('Bob'));
+    });
+
+    it('fetchIssueComments:true filters out app-authored comments by marker', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      mockIssueComments = [
+        { text: `Human comment`, createdAt: '2026-04-01T10:00:00Z', author: { displayName: 'Alice' } },
+        { text: `Bot result\n\n---\n_— Posted by ${AGENT_DETECTIVE_MARKER}_`, createdAt: '2026-04-02T10:00:00Z', author: { displayName: 'Bot' } },
+      ];
+      const prCalls: PrWorkflowInput[] = [];
+      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      const config: JiraAdapterConfig = { ...analyzeConfig, fetchIssueComments: true };
+      const context = createMockContext(config);
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr'),
+        makeTaskInfo({ key: 'FIC-2', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(prCalls.length, 1);
+      assert.equal(prCalls[0].issueComments!.length, 1);
+      assert.ok(prCalls[0].issueComments![0].includes('Alice'));
+    });
+
+    it('fetchIssueComments:false (default) does not pass issueComments to startPrWorkflow', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      mockIssueComments = [
+        { text: 'Some comment', createdAt: '2026-04-01T10:00:00Z', author: { displayName: 'Alice' } },
+      ];
+      const prCalls: PrWorkflowInput[] = [];
+      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      const context = createMockContext(analyzeConfig); // fetchIssueComments not set → defaults to false
+
+      await routeToHandler(
+        makePrPayload('#agent-detective pr'),
+        makeTaskInfo({ key: 'FIC-3', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(prCalls.length, 1);
+      assert.equal(prCalls[0].issueComments, undefined);
     });
   });
 });

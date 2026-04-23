@@ -164,6 +164,13 @@ export function createRealJiraClient(
                 ? JSON.stringify(c.body)
                 : '',
           createdAt: c.created || new Date().toISOString(),
+          author: c.author
+            ? {
+                accountId: c.author.accountId,
+                emailAddress: c.author.emailAddress,
+                displayName: c.author.displayName,
+              }
+            : undefined,
         }));
       } catch (err) {
         throw wrapJiraError('getComments', err);

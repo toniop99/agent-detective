@@ -80,6 +80,12 @@ export const prPipelineOptionsSchema = z
      * only show wall time. Default false.
      */
     prAnalytics: z.boolean().default(false),
+    /**
+     * When true (default), Jira issue comments fetched by the jira-adapter are
+     * included in the agent prompt as additional context. Set to false to
+     * suppress them even when the adapter passes them.
+     */
+    includeIssueComments: z.boolean().default(true),
   })
   .strict();
 
