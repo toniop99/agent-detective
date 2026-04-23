@@ -7,7 +7,7 @@ import {
 } from '../../src/handlers/index.js';
 import type { HandlerContext } from '../../src/handlers/index.js';
 import type { JiraAdapterConfig, JiraTaskInfo } from '../../src/types.js';
-import type { JiraCommentRecord } from '../../src/jira-client.js';
+import type { JiraAttachmentRecord, JiraCommentRecord } from '../../src/jira-client.js';
 import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
 import {
   PR_WORKFLOW_SERVICE,
@@ -29,6 +29,8 @@ interface MockJiraClientForTest {
   issueComments: JiraCommentRecord[];
   addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
   getComments(issueKey: string): Promise<JiraCommentRecord[]>;
+  getAttachments(issueKey: string): Promise<JiraAttachmentRecord[]>;
+  downloadAttachment(attachmentId: string): Promise<Buffer>;
 }
 
 function makeTaskInfo(overrides: Partial<JiraTaskInfo> = {}): JiraTaskInfo {
@@ -71,6 +73,12 @@ describe('Handler Registry', () => {
       },
       async getComments(_issueKey) {
         return mockIssueComments;
+      },
+      async getAttachments(_issueKey) {
+        return [];
+      },
+      async downloadAttachment(_id) {
+        return Buffer.alloc(0);
       },
     };
   });

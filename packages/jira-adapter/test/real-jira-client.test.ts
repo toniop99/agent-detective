@@ -11,17 +11,20 @@ function createStubClient(): {
     getIssue: Array<Record<string, unknown>>;
     editIssue: Array<Record<string, unknown>>;
     getComments: Array<Record<string, unknown>>;
+    getAttachmentContent: Array<unknown>;
   };
   nextAddCommentError?: unknown;
   nextGetIssueError?: unknown;
   nextGetCommentsResponse?: unknown;
   nextGetIssueResponse?: unknown;
+  nextGetAttachmentContentResponse?: Buffer;
 } {
   const spies = {
     addComment: [] as Array<Record<string, unknown>>,
     getIssue: [] as Array<Record<string, unknown>>,
     editIssue: [] as Array<Record<string, unknown>>,
     getComments: [] as Array<Record<string, unknown>>,
+    getAttachmentContent: [] as Array<unknown>,
   };
   const ctx: {
     client: Version3ClientSurface;
@@ -30,6 +33,7 @@ function createStubClient(): {
     nextGetIssueError?: unknown;
     nextGetCommentsResponse?: unknown;
     nextGetIssueResponse?: unknown;
+    nextGetAttachmentContentResponse?: Buffer;
   } = { client: {} as Version3ClientSurface, spies };
 
   const issueComments = {
@@ -62,7 +66,14 @@ function createStubClient(): {
     },
   };
 
-  ctx.client = { issueComments, issues } as unknown as Version3ClientSurface;
+  const issueAttachments = {
+    async getAttachmentContent(id: unknown) {
+      spies.getAttachmentContent.push(id);
+      return (ctx.nextGetAttachmentContentResponse ?? Buffer.alloc(0)) as unknown;
+    },
+  };
+
+  ctx.client = { issueComments, issues, issueAttachments } as unknown as Version3ClientSurface;
   return ctx;
 }
 
@@ -297,7 +308,7 @@ describe('real-jira-client', () => {
     stub.nextGetCommentsResponse = {
       comments: [
         { renderedBody: '<p>hi</p>', created: '2026-04-01T00:00:00Z' },
-        { body: { type: 'doc' }, created: '2026-04-02T00:00:00Z' },
+        { body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'from adf' }] }] }, created: '2026-04-02T00:00:00Z' },
       ],
     };
     const client = createRealJiraClient({}, { client: stub.client });
@@ -305,7 +316,7 @@ describe('real-jira-client', () => {
     const out = await client.getComments('C-1');
     assert.equal(out.length, 2);
     assert.equal(out[0]!.text, '<p>hi</p>');
-    assert.ok(out[1]!.text.includes('doc'));
+    assert.equal(out[1]!.text, 'from adf');
   });
 
   it('getComments maps author fields to JiraCommentRecord', async () => {
@@ -337,5 +348,46 @@ describe('real-jira-client', () => {
       displayName: 'Alice',
     });
     assert.equal(out[1]!.author, undefined);
+  });
+
+  it('getAttachments returns only image/* attachments', async () => {
+    const stub = createStubClient();
+    stub.nextGetIssueResponse = {
+      key: 'IMG-1',
+      fields: {
+        attachment: [
+          { id: '1', filename: 'screenshot.png', mimeType: 'image/png', size: 1024 },
+          { id: '2', filename: 'report.pdf', mimeType: 'application/pdf', size: 2048 },
+          { id: '3', filename: 'photo.jpg', mimeType: 'image/jpeg', size: 512 },
+        ],
+      },
+    };
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    const attachments = await client.getAttachments('IMG-1');
+    assert.equal(attachments.length, 2);
+    assert.equal(attachments[0]!.filename, 'screenshot.png');
+    assert.equal(attachments[1]!.filename, 'photo.jpg');
+  });
+
+  it('getAttachments returns empty array when no attachments', async () => {
+    const stub = createStubClient();
+    stub.nextGetIssueResponse = { key: 'IMG-2', fields: { attachment: [] } };
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    const attachments = await client.getAttachments('IMG-2');
+    assert.equal(attachments.length, 0);
+  });
+
+  it('downloadAttachment delegates to issueAttachments.getAttachmentContent', async () => {
+    const stub = createStubClient();
+    stub.nextGetAttachmentContentResponse = Buffer.from('image-bytes');
+    const client = createRealJiraClient({}, { client: stub.client });
+
+    const buf = await client.downloadAttachment('att-42');
+    assert.ok(buf instanceof Buffer);
+    assert.equal(buf.toString(), 'image-bytes');
+    assert.equal(stub.spies.getAttachmentContent.length, 1);
+    assert.equal(stub.spies.getAttachmentContent[0], 'att-42');
   });
 });

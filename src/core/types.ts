@@ -21,6 +21,7 @@ export type {
   RepoMappingConfig,
   BuildCommandOptions,
   AgentOutput,
+  AgentUsage,
   StreamingOutput,
   Agent,
   AgentInfo,

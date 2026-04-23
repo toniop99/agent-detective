@@ -271,7 +271,8 @@ async function handleAnalyze(
         taskInfo,
         context,
         eventConfig,
-        prCommentContext
+        prCommentContext,
+        comment?.id
       );
       return;
     }
@@ -514,7 +515,8 @@ async function fanOutPr(
   taskInfo: JiraTaskInfo,
   context: HandlerContext,
   eventConfig: JiraEventConfig,
-  prCommentContext: string
+  prCommentContext: string,
+  triggerCommentId?: string
 ): Promise<void> {
   const { config, jiraClient, logger, getService } = context;
 
@@ -558,8 +560,15 @@ async function fanOutPr(
     try {
       const allComments = await jiraClient.getComments(taskInfo.key);
       const ownUser = config.jiraUser;
+      const prPhrase = config.prTriggerPhrase ?? jiraHandlerDefaults.prTriggerPhrase;
+      const analyzePhrase = config.retryTriggerPhrase ?? jiraHandlerDefaults.retryTriggerPhrase;
       issueComments = allComments
-        .filter((c) => !isOwnComment(c.text, c.author ?? null, ownUser))
+        .filter((c) => {
+          if (isOwnComment(c.text, c.author ?? null, ownUser)) return false;
+          if (hasTriggerPhrase(c.text, prPhrase)) return false;
+          if (hasTriggerPhrase(c.text, analyzePhrase)) return false;
+          return true;
+        })
         .map((c) => {
           const who = c.author?.displayName || 'Unknown';
           const text = c.text.slice(0, 2_000);
@@ -571,6 +580,17 @@ async function fanOutPr(
     }
   }
 
+  let imageAttachments: Array<{ id: string; filename: string; mimeType: string; size: number }> | undefined;
+  try {
+    const attachments = await jiraClient.getAttachments(taskInfo.key);
+    if (attachments.length > 0) {
+      imageAttachments = attachments;
+      logger?.info(`jira-adapter: found ${attachments.length} image attachment(s) for ${taskInfo.key}`);
+    }
+  } catch (err) {
+    logger?.warn(`jira-adapter: failed to fetch attachments for ${taskInfo.key}: ${(err as Error).message}`);
+  }
+
   for (const match of repos) {
     pr.startPrWorkflow({
       issueKey: taskInfo.key,
@@ -580,13 +600,16 @@ async function fanOutPr(
       labels: taskInfo.labels,
       match: { name: match.name, path: match.path },
       jira: {
-        addComment: async (k, t) => {
-          await jiraClient.addComment(k, t);
+        addComment: async (k, t, opts) => {
+          await jiraClient.addComment(k, t, opts);
         },
+        downloadAttachment: (id) => jiraClient.downloadAttachment(id),
       },
       analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
       ...(prCommentContext ? { prCommentContext } : {}),
       ...(issueComments?.length ? { issueComments } : {}),
+      ...(triggerCommentId ? { triggerCommentId } : {}),
+      ...(imageAttachments?.length ? { imageAttachments } : {}),
     });
   }
 }

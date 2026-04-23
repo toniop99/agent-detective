@@ -178,6 +178,12 @@ export interface RunAgentOptions {
    * Conversation / session id for CLIs that support resume (opencode, claude, cursor, etc.).
    */
   threadId?: string;
+  /**
+   * Absolute paths to image files to pass to the agent. Only adapters that
+   * support multimodal input (e.g. claude via `--input-file`) will use these;
+   * others silently ignore the field.
+   */
+  inputFiles?: string[];
 }
 
 export interface StopRunResult {
@@ -273,6 +279,8 @@ export interface BuildCommandOptions {
    * ignore this flag if it cannot enforce read-only mode.
    */
   readOnly?: boolean;
+  /** Absolute paths to image files to pass as `--input-file` args (adapter-dependent). */
+  inputFiles?: string[];
 }
 
 export interface AgentUsage {
@@ -381,7 +389,8 @@ export const PR_WORKFLOW_SERVICE = 'pr-workflow' as const;
 
 /** Minimal Jira client surface for posting follow-up comments from the PR module. */
 export interface PrJiraClient {
-  addComment(issueIdOrKey: string, body: string): Promise<void>;
+  addComment(issueIdOrKey: string, body: string, options?: { parentId?: string }): Promise<void>;
+  downloadAttachment(attachmentId: string): Promise<Buffer>;
 }
 
 /**
@@ -409,6 +418,10 @@ export interface PrWorkflowInput {
    * by the jira-adapter when `fetchIssueComments` is enabled.
    */
   issueComments?: string[];
+  /** Jira comment ID of the triggering `#agent-detective pr` comment, used as parentId for threaded replies. */
+  triggerCommentId?: string;
+  /** Image attachments from the Jira issue (image/* mimeType only), available for download. */
+  imageAttachments?: Array<{ id: string; filename: string; mimeType: string; size: number }>;
 }
 
 export interface PrWorkflowService {

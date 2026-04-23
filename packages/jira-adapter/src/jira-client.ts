@@ -15,10 +15,23 @@ export interface JiraIssueRecord {
   fields: Record<string, unknown>;
 }
 
+export interface AddCommentOptions {
+  parentId?: string;
+}
+
+export interface JiraAttachmentRecord {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface JiraClient {
-  addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
+  addComment(issueKey: string, commentText: string, options?: AddCommentOptions): Promise<{ success: boolean; issueKey: string }>;
   getIssue(issueKey: string): Promise<JiraIssueRecord | null>;
   updateIssue(issueKey: string, updates: Record<string, unknown>): Promise<{ success: boolean }>;
   getComments(issueKey: string): Promise<JiraCommentRecord[]>;
+  getAttachments(issueKey: string): Promise<JiraAttachmentRecord[]>;
+  downloadAttachment(attachmentId: string): Promise<Buffer>;
   clear(): void;
 }

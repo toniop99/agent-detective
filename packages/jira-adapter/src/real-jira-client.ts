@@ -2,8 +2,9 @@ import { Version3Client } from 'jira.js';
 import { HttpException } from 'jira.js';
 import type { Logger } from '@agent-detective/types';
 import type { JiraAdapterConfig } from './types.js';
-import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+import type { JiraClient, JiraAttachmentRecord, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';
+import { extractBodyText } from './comment-trigger.js';
 
 function normalizeBaseUrl(url: string): string {
   return String(url || '')
@@ -12,7 +13,7 @@ function normalizeBaseUrl(url: string): string {
 }
 
 /** Minimal jira.js Version3Client surface used by this adapter. Enables test stubs. */
-export type Version3ClientSurface = Pick<Version3Client, 'issues' | 'issueComments'>;
+export type Version3ClientSurface = Pick<Version3Client, 'issues' | 'issueComments' | 'issueAttachments'>;
 
 /**
  * Convert a plain-text (or single-paragraph) string into an ADF doc. Kept as a
@@ -86,12 +87,13 @@ export function createRealJiraClient(
   const logger = overrides?.logger;
 
   return {
-    async addComment(issueKey, commentText): Promise<{ success: boolean; issueKey: string }> {
+    async addComment(issueKey, commentText, options?): Promise<{ success: boolean; issueKey: string }> {
       const adf = markdownToAdfDoc(commentText);
       try {
         await client.issueComments.addComment({
           issueIdOrKey: issueKey,
           comment: adf,
+          ...(options?.parentId ? { parentId: options.parentId } : {}),
         });
         return { success: true, issueKey };
       } catch (err) {
@@ -111,6 +113,7 @@ export function createRealJiraClient(
             await client.issueComments.addComment({
               issueIdOrKey: issueKey,
               comment: plainTextToAdfDoc(commentText),
+              ...(options?.parentId ? { parentId: options.parentId } : {}),
             });
             logger?.info(
               `Jira plain-text retry succeeded for ${issueKey} (formatting lost but body preserved).`
@@ -154,15 +157,16 @@ export function createRealJiraClient(
 
     async getComments(issueKey): Promise<JiraCommentRecord[]> {
       try {
-        const page = await client.issueComments.getComments({ issueIdOrKey: issueKey });
+        const page = await client.issueComments.getComments({
+          issueIdOrKey: issueKey,
+          expand: 'renderedBody',
+        });
         const list = page.comments ?? [];
         return list.map((c) => ({
           text:
             typeof c.renderedBody === 'string' && c.renderedBody
               ? c.renderedBody
-              : c.body
-                ? JSON.stringify(c.body)
-                : '',
+              : extractBodyText(c.body) ?? '',
           createdAt: c.created || new Date().toISOString(),
           author: c.author
             ? {
@@ -174,6 +178,36 @@ export function createRealJiraClient(
         }));
       } catch (err) {
         throw wrapJiraError('getComments', err);
+      }
+    },
+
+    async getAttachments(issueKey): Promise<JiraAttachmentRecord[]> {
+      try {
+        const data = await client.issues.getIssue({
+          issueIdOrKey: issueKey,
+          fields: ['attachment'],
+        });
+        const attachments = (data.fields?.attachment ?? []) as unknown as Array<Record<string, unknown>>;
+        return attachments
+          .filter((a) => typeof a.mimeType === 'string' && a.mimeType.startsWith('image/'))
+          .map((a) => ({
+            id: String(a.id ?? ''),
+            filename: String(a.filename ?? 'attachment'),
+            mimeType: String(a.mimeType ?? 'image/jpeg'),
+            size: typeof a.size === 'number' ? a.size : 0,
+          }))
+          .filter((a) => a.id);
+      } catch (err) {
+        if (isHttpStatus(err, 404)) return [];
+        throw wrapJiraError('getAttachments', err);
+      }
+    },
+
+    async downloadAttachment(attachmentId): Promise<Buffer> {
+      try {
+        return await client.issueAttachments.getAttachmentContent(attachmentId) as Buffer;
+      } catch (err) {
+        throw wrapJiraError('downloadAttachment', err);
       }
     },
 

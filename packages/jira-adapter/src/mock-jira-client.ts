@@ -1,7 +1,7 @@
 import type { Logger } from '@agent-detective/types';
-import type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+import type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
-export type { JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+export type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
 /** @deprecated Use {@link JiraClient}. Retained for backwards compatibility. */
 export type MockJiraClient = JiraClient;
@@ -63,6 +63,14 @@ export function createMockJiraClient(options?: { logger?: Pick<Logger, 'warn' | 
 
     async getComments(issueKey: string): Promise<JiraCommentRecord[]> {
       return comments.get(issueKey) || [];
+    },
+
+    async getAttachments(_issueKey: string): Promise<JiraAttachmentRecord[]> {
+      return [];
+    },
+
+    async downloadAttachment(_attachmentId: string): Promise<Buffer> {
+      return Buffer.alloc(0);
     },
 
     clear(): void {

@@ -190,7 +190,7 @@ export function createJiraWebhookHandler(options: HandlerContext) {
     // level instead of `{ issue: {...} }`. Normalize both shapes into the
     // canonical envelope before schema validation so the Zod schema,
     // normalizer, and handlers can share one path.
-    const { payload: normalizedPayload, shape } = normalizeWebhookShape(payload);
+    const { payload: normalizedPayload } = normalizeWebhookShape(payload);
 
     const parsed = webhookEnvelopeSchema.safeParse(normalizedPayload);
     if (!parsed.success) {

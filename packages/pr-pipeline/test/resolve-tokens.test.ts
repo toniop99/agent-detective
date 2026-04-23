@@ -37,6 +37,45 @@ describe('prPipelineOptionsSchema', () => {
   it('accepts includeIssueComments: false', () => {
     assert.strictEqual(prPipelineOptionsSchema.parse({ includeIssueComments: false }).includeIssueComments, false);
   });
+
+  it('defaults triage.enabled to false', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).triage.enabled, false);
+  });
+
+  it('defaults triage.timeoutMs to 60000', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).triage.timeoutMs, 60_000);
+  });
+
+  it('accepts triage with model and agent overrides', () => {
+    const result = prPipelineOptionsSchema.parse({
+      triage: { enabled: true, model: 'claude-haiku-4-5-20251001', agent: 'claude', timeoutMs: 30_000 },
+    });
+    assert.strictEqual(result.triage.enabled, true);
+    assert.strictEqual(result.triage.model, 'claude-haiku-4-5-20251001');
+    assert.strictEqual(result.triage.agent, 'claude');
+    assert.strictEqual(result.triage.timeoutMs, 30_000);
+  });
+
+  it('defaults images.enabled to false', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).images.enabled, false);
+  });
+
+  it('defaults images.maxCount to 5', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).images.maxCount, 5);
+  });
+
+  it('defaults images.maxTotalBytes to 10MB', () => {
+    assert.strictEqual(prPipelineOptionsSchema.parse({}).images.maxTotalBytes, 10 * 1024 * 1024);
+  });
+
+  it('accepts images with custom limits', () => {
+    const result = prPipelineOptionsSchema.parse({
+      images: { enabled: true, maxCount: 3, maxTotalBytes: 5 * 1024 * 1024 },
+    });
+    assert.strictEqual(result.images.enabled, true);
+    assert.strictEqual(result.images.maxCount, 3);
+    assert.strictEqual(result.images.maxTotalBytes, 5 * 1024 * 1024);
+  });
 });
 
 beforeEach(() => {

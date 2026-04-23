@@ -126,6 +126,7 @@ export function isOwnComment(
 }
 
 export interface ExtractedComment {
+  id?: string;
   body: string;
   author?: CommentAuthor;
 }
@@ -169,7 +170,14 @@ function readCommentObject(value: unknown): ExtractedComment | null {
   const body = extractBodyText(c.body);
   if (body === null) return null;
   const author = readAuthor(c.author);
-  return author ? { body, author } : { body };
+  const id =
+    typeof c.id === 'string' ? c.id :
+    typeof c.id === 'number' ? String(c.id) :
+    undefined;
+  const result: ExtractedComment = { body };
+  if (id) result.id = id;
+  if (author) result.author = author;
+  return result;
 }
 
 function readAuthor(value: unknown): CommentAuthor | undefined {
@@ -190,7 +198,7 @@ function readAuthor(value: unknown): CommentAuthor | undefined {
  * flatten ADF paragraphs into a single string. Non-text ADF nodes (mentions,
  * emoji, etc.) contribute nothing — users have to actually type the phrase.
  */
-function extractBodyText(value: unknown): string | null {
+export function extractBodyText(value: unknown): string | null {
   if (typeof value === 'string') return value;
   if (!value || typeof value !== 'object') return null;
   const v = value as Record<string, unknown>;

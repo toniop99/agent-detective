@@ -65,6 +65,16 @@ Set **`enabled`: false** in this plugin’s `options` to keep the pr-pipeline en
 
 **Jira ticket comment history:** when `fetchIssueComments: true` is set on the `@agent-detective/jira-adapter` plugin, the adapter fetches all comments on the Jira ticket at PR-trigger time, discards any posted by the app itself (identified by the `agent-detective · ad-v1` marker or the configured `jiraUser` identity), and passes the remaining comments to the pr-pipeline. The pr-pipeline includes them in the agent prompt as *Jira ticket comments (oldest to newest)* when `includeIssueComments: true` (the default). This gives the agent the full discussion context from the ticket — requirements clarifications, follow-ups, decisions — in addition to the issue description. Both options default to `false` / `true` respectively so no existing behaviour changes unless you opt in via `fetchIssueComments: true`.
 
+**Triage (opt-in):** set `triage.enabled: true` under `@agent-detective/pr-pipeline` options to run a read-only agent call *before* any worktree is created. The triage agent fetches the latest remote state (`origin/{prBase}`), reads the codebase, and decides whether the Jira ticket actually requires a code change. If it determines it does not (e.g. the issue is a data problem, user misunderstanding, or already fixed), it posts a Jira comment with the reasoning and exits early — saving worktree creation and coding-agent cost. If the triage fails or times out, the workflow **proceeds** (fail-open). Config options:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `triage.enabled` | boolean | `false` | Enable the triage step |
+| `triage.agent` | string | — | Agent ID for triage (falls back to `prAgent` then app default) |
+| `triage.model` | string | — | Model override, e.g. `claude-haiku-4-5-20251001` for cheap/fast triage |
+| `triage.timeoutMs` | number | `60000` | Timeout in ms for the triage agent call |
+| `triage.customPrompt` | string | — | Extra instructions appended to the triage prompt |
+
 **Precedence (always):** values from **environment variables** override the same keys in **merged JSON** (`default.json` + `local.json`) for both the [plugin env merge](#plugin-env-whitelist-first-party) at load time and, for tokens, the [runtime resolution](#host-credentials-precedence) used when the job runs. Prefer secrets in **env** in production; use `config/local.json` (gitignored) for local dev if you accept file-based secrets.
 
 ### Host credentials precedence

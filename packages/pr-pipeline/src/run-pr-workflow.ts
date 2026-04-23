@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execLocal } from '@agent-detective/process-utils';
@@ -110,6 +110,115 @@ function buildPrTitle(tpl: string, key: string, summary: string): string {
   return tpl.replaceAll('{{key}}', key).replaceAll('{{summary}}', summary.slice(0, 200) || 'Update');
 }
 
+interface TriageResult {
+  proceed: boolean;
+  reason: string;
+}
+
+export function parseTriageVerdict(text: string): TriageResult {
+  const lines = text.trim().split('\n').reverse();
+  for (const line of lines) {
+    const t = line.trim();
+    if (/^VERDICT:\s*PROCEED/i.test(t)) return { proceed: true, reason: '' };
+    if (/^VERDICT:\s*SKIP/i.test(t)) {
+      const reason = t.replace(/^VERDICT:\s*SKIP\s*[-–]?\s*/i, '').trim();
+      return { proceed: false, reason: reason || 'Triage determined this is not a code issue.' };
+    }
+  }
+  return { proceed: true, reason: '' };
+}
+
+async function runTriageCheck(
+  input: Pick<PrWorkflowInput, 'issueKey' | 'issueSummary' | 'taskDescription' | 'issueComments' | 'prCommentContext' | 'match'>,
+  prBase: string,
+  deps: RunPrWorkflowDeps
+): Promise<TriageResult> {
+  const { agentRunner, options, logger } = deps;
+  const { issueKey, issueSummary, taskDescription, issueComments, prCommentContext, match } = input;
+  const mainPath = match.path;
+
+  const commentCtx = (prCommentContext || '').trim().slice(0, 12_000);
+  const commentsBlock =
+    issueComments?.length
+      ? `## Jira ticket comments (oldest to newest):\n${issueComments.join('\n\n---\n\n')}\n`
+      : '';
+
+  const triagePrompt = [
+    `You are a triage agent. Analyze the Jira ticket below and determine whether it requires a CODE CHANGE in this repository.`,
+    ``,
+    `Jira: ${issueKey} — ${issueSummary}`,
+    ``,
+    `Issue description:`,
+    String(taskDescription || '').slice(0, 20_000),
+    ``,
+    ...(commentsBlock ? [commentsBlock] : []),
+    ...(commentCtx ? [`## Operator context:\n${commentCtx}\n`] : []),
+    `Investigate the codebase to understand whether this issue stems from a bug in the source code.`,
+    ``,
+    `Issues that do NOT need code changes include:`,
+    `- Wrong data or configuration values stored outside this repo (database, external config)`,
+    `- User misunderstandings or incorrect usage of the application`,
+    `- Issues that are already fixed in the current codebase`,
+    `- Duplicate tickets`,
+    `- Infrastructure, networking, or deployment problems`,
+    `- Issues in third-party services or dependencies this repo cannot fix`,
+    ``,
+    ...(options.triage.customPrompt ? [options.triage.customPrompt, ``] : []),
+    `After your analysis, end your response with EXACTLY one of these two lines (no extra text after it):`,
+    `VERDICT: PROCEED`,
+    `VERDICT: SKIP - <brief one-line reason>`,
+  ].join('\n');
+
+  let savedRef: string | undefined;
+  try {
+    await execLocal('git', ['-C', mainPath, 'fetch', 'origin'], GIT).catch((e) => {
+      logger.warn(`pr-pipeline: triage git fetch in ${mainPath}: ${(e as Error).message}`);
+    });
+    savedRef = (await execLocal('git', ['-C', mainPath, 'rev-parse', 'HEAD'], GIT)).trim();
+    await execLocal('git', ['-C', mainPath, 'checkout', `origin/${prBase}`], GIT);
+
+    const taskId = `pr-triage-${issueKey}-${Date.now()}`;
+    const out = await agentRunner.runAgentForChat(taskId, triagePrompt, {
+      readOnly: true,
+      cwd: mainPath,
+      repoPath: mainPath,
+      ...(options.triage.agent !== undefined
+        ? { agentId: options.triage.agent }
+        : options.prAgent !== undefined
+          ? { agentId: options.prAgent }
+          : {}),
+      ...(options.triage.model !== undefined ? { model: options.triage.model } : {}),
+      timeoutMs: options.triage.timeoutMs,
+      ...(options.prDebug
+        ? {
+            onProgress: (messages: string[]) => {
+              for (const msg of messages) {
+                logger.info(`pr-pipeline [${taskId}] triage: ${msg.slice(0, 500)}`);
+              }
+            },
+            onStdout: (chunk: string) => {
+              for (const line of chunk.split('\n')) {
+                const trimmed = line.trim();
+                if (trimmed) logger.info(`pr-pipeline [${taskId}] triage stdout: ${trimmed.slice(0, 500)}`);
+              }
+            },
+          }
+        : {}),
+    });
+
+    return parseTriageVerdict(out.text);
+  } catch (err) {
+    logger.warn(`pr-pipeline: triage check failed (proceeding): ${(err as Error).message}`);
+    return { proceed: true, reason: '' };
+  } finally {
+    if (savedRef) {
+      await execLocal('git', ['-C', mainPath, 'checkout', savedRef], GIT).catch((e) => {
+        logger.warn(`pr-pipeline: triage could not restore HEAD to ${savedRef}: ${(e as Error).message}`);
+      });
+    }
+  }
+}
+
 export interface RunPrWorkflowDeps {
   localRepos: LocalReposService;
   agentRunner: AgentRunner;
@@ -118,15 +227,63 @@ export interface RunPrWorkflowDeps {
 }
 
 /**
+ * Downloads Jira image attachments to a temp directory and returns their paths.
+ * Respects maxCount and maxTotalBytes limits. Fails open per image — a single
+ * download failure is logged and skipped, not propagated.
+ * Returns an empty array when images are disabled or none are available.
+ */
+export async function downloadImagesToTempDir(
+  input: Pick<PrWorkflowInput, 'jira' | 'imageAttachments' | 'issueKey'>,
+  options: PrPipelineOptions,
+  logger: Pick<Logger, 'info' | 'warn'>
+): Promise<{ paths: string[]; tempDir: string | null }> {
+  if (!options.images.enabled || !input.imageAttachments?.length) {
+    return { paths: [], tempDir: null };
+  }
+
+  const { maxCount, maxTotalBytes } = options.images;
+  const sorted = [...input.imageAttachments].sort((a, b) => a.size - b.size);
+
+  let tempDir: string | null = null;
+  const paths: string[] = [];
+  let totalBytes = 0;
+
+  for (const att of sorted) {
+    if (paths.length >= maxCount) break;
+    if (att.size > 0 && totalBytes + att.size > maxTotalBytes) {
+      logger.warn(`pr-pipeline: skipping image ${att.filename} (would exceed maxTotalBytes limit)`);
+      continue;
+    }
+    try {
+      const buf = await input.jira.downloadAttachment(att.id);
+      if (tempDir === null) {
+        tempDir = await mkdtemp(join(tmpdir(), `ad-img-${input.issueKey.replace(/[^a-z0-9]+/gi, '-')}-`));
+      }
+      const filePath = join(tempDir, att.filename);
+      await writeFile(filePath, buf);
+      paths.push(filePath);
+      totalBytes += buf.length;
+      logger.info(`pr-pipeline: downloaded image ${att.filename} (${buf.length} bytes) for ${input.issueKey}`);
+    } catch (err) {
+      logger.warn(`pr-pipeline: failed to download image ${att.filename}: ${(err as Error).message}`);
+    }
+  }
+
+  return { paths, tempDir };
+}
+
+/**
  * Isolated worktree, write-mode agent, commit + push, GitHub or Bitbucket PR, Jira comment; cleanup on error.
  */
 export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowDeps): Promise<void> {
   const { localRepos, agentRunner, options, logger } = deps;
-  const { issueKey, issueSummary, taskDescription, match, jira, analysisPrompt, prCommentContext, issueComments } = input;
+  const { issueKey, issueSummary, taskDescription, match, jira, analysisPrompt, prCommentContext, issueComments, triggerCommentId, imageAttachments } = input;
   const commentCtx = (prCommentContext || '').trim().slice(0, 12_000);
+  const threadOpts = triggerCommentId ? { parentId: triggerCommentId } : undefined;
+  const postComment = (body: string) => jira.addComment(issueKey, body, threadOpts);
   const cfg = localRepos.getSourceRepoConfig(match.name);
   if (!cfg) {
-    await jira.addComment(issueKey, stampJiraPr(`**pr-pipeline:** no source config for repo \`${match.name}\`.`));
+    await postComment(stampJiraPr(`**pr-pipeline:** no source config for repo \`${match.name}\`.`));
     return;
   }
   const prBase = cfg.prBaseBranch || 'main';
@@ -138,8 +295,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
 
   if (needsHost) {
     if (!vcs) {
-      await jira.addComment(
-        issueKey,
+      await postComment(
         stampJiraPr(
           '**pr-pipeline:** for a real push and PR, set `vcs` (GitHub or Bitbucket) on this repository entry in `local-repos` `repos[]`, or use `prDryRun: true` to test without a host.'
         )
@@ -148,8 +304,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     }
     if (vcs.provider === 'github') {
       if (!resolveGithubToken(options)) {
-        await jira.addComment(
-          issueKey,
+        await postComment(
           stampJiraPr(
             '**pr-pipeline:** set a GitHub token: environment `GITHUB_TOKEN` or `GH_TOKEN` (preferred), or `githubToken` under `@agent-detective/pr-pipeline` in config. Env overrides file.'
           )
@@ -158,8 +313,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       }
     } else if (vcs.provider === 'bitbucket') {
       if (!resolveBitbucketAuth(options)) {
-        await jira.addComment(
-          issueKey,
+        await postComment(
           stampJiraPr(
             '**pr-pipeline:** for Bitbucket, set an **access token** (`BITBUCKET_TOKEN` or `bitbucketToken` in config) *or* **app password** pair (`BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD`, or the matching plugin options). Token mode is used when a token is set. Env overrides file.'
           )
@@ -167,8 +321,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         return;
       }
     } else {
-      await jira.addComment(
-        issueKey,
+      await postComment(
         stampJiraPr(
           `**pr-pipeline:** unsupported vcs provider \`${vcs.provider}\`. Use \`github\` or \`bitbucket\`, or \`prDryRun: true\`.`
         )
@@ -177,10 +330,33 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     }
   }
 
+  if (options.triage.enabled) {
+    logger.info(`pr-pipeline: running triage for ${issueKey} on ${match.name}`);
+    const triageResult = await runTriageCheck(input, prBase, deps);
+    if (!triageResult.proceed) {
+      logger.info(`pr-pipeline: triage skipped ${issueKey}: ${triageResult.reason}`);
+      await postComment(
+        stampJiraPr(
+          `**pr-pipeline** (${match.name}): **Triage: no code change needed.**\n\n` +
+          `${triageResult.reason}\n\n` +
+          `_The coding agent was not run. If you believe this assessment is incorrect, ` +
+          `re-trigger the workflow or disable triage._`
+        )
+      );
+      return;
+    }
+    logger.info(`pr-pipeline: triage approved ${issueKey}, proceeding to coding agent`);
+    await postComment(
+        stampJiraPr(`**pr-pipeline** (${match.name}): **Triage: code change needed.** Proceeding to coding agent.`)
+      )
+      .catch((e) => logger.warn(`pr-pipeline: could not post triage-approved Jira comment: ${(e as Error).message}`));
+  }
+
   const workPath = await mkdtemp(join(tmpdir(), `ad-pr-${issueKey.replace(/[^a-z0-9]+/gi, '-')}-`));
   const title = buildPrTitle(options.prTitleTemplate, issueKey, issueSummary);
   const idSuffix = randomBytes(4).toString('hex');
   const wt: ActiveWorktree = { mainPath, workPath, branchName };
+  let imageTempDir: string | null = null;
 
   try {
     await execLocal('git', ['-C', mainPath, 'fetch', 'origin'], GIT).catch((e) => {
@@ -204,11 +380,33 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       });
     }
 
+    const { paths: imagePaths, tempDir: downloadedTempDir } = await downloadImagesToTempDir(
+      { jira, imageAttachments, issueKey },
+      options,
+      logger
+    );
+    imageTempDir = downloadedTempDir;
+
     const commentsBlock =
       options.includeIssueComments && issueComments?.length
         ? [
             `## Jira ticket comments (oldest to newest, app-authored excluded):`,
             issueComments.join('\n\n---\n\n'),
+            ``,
+          ]
+        : [];
+
+    const imageBlock =
+      imagePaths.length
+        ? [
+            `## Jira ticket images — use the Read tool to view each one:`,
+            ...imagePaths.map((p) => `- ${p}`),
+            ``,
+          ]
+        : imageAttachments?.length
+        ? [
+            `## Attached images (could not be downloaded — filenames for reference only):`,
+            ...imageAttachments.map((a) => `- ${a.filename}`),
             ``,
           ]
         : [];
@@ -220,6 +418,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       String(taskDescription || '').slice(0, 20_000),
       ``,
       ...commentsBlock,
+      ...imageBlock,
       ...(commentCtx
         ? [
             `## Additional context from the Jira comment (operator, after the PR trigger phrase):`,
@@ -231,11 +430,8 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       analysisPrompt ? `## Extra instructions from operator:\n${analysisPrompt}` : '',
     ]
       .join('\n');
-    console.log(userPrompt)
     const dryRunNote = options.prDryRun ? ' **Dry run** — no push or host PR will be created.' : '';
-    await jira
-      .addComment(
-        issueKey,
+    await postComment(
         stampJiraPr(
           `**pr-pipeline** (${match.name}): running the coding agent in a worktree on \`${branchName}\` (base: \`${prBase}\`).${dryRunNote} ` +
             `This often takes several minutes; a follow-up comment will be posted when it finishes.`
@@ -269,7 +465,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
 
     const status = await execLocal('git', ['-C', workPath, 'status', '--porcelain'], GIT);
     if (!status.trim()) {
-      await jira.addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): no file changes; agent output:\n\n${out.text.slice(0, 4_000)}`));
+      await postComment(stampJiraPr(`**pr-pipeline** (${match.name}): no file changes; agent output:\n\n${out.text.slice(0, 4_000)}`));
       return;
     }
 
@@ -289,8 +485,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       } else {
         where = `host provider \`${vcs.provider}\``;
       }
-      await jira.addComment(
-        issueKey,
+      await postComment(
         stampJiraPr(
           `**pr-pipeline** (${match.name}, **dry run**): would create branch \`${branchName}\` and open a PR ` +
             `on ${where} (base: \`${prBase}\`).\n\n---\n\nAgent report (truncated):\n\n${out.text.slice(0, 3_000)}`
@@ -379,8 +574,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         sourceBranch: branchName,
         destinationBranch: prBase,
       });
-      await jira.addComment(
-        issueKey,
+      await postComment(
         stampJiraPr(
           [
             `**Pull request opened** (Bitbucket, ${match.name}): ${pr.htmlUrl}`,
@@ -405,8 +599,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
         base: prBase,
         body: prBody,
       });
-      await jira.addComment(
-        issueKey,
+      await postComment(
         stampJiraPr(
           [
             `**Pull request opened** (${match.name}): ${pr.htmlUrl}`,
@@ -422,8 +615,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
   } catch (err) {
     const msg = (err as Error).message;
     logger.error(`pr-pipeline: failed for ${issueKey} / ${match.name}: ${msg}`);
-    await jira
-      .addComment(issueKey, stampJiraPr(`**pr-pipeline** (${match.name}): failed — \`${msg.slice(0, 3_000)}\``))
+    await postComment(stampJiraPr(`**pr-pipeline** (${match.name}): failed — \`${msg.slice(0, 3_000)}\``))
       .catch((e) => logger.error(String(e)));
   } finally {
     try {
@@ -440,6 +632,13 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
       await execLocal('git', ['-C', mainPath, 'branch', '-D', branchName], GIT);
     } catch {
       /* branch may not exist or still used */
+    }
+    if (imageTempDir) {
+      try {
+        await rm(imageTempDir, { recursive: true, force: true });
+      } catch {
+        /* best effort */
+      }
     }
     activeWorktrees.delete(wt);
   }

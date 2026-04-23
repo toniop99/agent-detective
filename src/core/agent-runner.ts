@@ -113,6 +113,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       readOnly,
       timeoutMs: runTimeoutMs,
       threadId,
+      inputFiles,
     } = runOptions;
 
     const effectiveAgentId = overrideAgentId || defaultAgentId || 'opencode';
@@ -184,6 +185,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
         readOnly,
         timeoutMs: runTimeoutMs,
         threadId: threadId && String(threadId).trim() ? String(threadId).trim() : undefined,
+        inputFiles,
       });
 
       run.settled = true;
@@ -219,6 +221,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       readOnly,
       timeoutMs: shellTimeoutMs,
       threadId,
+      inputFiles,
     }: {
       prompt: string;
       cwd: string;
@@ -235,6 +238,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       readOnly?: boolean;
       timeoutMs?: number;
       threadId?: string;
+      inputFiles?: string[];
     }
   ): Promise<AgentOutput> {
     const effectiveTimeoutMs =
@@ -250,6 +254,7 @@ function createAgentRunner(options: CreateAgentRunnerOptions) {
       thinking: undefined,
       readOnly,
       threadId,
+      inputFiles,
     }) || `${agent.command} ${promptExpression}`;
 
     const command = [

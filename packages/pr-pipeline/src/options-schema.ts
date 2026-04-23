@@ -86,6 +86,42 @@ export const prPipelineOptionsSchema = z
      * suppress them even when the adapter passes them.
      */
     includeIssueComments: z.boolean().default(true),
+    /**
+     * Opt-in triage step that runs a read-only agent against the repo BEFORE
+     * creating a worktree or running the coding agent. If the agent determines
+     * the ticket does not require a code change, the workflow posts a Jira
+     * comment and exits early — saving worktree and coding-agent cost.
+     * Fails open: errors or unparseable verdicts always proceed to coding.
+     */
+    triage: z
+      .object({
+        /** When true, enable the triage step. Default false (opt-in). */
+        enabled: z.boolean().default(false),
+        /** Agent ID for triage (e.g. `'claude'`). Falls back to `prAgent` then app default. */
+        agent: z.string().min(1).optional(),
+        /** Model override for the triage call (e.g. `'claude-haiku-4-5-20251001'` for cheap triage). */
+        model: z.string().min(1).optional(),
+        /** Timeout in ms for the triage agent call. Default 60 000 (1 minute). */
+        timeoutMs: z.number().int().positive().default(60_000),
+        /** Extra instructions appended to the triage prompt for domain-specific guidance. */
+        customPrompt: z.string().optional(),
+      })
+      .default({ enabled: false, timeoutMs: 60_000 }),
+    /**
+     * Opt-in image passing: download image attachments from the Jira ticket and
+     * pass them to the agent (only supported by the `claude` adapter via `--input-file`).
+     * Other agents receive a text-only list of attachment filenames. Default disabled.
+     */
+    images: z
+      .object({
+        /** When true, enable image downloading and passing. Default false (opt-in). */
+        enabled: z.boolean().default(false),
+        /** Maximum number of images to download. Default 5. */
+        maxCount: z.number().int().positive().default(5),
+        /** Maximum total bytes to download across all images. Default 10 MB. */
+        maxTotalBytes: z.number().int().positive().default(10 * 1024 * 1024),
+      })
+      .default({ enabled: false, maxCount: 5, maxTotalBytes: 10_485_760 }),
   })
   .strict();
 
