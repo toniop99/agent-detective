@@ -181,7 +181,7 @@ pnpm test
 
 When `mockMode: true`, the adapter uses `mock-jira-client.ts` and logs `[MOCK] Added comment...` instead of calling Jira.
 
-When `mockMode: false`, set `baseUrl`, `email`, and `apiToken` (or `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`) so comments are posted via Jira REST ([real-jira-client.ts](../packages/jira-adapter/src/real-jira-client.ts)).
+When `mockMode: false`, set `baseUrl`, `email`, and `apiToken` (or `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`) so comments are posted via Jira REST ([real-jira-client.ts](../packages/jira-adapter/src/infrastructure/real-jira-client.ts)).
 
 ```bash
 # From repo root (server must be running on PORT)

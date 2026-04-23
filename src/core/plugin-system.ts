@@ -2,7 +2,8 @@ import { validatePluginSchema, validatePluginConfig } from './schema-validator.j
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Plugin, PluginContext, LoadedPlugin, TaskQueue, EnqueueFn } from './types.js';
+import type { Agent, Plugin, PluginContext, LoadedPlugin, TaskQueue, EnqueueFn } from './types.js';
+import type { RequestHandler } from 'express';
 import { createMemoryTaskQueue } from './queue.js';
 
 /** Repository root for resolving local plugin paths (packages/...). Uses process.cwd() so bundled dist/index.js matches Docker WORKDIR and local pnpm dev. */
@@ -48,7 +49,7 @@ function createPrefixedApp(
         };
       }
       if (prop === 'use') {
-        return (path: string | Function, ...handlers: unknown[]) => {
+        return (path: string | RequestHandler, ...handlers: unknown[]) => {
           if (typeof path === 'function') {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (target as any).use(path, ...handlers);
@@ -188,7 +189,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         events,
         registerService: sharedContext?.registerService || registerService,
         getService: sharedContext?.getService || getService,
-        registerAgent: (agent: any) => agentRunner.registerAgent(agent),
+        registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
         registerCapability: sharedContext?.registerCapability || registerCapability,
         hasCapability: sharedContext?.hasCapability || hasCapability,
         registerTaskQueue: sharedContext?.registerTaskQueue || registerTaskQueue,
@@ -321,7 +322,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       events,
       registerService,
       getService,
-      registerAgent: (agent: any) => agentRunner.registerAgent(agent),
+      registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
       registerCapability,
       hasCapability,
       registerTaskQueue,

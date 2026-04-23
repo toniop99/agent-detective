@@ -15,7 +15,7 @@ TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main 
 
 ## Configuration
 
-Runtime config: `config/default.json` + optional `config/local.json` (deep merge), then an explicit env whitelist — see `docs/configuration.md`. Plugin option Zod schemas live in `packages/*/src/options-schema.ts`; generated reference: `docs/generated/plugin-options.md`.
+Runtime config: `config/default.json` + optional `config/local.json` (deep merge), then an explicit env whitelist — see `docs/configuration.md`. Plugin option Zod schemas: `packages/jira-adapter/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`; generated reference: `docs/generated/plugin-options.md`.
 
 ## Golden Rules
 
@@ -132,7 +132,7 @@ packages/
 ├── core/src/
 ├── observability/src/
 ├── process-utils/src/
-├── local-repos-plugin/src/
+├── local-repos-plugin/src/   # presentation / application / domain / infrastructure
 └── jira-adapter/src/
 
 test/                         # *.test.ts files (tsx --test)

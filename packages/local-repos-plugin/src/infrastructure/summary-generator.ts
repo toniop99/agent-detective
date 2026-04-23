@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AgentRunner, Logger } from '@agent-detective/types';
-import type { SummaryGenerationConfig } from './types.js';
+import type { SummaryGenerationConfig } from '../domain/types.js';
 import { execLocal } from '@agent-detective/process-utils';
 
 const DEFAULT_MAX_OUTPUT_CHARS = 500;

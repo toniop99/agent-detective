@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRepoByLabels, matchAllReposByLabels } from '../src/repo-matcher.js';
-import type { ValidatedRepo } from '../src/types.js';
+import { matchRepoByLabels, matchAllReposByLabels } from '../src/domain/repo-matcher.js';
+import type { ValidatedRepo } from '../src/domain/types.js';
 
 function repo(name: string, path = `/repos/${name}`): ValidatedRepo {
   return {

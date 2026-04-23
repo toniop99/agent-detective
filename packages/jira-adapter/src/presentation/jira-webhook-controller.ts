@@ -8,11 +8,11 @@ import {
   Response as OpenApiResponse,
   RequestBody,
 } from '@agent-detective/core';
-import type { JiraWebhookResponse } from './webhook-types.js';
+import type { JiraWebhookResponse } from '../domain/webhook-types.js';
 import type { Logger } from '@agent-detective/types';
-import { JiraWebhookPayloadError } from './webhook-handler.js';
+import { JiraWebhookPayloadError } from '../application/webhook-handler.js';
 
-type JiraWebhookHandler = ReturnType<typeof import('./webhook-handler.js').createJiraWebhookHandler>;
+type JiraWebhookHandler = ReturnType<typeof import('../application/webhook-handler.js').createJiraWebhookHandler>;
 
 const PLUGIN_TAG = '@agent-detective/jira-adapter';
 

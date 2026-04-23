@@ -4,9 +4,9 @@ Do not edit by hand. Regenerate with `pnpm docs:plugins`.
 
 Source files:
 
-- `packages/jira-adapter/src/options-schema.ts`
-- `packages/local-repos-plugin/src/options-schema.ts`
-- `packages/pr-pipeline/src/options-schema.ts`
+- `packages/jira-adapter/src/application/options-schema.ts`
+- `packages/local-repos-plugin/src/application/options-schema.ts`
+- `packages/pr-pipeline/src/application/options-schema.ts`
 
 ### @agent-detective/jira-adapter
 
@@ -161,6 +161,10 @@ Anchor: `jira-adapter`
       "type": "integer",
       "minimum": 0,
       "maximum": 9007199254740991
+    },
+    "fetchIssueComments": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
@@ -172,7 +176,8 @@ Anchor: `jira-adapter`
     "prTriggerPhrase",
     "webhookBehavior",
     "autoAnalysisCooldownMs",
-    "missingLabelsReminderCooldownMs"
+    "missingLabelsReminderCooldownMs",
+    "fetchIssueComments"
   ],
   "additionalProperties": false
 }
@@ -389,6 +394,10 @@ Anchor: `pr-pipeline`
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991
     },
+    "prDebug": {
+      "default": false,
+      "type": "boolean"
+    },
     "githubToken": {
       "type": "string",
       "minLength": 1
@@ -415,6 +424,81 @@ Anchor: `pr-pipeline`
       "items": {
         "type": "string"
       }
+    },
+    "prAnalytics": {
+      "default": false,
+      "type": "boolean"
+    },
+    "includeIssueComments": {
+      "default": true,
+      "type": "boolean"
+    },
+    "triage": {
+      "default": {
+        "enabled": false,
+        "timeoutMs": 60000
+      },
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeoutMs": {
+          "default": 60000,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "customPrompt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "timeoutMs"
+      ],
+      "additionalProperties": false
+    },
+    "images": {
+      "default": {
+        "enabled": false,
+        "maxCount": 5,
+        "maxTotalBytes": 10485760
+      },
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "maxCount": {
+          "default": 5,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "maxTotalBytes": {
+          "default": 10485760,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "enabled",
+        "maxCount",
+        "maxTotalBytes"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -422,7 +506,12 @@ Anchor: `pr-pipeline`
     "prBranchPrefix",
     "prTitleTemplate",
     "prDryRun",
-    "worktreeSetupCommands"
+    "prDebug",
+    "worktreeSetupCommands",
+    "prAnalytics",
+    "includeIssueComments",
+    "triage",
+    "images"
   ],
   "additionalProperties": false
 }

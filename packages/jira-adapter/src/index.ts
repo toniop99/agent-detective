@@ -1,16 +1,16 @@
-import { createJiraWebhookHandler } from './webhook-handler.js';
-import { createMockJiraClient } from './mock-jira-client.js';
-import { createRealJiraClient } from './real-jira-client.js';
+import { createJiraWebhookHandler } from './application/webhook-handler.js';
+import { createMockJiraClient } from './infrastructure/mock-jira-client.js';
+import { createRealJiraClient } from './infrastructure/real-jira-client.js';
 import { StandardEvents, type Plugin, type TaskEvent } from '@agent-detective/types';
-import type { JiraAdapterConfig } from './types.js';
+import type { JiraAdapterConfig } from './domain/types.js';
 import { registerController } from '@agent-detective/core';
-import { JiraWebhookController } from './jira-webhook-controller.js';
+import { JiraWebhookController } from './presentation/jira-webhook-controller.js';
 import * as z from 'zod';
-import { jiraAdapterOptionsSchema } from './options-schema.js';
+import { jiraAdapterOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/core';
-import { stampComment } from './comment-trigger.js';
+import { stampComment } from './domain/comment-trigger.js';
 
-export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './options-schema.js';
+export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './application/options-schema.js';
 
 const PLUGIN_NAME = '@agent-detective/jira-adapter';
 const PLUGIN_VERSION = '0.1.0';

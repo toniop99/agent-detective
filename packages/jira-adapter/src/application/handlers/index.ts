@@ -8,8 +8,8 @@ import {
   type MatchedRepo,
   type RepoMatcher,
 } from '@agent-detective/types';
-import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../types.js';
-import { getDefaultAcknowledgmentMessage } from '../types.js';
+import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../../domain/types.js';
+import { getDefaultAcknowledgmentMessage } from '../../domain/types.js';
 import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler.js';
 import { handleIgnore, IgnoreHandlerDeps } from './ignore-handler.js';
 import { handleMissingLabels } from './missing-labels-handler.js';
@@ -19,7 +19,7 @@ import {
   hasTriggerPhrase,
   isOwnComment,
   stampComment,
-} from '../comment-trigger.js';
+} from '../../domain/comment-trigger.js';
 import { jiraAdapterOptionsSchema } from '../options-schema.js';
 
 /** Options defaults from the Zod schema (single source of truth for handler fallbacks). */

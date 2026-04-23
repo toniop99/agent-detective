@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { markdownToAdfDoc } from '../src/markdown-to-adf.js';
+import { markdownToAdfDoc } from '../src/infrastructure/markdown-to-adf.js';
 
 type AdfNode = { type: string; [key: string]: unknown };
 

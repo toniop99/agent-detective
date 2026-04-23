@@ -4,11 +4,11 @@ import {
   routeToHandler,
   __resetMissingLabelsReminderStateForTests,
   __resetAnalysisCooldownForTests,
-} from '../../src/handlers/index.js';
-import type { HandlerContext } from '../../src/handlers/index.js';
-import type { JiraAdapterConfig, JiraTaskInfo } from '../../src/types.js';
-import type { JiraAttachmentRecord, JiraCommentRecord } from '../../src/jira-client.js';
-import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
+} from '../../src/application/handlers/index.js';
+import type { HandlerContext } from '../../src/application/handlers/index.js';
+import type { JiraAdapterConfig, JiraTaskInfo } from '../../src/domain/types.js';
+import type { JiraAttachmentRecord, JiraCommentRecord } from '../../src/infrastructure/jira-client.js';
+import { AGENT_DETECTIVE_MARKER } from '../../src/domain/comment-trigger.js';
 import {
   PR_WORKFLOW_SERVICE,
   REPO_MATCHER_SERVICE,
@@ -901,7 +901,11 @@ describe('Handler Registry', () => {
         { text: 'Also check the signup form', createdAt: '2026-04-02T10:00:00Z', author: { displayName: 'Bob', accountId: 'bob-id' } },
       ];
       const prCalls: PrWorkflowInput[] = [];
-      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      services.set(PR_WORKFLOW_SERVICE, {
+        startPrWorkflow: (i: PrWorkflowInput) => {
+          prCalls.push(i);
+        },
+      } as PrWorkflowService);
       const config: JiraAdapterConfig = {
         ...analyzeConfig,
         fetchIssueComments: true,
@@ -929,7 +933,11 @@ describe('Handler Registry', () => {
         { text: `Bot result\n\n---\n_— Posted by ${AGENT_DETECTIVE_MARKER}_`, createdAt: '2026-04-02T10:00:00Z', author: { displayName: 'Bot' } },
       ];
       const prCalls: PrWorkflowInput[] = [];
-      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      services.set(PR_WORKFLOW_SERVICE, {
+        startPrWorkflow: (i: PrWorkflowInput) => {
+          prCalls.push(i);
+        },
+      } as PrWorkflowService);
       const config: JiraAdapterConfig = { ...analyzeConfig, fetchIssueComments: true };
       const context = createMockContext(config);
 
@@ -951,7 +959,11 @@ describe('Handler Registry', () => {
         { text: 'Some comment', createdAt: '2026-04-01T10:00:00Z', author: { displayName: 'Alice' } },
       ];
       const prCalls: PrWorkflowInput[] = [];
-      services.set(PR_WORKFLOW_SERVICE, { startPrWorkflow: (i: PrWorkflowInput) => prCalls.push(i) } as PrWorkflowService);
+      services.set(PR_WORKFLOW_SERVICE, {
+        startPrWorkflow: (i: PrWorkflowInput) => {
+          prCalls.push(i);
+        },
+      } as PrWorkflowService);
       const context = createMockContext(analyzeConfig); // fetchIssueComments not set → defaults to false
 
       await routeToHandler(

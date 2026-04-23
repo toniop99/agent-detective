@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRealJiraClient, plainTextToAdfDoc, type Version3ClientSurface } from '../src/real-jira-client.js';
-import { jiraAdapterOptionsSchema } from '../src/options-schema.js';
+import { createRealJiraClient, plainTextToAdfDoc, type Version3ClientSurface } from '../src/infrastructure/real-jira-client.js';
+import { jiraAdapterOptionsSchema } from '../src/application/options-schema.js';
 import { HttpException } from 'jira.js';
 
 function createStubClient(): {
