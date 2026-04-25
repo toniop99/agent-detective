@@ -5,10 +5,10 @@ import { join } from 'node:path';
 import { execLocal } from '@agent-detective/process-utils';
 import type { AgentRunner, AgentOutput, AgentUsage, Logger, PrWorkflowInput } from '@agent-detective/types';
 import type { LocalReposService } from '@agent-detective/local-repos-plugin';
-import { createBitbucketPullRequest } from './bitbucket-pr.js';
-import { createGithubPullRequest } from './github-pr.js';
-import { resolveBitbucketAuth, resolveGithubToken } from './resolve-tokens.js';
-import { stampJiraPr } from './stamp-jira.js';
+import { createBitbucketPullRequest } from '../infrastructure/bitbucket-pr.js';
+import { createGithubPullRequest } from '../infrastructure/github-pr.js';
+import { resolveBitbucketAuth, resolveGithubToken } from '../infrastructure/resolve-tokens.js';
+import { stampJiraPr } from '../infrastructure/stamp-jira.js';
 import type { PrPipelineOptions } from './options-schema.js';
 
 const GIT = { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 } as const;

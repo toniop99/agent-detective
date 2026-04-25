@@ -13,6 +13,8 @@
 
 4. **Plugin discovery**: Plugins are declared explicitly in `config/default.json` under `plugins[]`.
 
+For **hexagonal-style layering** inside first-party plugins (presentation / application / domain / infrastructure), see [architecture-layering.md](architecture-layering.md) and [ADR 0001](adr/0001-layering-and-plugin-boundaries.md).
+
 ## Type System
 
 All shared types are defined in `@agent-detective/types` package (`packages/types/src/index.ts`).

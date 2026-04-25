@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeWebhookEventName,
   resolveWebhookEvent,
-} from '../src/jira-webhook-controller.js';
+} from '../src/presentation/jira-webhook-controller.js';
 
 type PartialReq = {
   body?: Record<string, unknown>;

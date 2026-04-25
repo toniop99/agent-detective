@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
-import { handleIgnore } from '../../src/handlers/ignore-handler.js';
-import type { IgnoreHandlerDeps } from '../../src/handlers/ignore-handler.js';
+import { handleIgnore } from '../../src/application/handlers/ignore-handler.js';
+import type { IgnoreHandlerDeps } from '../../src/application/handlers/ignore-handler.js';
 
 describe('Ignore Handler', () => {
   it('logs ignored webhook event', async () => {

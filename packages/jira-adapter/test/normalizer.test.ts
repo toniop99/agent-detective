@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { normalizeJiraPayload, extractLabelsFromPayload, extractProjectKeyFromPayload, extractProjectNameFromPayload } from '../src/normalizer.js';
-import type { JiraPayload } from '../src/types.js';
+import { normalizeJiraPayload, extractLabelsFromPayload, extractProjectKeyFromPayload, extractProjectNameFromPayload } from '../src/domain/normalizer.js';
+import type { JiraPayload } from '../src/domain/types.js';
 import issueCreatedFixture from './fixtures/issue-created.json' with { type: 'json' };
 
 describe('Jira normalizer', () => {

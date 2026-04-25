@@ -1,10 +1,10 @@
 import { Version3Client } from 'jira.js';
 import { HttpException } from 'jira.js';
 import type { Logger } from '@agent-detective/types';
-import type { JiraAdapterConfig } from './types.js';
+import type { JiraAdapterConfig } from '../domain/types.js';
 import type { JiraClient, JiraAttachmentRecord, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';
-import { extractBodyText } from './comment-trigger.js';
+import { extractBodyText } from '../domain/comment-trigger.js';
 
 function normalizeBaseUrl(url: string): string {
   return String(url || '')

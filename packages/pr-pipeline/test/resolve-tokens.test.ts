@@ -1,7 +1,7 @@
 import { describe, it, afterEach, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { prPipelineOptionsSchema } from '../src/options-schema.js';
-import { resolveBitbucketAuth, resolveGithubToken } from '../src/resolve-tokens.js';
+import { prPipelineOptionsSchema } from '../src/application/options-schema.js';
+import { resolveBitbucketAuth, resolveGithubToken } from '../src/infrastructure/resolve-tokens.js';
 
 const saved = { ...process.env };
 

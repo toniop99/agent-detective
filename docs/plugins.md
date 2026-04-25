@@ -2,7 +2,7 @@
 
 Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers everything you need to build a plugin.
 
-**Bundled plugin options (Zod → JSON Schema):** after changing `options-schema.ts` in `@agent-detective/jira-adapter` or `@agent-detective/local-repos-plugin`, run `pnpm docs:plugins` and commit [generated/plugin-options.md](generated/plugin-options.md). See [configuration.md](configuration.md).
+**Bundled plugin options (Zod → JSON Schema):** after changing the Zod options schema in `@agent-detective/jira-adapter` (`src/application/options-schema.ts`), `@agent-detective/local-repos-plugin` (`src/application/options-schema.ts`), or `@agent-detective/pr-pipeline` (`src/application/options-schema.ts`), run `pnpm docs:plugins` and commit [generated/plugin-options.md](generated/plugin-options.md). See [configuration.md](configuration.md).
 
 ## Table of Contents
 

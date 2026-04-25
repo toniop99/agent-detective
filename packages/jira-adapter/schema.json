@@ -10,5 +10,5 @@
   },
   "additionalProperties": false,
   "required": [],
-  "description": "Authoritative Zod shape: packages/jira-adapter/src/options-schema.ts. Webhook path is /plugins/{sanitized-name}/webhook/jira."
+  "description": "Authoritative Zod shape: packages/jira-adapter/src/application/options-schema.ts. Webhook path is /plugins/{sanitized-name}/webhook/jira."
 }

@@ -5,8 +5,8 @@ import {
   JiraWebhookPayloadError,
   normalizeWebhookShape,
   summarizeWebhookPayload,
-} from '../src/webhook-handler.js';
-import type { HandlerContext } from '../src/handlers/index.js';
+} from '../src/application/webhook-handler.js';
+import type { HandlerContext } from '../src/application/handlers/index.js';
 import type { EventBus, Logger } from '@agent-detective/types';
 
 function createNoopContext(): HandlerContext {
@@ -34,6 +34,12 @@ function createNoopContext(): HandlerContext {
       },
       async getComments() {
         return [];
+      },
+      async getAttachments() {
+        return [];
+      },
+      async downloadAttachment() {
+        return Buffer.alloc(0);
       },
       clear() {},
     },

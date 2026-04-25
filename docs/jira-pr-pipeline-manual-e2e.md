@@ -158,7 +158,7 @@ The bundled [jira:webhook-smoke](../package.json) script posts **`issue_created`
 
 ## Safety (git, remote, and agent)
 
-This section describes what the [run-pr-workflow implementation](../packages/pr-pipeline/src/run-pr-workflow.ts) is designed **not** to do, and where operational risk can still appear.
+This section describes what the [run-pr-workflow implementation](../packages/pr-pipeline/src/application/run-pr-workflow.ts) is designed **not** to do, and where operational risk can still appear.
 
 ### What the pipeline does not do
 

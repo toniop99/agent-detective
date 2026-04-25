@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { normalizeJiraPayload } from './normalizer.js';
-import type { JiraTaskInfo, JiraPayload } from './types.js';
+import { normalizeJiraPayload } from '../domain/normalizer.js';
+import type { JiraTaskInfo, JiraPayload } from '../domain/types.js';
 import { routeToHandler, HandlerContext } from './handlers/index.js';
 
 /**

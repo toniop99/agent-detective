@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { JiraWebhookBehavior } from './types.js';
+import type { JiraWebhookBehavior } from '../domain/types.js';
 
 export const DEFAULT_WEBHOOK_BEHAVIOR: JiraWebhookBehavior = {
   defaults: {

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTriageVerdict } from '../src/run-pr-workflow.js';
+import { parseTriageVerdict } from '../src/application/run-pr-workflow.js';
 
 describe('parseTriageVerdict', () => {
   it('returns proceed:true on VERDICT: PROCEED', () => {

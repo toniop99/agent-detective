@@ -143,7 +143,7 @@ Zod option schemas for bundled plugins drive both runtime validation in `registe
 
 - [docs/generated/plugin-options.md](generated/plugin-options.md)
 
-Regenerate after editing `packages/*/src/options-schema.ts`:
+Regenerate after editing the bundled plugins’ Zod schemas (see [architecture-layering.md](architecture-layering.md) for paths; e.g. `packages/jira-adapter/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`):
 
 ```bash
 pnpm docs:plugins

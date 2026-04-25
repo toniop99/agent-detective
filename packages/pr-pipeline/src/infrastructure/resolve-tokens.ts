@@ -1,4 +1,4 @@
-import type { PrPipelineOptions } from './options-schema.js';
+import type { PrPipelineOptions } from '../application/options-schema.js';
 
 function firstNonEmpty(...vals: (string | undefined)[]): string | undefined {
   for (const v of vals) {

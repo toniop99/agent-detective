@@ -7,7 +7,7 @@ import {
   Tags,
   Response as OpenApiResponse,
 } from '@agent-detective/core';
-import type { LocalReposContext } from './types.js';
+import type { LocalReposContext } from '../domain/types.js';
 
 const PLUGIN_TAG = '@agent-detective/local-repos-plugin';
 

@@ -1,7 +1,7 @@
 import type { Logger } from '@agent-detective/types';
-import type { JiraClient } from '../jira-client.js';
-import type { JiraAdapterConfig, JiraTaskInfo } from '../types.js';
-import { stampComment } from '../comment-trigger.js';
+import type { JiraClient } from '../../infrastructure/jira-client.js';
+import type { JiraAdapterConfig, JiraTaskInfo } from '../../domain/types.js';
+import { stampComment } from '../../domain/comment-trigger.js';
 
 export interface AcknowledgeHandlerDeps {
   jiraClient: JiraClient;

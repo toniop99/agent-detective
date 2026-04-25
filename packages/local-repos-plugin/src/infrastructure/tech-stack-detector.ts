@@ -1,5 +1,5 @@
 import { readdirSync } from 'node:fs';
-import type { TechStackDetectionConfig } from './types.js';
+import type { TechStackDetectionConfig } from '../domain/types.js';
 
 const DEFAULT_PATTERNS: Record<string, string[]> = {
   node: ['package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock'],

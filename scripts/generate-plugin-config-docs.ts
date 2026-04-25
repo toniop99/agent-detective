@@ -6,9 +6,9 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as z from 'zod';
-import { jiraAdapterOptionsSchema } from '../packages/jira-adapter/src/options-schema.js';
-import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/src/options-schema.js';
-import { prPipelineOptionsSchema } from '../packages/pr-pipeline/src/options-schema.js';
+import { jiraAdapterOptionsSchema } from '../packages/jira-adapter/src/application/options-schema.js';
+import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/src/application/options-schema.js';
+import { prPipelineOptionsSchema } from '../packages/pr-pipeline/src/application/options-schema.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outPath = join(__dirname, '..', 'docs', 'generated', 'plugin-options.md');
@@ -29,9 +29,9 @@ Do not edit by hand. Regenerate with \`pnpm docs:plugins\`.
 
 Source files:
 
-- \`packages/jira-adapter/src/options-schema.ts\`
-- \`packages/local-repos-plugin/src/options-schema.ts\`
-- \`packages/pr-pipeline/src/options-schema.ts\`
+- \`packages/jira-adapter/src/application/options-schema.ts\`
+- \`packages/local-repos-plugin/src/application/options-schema.ts\`
+- \`packages/pr-pipeline/src/application/options-schema.ts\`
 
 ${block('@agent-detective/jira-adapter', 'jira-adapter', jira)}${block(
   '@agent-detective/local-repos-plugin',
@@ -42,4 +42,5 @@ ${block('@agent-detective/jira-adapter', 'jira-adapter', jira)}${block(
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, body, 'utf8');
+// eslint-disable-next-line no-console -- CLI script success output
 console.log('Wrote', outPath);

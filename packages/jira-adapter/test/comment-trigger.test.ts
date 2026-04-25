@@ -7,8 +7,8 @@ import {
   hasTriggerPhrase,
   isOwnComment,
   stampComment,
-} from '../src/comment-trigger.js';
-import { markdownToAdfDoc } from '../src/markdown-to-adf.js';
+} from '../src/domain/comment-trigger.js';
+import { markdownToAdfDoc } from '../src/infrastructure/markdown-to-adf.js';
 
 describe('stampComment', () => {
   it('appends the marker on a fresh body', () => {

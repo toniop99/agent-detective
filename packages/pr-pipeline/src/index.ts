@@ -3,8 +3,8 @@ import { PR_WORKFLOW_SERVICE, type PrWorkflowService } from '@agent-detective/ty
 import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 import * as z from 'zod';
 import { zodToPluginSchema } from '@agent-detective/core';
-import { prPipelineOptionsSchema } from './options-schema.js';
-import { runPrWorkflow, cleanupWorktrees } from './run-pr-workflow.js';
+import { prPipelineOptionsSchema } from './application/options-schema.js';
+import { runPrWorkflow, cleanupWorktrees } from './application/run-pr-workflow.js';
 
 // registerService is not exported from core for plugin - use context.registerService
 const schema = zodToPluginSchema(prPipelineOptionsSchema);
@@ -54,5 +54,5 @@ const prPipelinePlugin: Plugin = {
 };
 
 export default prPipelinePlugin;
-export { prPipelineOptionsSchema } from './options-schema.js';
-export { cleanupWorktrees } from './run-pr-workflow.js';
+export { prPipelineOptionsSchema } from './application/options-schema.js';
+export { cleanupWorktrees } from './application/run-pr-workflow.js';

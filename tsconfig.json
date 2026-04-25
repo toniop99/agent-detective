@@ -32,6 +32,6 @@
       "@agent-detective/pr-pipeline": ["./packages/pr-pipeline/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "packages/*/src/**/*"],
+  "include": ["src/**/*", "test/**/*", "scripts/**/*.ts", "packages/*/src/**/*"],
   "exclude": ["node_modules", "dist", "packages/*/dist", "packages/*/node_modules"]
 }

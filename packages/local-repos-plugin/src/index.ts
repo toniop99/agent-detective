@@ -16,21 +16,21 @@ import type {
   SummaryGenerationConfig,
   RepoConfig,
   RepoVcsConfig,
-} from './types.js';
-import { matchRepoByLabels, matchAllReposByLabels } from './repo-matcher.js';
-import { validateRepos, hasValidationErrors } from './validate.js';
-import { detectTechStack } from './tech-stack-detector.js';
-import { generateSummary } from './summary-generator.js';
-import { gitLog } from './repo-context/git-log.js';
-import { buildRepoContext, formatRepoContextForPrompt } from './repo-context/index.js';
+} from './domain/types.js';
+import { matchRepoByLabels, matchAllReposByLabels } from './domain/repo-matcher.js';
+import { validateRepos, hasValidationErrors } from './domain/validate.js';
+import { detectTechStack } from './infrastructure/tech-stack-detector.js';
+import { generateSummary } from './infrastructure/summary-generator.js';
+import { gitLog } from './infrastructure/repo-context/git-log.js';
+import { buildRepoContext, formatRepoContextForPrompt } from './infrastructure/repo-context/index.js';
 import { registerController } from '@agent-detective/core';
-import { ReposController } from './repos-controller.js';
-import { createRepoAnalyzer } from './analyzer.js';
+import { ReposController } from './presentation/repos-controller.js';
+import { createRepoAnalyzer } from './application/analyzer.js';
 import * as z from 'zod';
-import { localReposPluginOptionsSchema } from './options-schema.js';
+import { localReposPluginOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/core';
 
-export { localReposPluginOptionsSchema } from './options-schema.js';
+export { localReposPluginOptionsSchema } from './application/options-schema.js';
 
 const localReposPluginSchema = zodToPluginSchema(localReposPluginOptionsSchema);
 

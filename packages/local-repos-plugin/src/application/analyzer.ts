@@ -4,8 +4,8 @@ import type {
   LocalReposContext,
   ValidatedRepo,
   LocalReposService,
-} from './types.js';
-import { formatTemplate, getDefaultAnalysisPrompt } from './types.js';
+} from '../domain/types.js';
+import { formatTemplate, getDefaultAnalysisPrompt } from '../domain/types.js';
 
 /**
  * Builds the repository context and final analysis prompt for an incoming

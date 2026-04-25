@@ -1,8 +1,8 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { handleAcknowledge } from '../../src/handlers/acknowledge-handler.js';
-import type { AcknowledgeHandlerDeps } from '../../src/handlers/acknowledge-handler.js';
-import { AGENT_DETECTIVE_MARKER } from '../../src/comment-trigger.js';
+import { handleAcknowledge } from '../../src/application/handlers/acknowledge-handler.js';
+import type { AcknowledgeHandlerDeps } from '../../src/application/handlers/acknowledge-handler.js';
+import { AGENT_DETECTIVE_MARKER } from '../../src/domain/comment-trigger.js';
 
 interface MockComment {
   issueKey: string;
