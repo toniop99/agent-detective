@@ -35,6 +35,7 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 | Docker, Compose, production image, GHCR | [docker.md](docker.md) |
 | systemd, nginx, health checks, troubleshooting (no Docker) | [deployment.md](deployment.md) |
 | Config files, env, plugins | [configuration.md](configuration.md) |
+| Releases, pinning images, git upgrade | [upgrading.md](upgrading.md) |
 | Day-to-day monorepo development | [development.md](development.md) |
 
 ## Clone URL (from source)
@@ -51,5 +52,6 @@ Replace `toniop99/agent-detective` with your fork’s `owner/name` on GitHub if 
 ## See also
 
 - Root [README.md](../README.md) — quick start and GHCR one-liner
+- [upgrading.md](upgrading.md) — image tags, releases, and upgrade runbook
 - [publishing.md](publishing.md) — building and publishing the image (maintainers)
 - [CHANGELOG.md](CHANGELOG.md) — breaking config and behavior notes

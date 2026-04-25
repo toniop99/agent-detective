@@ -56,4 +56,5 @@ In CI, `pnpm docs:plugins:check` fails if [generated/plugin-options.md](generate
 | Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](generated/plugin-options.md) |
 | Plugin system and `schema` in code | [plugins.md](plugins.md) (e.g. schema system) |
 | Install paths and `config` mounts | [installation.md](installation.md) |
+| New releases, GHCR tags, git pull | [upgrading.md](upgrading.md) |
 | Docker-specific env | [docker.md](docker.md#production-style-run-single-host) |

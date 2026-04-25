@@ -11,6 +11,7 @@ AI-powered code analysis that responds to events from Jira, Telegram, Slack, and
 - **[configuration-hub.md](configuration-hub.md)** — load order, top-level app keys, links to the full reference and generated plugin options
 - [configuration.md](configuration.md) — full detail (env, plugins, pr-pipeline)
 - [generated/plugin-options.md](generated/plugin-options.md) — generated option reference for bundled plugins
+- [upgrading.md](upgrading.md) — follow releases, pin container tags, runbook
 
 ## Concept
 

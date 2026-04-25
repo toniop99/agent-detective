@@ -1,6 +1,6 @@
 # Migration and history (archive)
 
-The codebase is **TypeScript** with shared types in `@agent-detective/types`. This page lists **breaking or notable changes**; for day-to-day setup use [development.md](development.md) and [configuration.md](configuration.md).
+The codebase is **TypeScript** with shared types in `@agent-detective/types`. This page lists **breaking or notable changes**; for day-to-day setup use [development.md](development.md) and [configuration.md](configuration.md). For how to follow releases and upgrade deploys, see [upgrading.md](upgrading.md).
 
 ## Config: `repoContext` location
 

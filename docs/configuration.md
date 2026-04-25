@@ -156,6 +156,7 @@ CI enforces that the generated file is up to date (`pnpm docs:plugins:check`).
 ## See also
 
 - [Configuration overview (hub)](configuration-hub.md)
+- [Upgrading and releases](upgrading.md)
 - [Docker environment variables](docker.md#production-style-run-single-host)
 - [Development guide](development.md#configuration)
 - [Plugin development](plugins.md#3-schema-system)
