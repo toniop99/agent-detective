@@ -38,7 +38,7 @@ export interface PluginSchema {
 export interface Plugin {
   name: string;
   version: string;
-  schemaVersion?: '1.0';
+  schemaVersion: '1.0';
   schema?: PluginSchema;
   dependsOn?: string[];
   requiresCapabilities?: string[];

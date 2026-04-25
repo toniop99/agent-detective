@@ -16,9 +16,8 @@ function normalizeBaseUrl(url: string): string {
 export type Version3ClientSurface = Pick<Version3Client, 'issues' | 'issueComments' | 'issueAttachments'>;
 
 /**
- * Convert a plain-text (or single-paragraph) string into an ADF doc. Kept as a
- * named export for backward compatibility and for callers that really don't
- * want Markdown parsing. New code should prefer {@link markdownToAdfDoc}.
+ * Convert a plain-text (or single-paragraph) string into an ADF doc.
+ * New code should prefer {@link markdownToAdfDoc}.
  */
 export function plainTextToAdfDoc(plainText: string): AdfDoc {
   const text = String(plainText ?? '').replace(/\r\n/g, '\n');

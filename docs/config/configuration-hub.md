@@ -40,7 +40,7 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
-The schema allows **unknown top-level keys** for forward compatibility, but you should not rely on undocumented keys.
+The schema rejects **unknown top-level keys** (strict validation).
 
 A **table and full JSON Schema (draft-7) kept in sync with Zod** are in **[generated/app-config.md](../reference/generated/app-config.md)** — regenerate with `pnpm docs:config` after changing `src/config/schema.ts` (the same way `pnpm docs:plugins` updates plugin options).
 

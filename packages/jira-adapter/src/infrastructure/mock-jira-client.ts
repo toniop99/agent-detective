@@ -3,13 +3,6 @@ import type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueReco
 
 export type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
-/** @deprecated Use {@link JiraClient}. Retained for backwards compatibility. */
-export type MockJiraClient = JiraClient;
-/** @deprecated Use {@link JiraCommentRecord}. Retained for backwards compatibility. */
-export type MockComment = JiraCommentRecord;
-/** @deprecated Use {@link JiraIssueRecord}. Retained for backwards compatibility. */
-export type MockIssue = JiraIssueRecord;
-
 /**
  * Mock Jira client for testing.
  * Stores comments in memory instead of making real API calls.

@@ -43,6 +43,7 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'mock-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -57,6 +58,7 @@ describe('Plugin System', () => {
       const invalidPlugin = {
         name: 'bad-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
       };
 
       const loaded = await pluginSystem.loadPlugin(invalidPlugin as unknown as Plugin, {} as never, {});
@@ -67,6 +69,7 @@ describe('Plugin System', () => {
     it('returns null for plugin without name', async () => {
       const invalidPlugin = {
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -78,6 +81,7 @@ describe('Plugin System', () => {
     it('returns null for plugin without version', async () => {
       const invalidPlugin = {
         name: 'test-plugin',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -90,6 +94,7 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -160,6 +165,7 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'loaded-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -177,6 +183,7 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'context-test-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: unknown, context: unknown) => {
           contextReceived = context;
         },
@@ -193,6 +200,7 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'enqueue-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: unknown, context: unknown) => {
           contextReceived = context;
         },
@@ -212,6 +220,7 @@ describe('Plugin System', () => {
       const asyncRegisterPlugin = {
         name: 'async-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: async () => {
           await new Promise(resolve => setTimeout(resolve, 10));
           registerCompleted = true;
@@ -230,6 +239,7 @@ describe('Plugin System', () => {
       const dependentPlugin = {
         name: 'dependent-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: async (_app: unknown, context: unknown) => {
           const extContext = context as { localRepos?: unknown };
           if (!extContext.localRepos) {
@@ -262,16 +272,14 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'config-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         schema: {
-          version: '1.0',
-          config: {
-            type: 'object',
-            properties: {
-              enabled: { type: 'boolean', default: true },
-              timeout: { type: 'number', default: 5000 },
-            },
-            required: [],
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', default: true },
+            timeout: { type: 'number', default: 5000 },
           },
+          required: [],
         },
         register: () => {},
       };
@@ -289,15 +297,13 @@ describe('Plugin System', () => {
       const mockPlugin = {
         name: 'defaults-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         schema: {
-          version: '1.0',
-          config: {
-            type: 'object',
-            properties: {
-              option1: { type: 'string', default: 'default-value' },
-            },
-            required: [],
+          type: 'object',
+          properties: {
+            option1: { type: 'string', default: 'default-value' },
           },
+          required: [],
         },
         register: () => {},
       };
@@ -319,6 +325,7 @@ describe('Plugin System', () => {
       const providerPlugin = {
         name: 'provider-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: any, context: any) => {
           context.registerService('test-service', serviceObj);
         },
@@ -328,6 +335,7 @@ describe('Plugin System', () => {
       const consumerPlugin = {
         name: 'consumer-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         dependsOn: ['provider-plugin'],
         register: (_app: any, context: any) => {
           retrievedService = context.getService('test-service');
@@ -345,6 +353,7 @@ describe('Plugin System', () => {
       const consumerPlugin = {
         name: 'consumer-plugin-error',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: any, context: any) => {
           context.getService('non-existent');
         },
@@ -365,6 +374,7 @@ describe('Plugin System', () => {
       const plugin = {
         name: 'overwrite-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: any, context: any) => {
           context.registerService('dup', { i: 1 });
           context.registerService('dup', { i: 2 });
@@ -384,6 +394,7 @@ describe('Plugin System', () => {
       const capabilityPlugin = {
         name: 'cap-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: (_app: any, context: any) => {
           context.registerCapability('my-capability');
           hasCap = context.hasCapability('my-capability');
@@ -406,6 +417,7 @@ describe('Plugin System', () => {
       const missingCapPlugin = {
         name: 'missing-cap-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         requiresCapabilities: ['code-analysis'],
         register: () => {},
       };
