@@ -25,7 +25,7 @@
  * in some setups — the reminder comment then got treated as a user trigger
  * (because the reminder body itself quotes `#agent-detective analyze` as
  * instructions) and spammed the ticket. See the loop protection notes in
- * `docs/jira-manual-e2e.md`.
+ * `docs/e2e/jira-manual-e2e.md`.
  */
 export const AGENT_DETECTIVE_MARKER = 'agent-detective · ad-v1';
 

@@ -3,7 +3,7 @@
 #
 # To run a pre-built image from GHCR without building locally, use docker-compose.ghcr.yml.
 #
-# Jira and other secrets: use environment variables (see docs/docker.md) or a
+# Jira and other secrets: use environment variables (see docs/operator/docker.md) or a
 # compose override file; this file does not require Docker "secrets" files.
 
 include:

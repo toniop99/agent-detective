@@ -1,0 +1,112 @@
+# Generated top-level app config (Zod)
+
+Do not edit by hand. Regenerate with `pnpm docs:config`.
+
+Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are allowed; see `additionalProperties` in the JSON below).
+
+## Top-level keys
+
+| Key | Shape (from JSON Schema) |
+|-----|---------------------------|
+| `agent` | string |
+| `agents` | object (string keys; see JSON below) |
+| `docsApiKey` | string |
+| `docsAuthRequired` | boolean |
+| `observability` | object (string keys; see JSON below) |
+| `plugins` | array |
+| `port` | number |
+
+## JSON Schema (draft-7)
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "port": {
+      "type": "number"
+    },
+    "agent": {
+      "type": "string"
+    },
+    "agents": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "defaultModel": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "timeoutMs": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "maxBufferBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "postFinalGraceMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "forceKillDelayMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": {}
+      }
+    },
+    "observability": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "docsAuthRequired": {
+      "type": "boolean"
+    },
+    "docsApiKey": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": {}
+}
+```

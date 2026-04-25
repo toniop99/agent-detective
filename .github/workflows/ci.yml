@@ -65,6 +65,9 @@ jobs:
       - name: Generated plugin docs match Zod
         run: pnpm docs:plugins:check
 
+      - name: Generated app config doc matches Zod
+        run: pnpm docs:config:check
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,60 @@
+---
+title: Agent Detective
+description: AI-powered code analysis, plugins, and the PR pipeline. Pick a path below or use the sidebar.
+---
+
+import { CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+**Source of truth** for prose is the [`docs/`](https://github.com/toniop99/agent-detective/tree/main/docs) folder in git. This site is built with [Starlight](https://starlight.astro.build) plus a sync step (`pnpm run docs:site:sync` or `prebuild` on the docs app). Enable **GitHub Pages** with the **GitHub Actions** source if the live URL is not deployed yet.
+
+## Choose a path
+
+<CardGrid stagger>
+	<LinkCard
+		title="Run the server"
+		href={import.meta.env.BASE_URL + 'operator/installation/'}
+		description="Install with Docker, Compose, or bare metal; configure, upgrade, and operate."
+	/>
+	<LinkCard
+		title="Configuration"
+		href={import.meta.env.BASE_URL + 'config/configuration-hub/'}
+		description="How settings load, env whitelist, and the full config reference."
+	/>
+	<LinkCard
+		title="Build plugins"
+		href={import.meta.env.BASE_URL + 'plugins/extending-with-plugins/'}
+		description="Install and author plugins; use the main API guide when you need depth."
+	/>
+	<LinkCard
+		title="Develop the monorepo"
+		href={import.meta.env.BASE_URL + 'development/development/'}
+		description="pnpm, Turbo, build/test workflow, and optional Cursor agent."
+	/>
+	<LinkCard
+		title="Architecture"
+		href={import.meta.env.BASE_URL + 'architecture/architecture/'}
+		description="System shape, layering, and ADRs."
+	/>
+	<LinkCard
+		title="Reference (generated)"
+		href={import.meta.env.BASE_URL + 'reference/generated/plugin-options/'}
+		description="Zod-generated JSON for bundled plugin options and top-level app config."
+	/>
+</CardGrid>
+
+## New clone (contributors)
+
+<Steps>
+	1. Install **Node 24+** and **pnpm 10+** (see root `package.json` `packageManager` via Corepack).
+	2. `pnpm install` and `pnpm run build` at the repository root.
+	3. Copy `config/local.example.json` to `config/local.json` and adjust; read the <a href={import.meta.env.BASE_URL + 'config/configuration-hub/'}>Configuration hub</a>.
+	4. `pnpm run dev` and open the URL printed in the terminal.
+</Steps>
+
+<p>
+	<a href={import.meta.env.BASE_URL + 'overview/'}>Full documentation index in git</a>
+	{' · '}
+	<a href={import.meta.env.BASE_URL + 'e2e/readme/'}>Jira E2E walkthroughs</a>
+	{' · '}
+	<a href={import.meta.env.BASE_URL + 'reference/changelog/'}>CHANGELOG</a>
+</p>

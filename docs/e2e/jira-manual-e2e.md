@@ -4,7 +4,7 @@ This guide walks through testing the full path locally, including how Jira Cloud
 
 ## Prerequisites (local machine)
 
-1. **Node 24+** and **pnpm** — see [development.md](development.md).
+1. **Node 24+** and **pnpm** — see [development.md](../development/development.md).
 2. **Agent CLI** on your `PATH` for dev (`pnpm dev`): install [OpenCode](https://opencode.ai/docs) with `npm install -g opencode-ai` (or use another registered agent with credentials configured).
 3. **LLM / provider credentials** for that agent (environment variables or OpenCode config).
 4. A **git checkout** on disk you can point the local-repos plugin at (your “test repo” containing the error or stack trace you will paste into Jira).
@@ -26,7 +26,7 @@ No path prefix beyond `/plugins/...` is required unless you put a reverse proxy 
 
 ### Which webhook source are you using?
 
-Jira Cloud offers two ways to send HTTP requests when issues change. Both are supported; the only difference is **how the event name reaches us**. The adapter accepts all three signals listed in [`resolveWebhookEvent`](../packages/jira-adapter/src/presentation/jira-webhook-controller.ts) and normalizes them to the canonical `jira:*` form before routing.
+Jira Cloud offers two ways to send HTTP requests when issues change. Both are supported; the only difference is **how the event name reaches us**. The adapter accepts all three signals listed in [`resolveWebhookEvent`](../../packages/jira-adapter/src/presentation/jira-webhook-controller.ts) and normalizes them to the canonical `jira:*` form before routing.
 
 | Source | Where Jira is configured | How the event arrives | What you do |
 |---|---|---|---|
@@ -36,16 +36,16 @@ Jira Cloud offers two ways to send HTTP requests when issues change. Both are su
 
 Notes:
 
-- **Automation-format bodies omit the envelope.** Jira Automation's "Automation format" default body expands `{{issue}}` at the top level, so the request looks like `{ self, id, key, fields, changelog, renderedFields }`. The adapter detects this via `key` + `fields` at the top level and auto-wraps it as `{ issue: { …bareIssue } }` before validation — see [`normalizeWebhookShape`](../packages/jira-adapter/src/application/webhook-handler.ts). You'll see `"shape":"bare-issue"` in the `Webhook payload accepted` log line when this triggers.
+- **Automation-format bodies omit the envelope.** Jira Automation's "Automation format" default body expands `{{issue}}` at the top level, so the request looks like `{ self, id, key, fields, changelog, renderedFields }`. The adapter detects this via `key` + `fields` at the top level and auto-wraps it as `{ issue: { …bareIssue } }` before validation — see [`normalizeWebhookShape`](../../packages/jira-adapter/src/application/webhook-handler.ts). You'll see `"shape":"bare-issue"` in the `Webhook payload accepted` log line when this triggers.
 - **Automation format still doesn't include the event name by default.** The body contains the issue, but not the trigger. Prefer `?webhookEvent=…` on the URL or customize the action's "Custom data" to add `{"issue_event_type_name":"{{issueEventTypeName}}"}` — both are more explicit than relying on shape inference.
 - **Payload-shape fallback.** When none of the explicit sources above provide an event, the adapter inspects the payload itself: a `comment` object ⇒ `jira:comment_created`, a non-empty `changelog.items` array ⇒ `jira:issue_updated`, otherwise (issue envelope or bare-issue) ⇒ `jira:issue_created`. The `comment` case wins over `changelog` because comment-event Automation rules typically include both. You'll see `Resolved webhook event from payload.shape: jira:comment_created` in the logs when this kicks in. This is a safety net for Automation rules that forget the URL query — routing still works, but the log makes it obvious you should fix the rule for clarity.
 - If the payload doesn't look like an issue event at all, the adapter resolves to `unknown` and falls back to `webhookBehavior.defaults`. Use the `Webhook payload accepted` summary line to diagnose.
 - When the event comes from anywhere other than `body.webhookEvent`, you'll see a single `Resolved webhook event from <source>: jira:issue_created (raw="issue_created")` log line that tells you where we picked it up and what we normalized it to.
-- Your `webhookBehavior.events` config stays in canonical form (`jira:issue_created`, `jira:issue_updated`, …) regardless of source — see [default.json](../config/default.json).
+- Your `webhookBehavior.events` config stays in canonical form (`jira:issue_created`, `jira:issue_updated`, …) regardless of source — see [default.json](../../config/default.json).
 
 ## Configuration
 
-Use **`config/local.json`** (merged over `default.json`, typically gitignored) so secrets stay off git. Copy from [config/local.example.json](../config/local.example.json).
+Use **`config/local.json`** (merged over `default.json`, typically gitignored) so secrets stay off git. Copy from [config/local.example.json](../../config/local.example.json).
 
 ### Local repos plugin
 
@@ -56,10 +56,10 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 ### Jira adapter
 
 - **Webhook URL (fixed):** Jira Automation / webhooks must target **`/plugins/agent-detective-jira-adapter/webhook/jira`** (plugin route prefix + controller path). This is not configurable in options.
-- **`webhookBehavior`:** default maps **`jira:issue_created`** → **`analyze`** ([default.json](../config/default.json)).
-- **`mockMode: true`:** analysis runs; “comments” are logged as **`[MOCK] Added comment...`** ([mock-jira-client.ts](../packages/jira-adapter/src/infrastructure/mock-jira-client.ts)).
-- **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../packages/jira-adapter/src/infrastructure/real-jira-client.ts). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../src/config/env-whitelist.ts)).
-- **Comment formatting (Markdown → ADF):** the agent is prompted to return GitHub-flavored Markdown and the adapter converts it to [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/) before posting — see [markdown-to-adf.ts](../packages/jira-adapter/src/infrastructure/markdown-to-adf.ts). Supported elements: headings, **bold**, *italic*, ~~strike~~, `inline code`, fenced code blocks with language, bullet / ordered / nested lists, blockquotes, links, horizontal rules, and hard breaks. HTML and tables are not supported and are rendered as plain text.
+- **`webhookBehavior`:** default maps **`jira:issue_created`** → **`analyze`** ([default.json](../../config/default.json)).
+- **`mockMode: true`:** analysis runs; “comments” are logged as **`[MOCK] Added comment...`** ([mock-jira-client.ts](../../packages/jira-adapter/src/infrastructure/mock-jira-client.ts)).
+- **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../../packages/jira-adapter/src/infrastructure/real-jira-client.ts). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../../src/config/env-whitelist.ts)).
+- **Comment formatting (Markdown → ADF):** the agent is prompted to return GitHub-flavored Markdown and the adapter converts it to [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/) before posting — see [markdown-to-adf.ts](../../packages/jira-adapter/src/infrastructure/markdown-to-adf.ts). Supported elements: headings, **bold**, *italic*, ~~strike~~, `inline code`, fenced code blocks with language, bullet / ordered / nested lists, blockquotes, links, horizontal rules, and hard breaks. HTML and tables are not supported and are rendered as plain text.
 
 Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the model toward root-cause analysis.
 
@@ -109,7 +109,7 @@ The rules:
 - Customize the reminder body via **`missingLabelsMessage`** in the plugin
   options — placeholders `{available_labels}` (bullet list), `{issue_key}`,
   and `{trigger_phrase}` are substituted. Default template lives in
-  [missing-labels-handler.ts](../packages/jira-adapter/src/application/handlers/missing-labels-handler.ts).
+  [missing-labels-handler.ts](../../packages/jira-adapter/src/application/handlers/missing-labels-handler.ts).
 - Customize the trigger phrase via **`retryTriggerPhrase`** (default
   `#agent-detective analyze`). The phrase is matched as a case-insensitive
   substring so it can be embedded in longer sentences like
@@ -236,12 +236,12 @@ Jira ticket is misinterpreted as a change request, the adapter emits every
 `analyze` task with `metadata.readOnly = true`. The orchestrator forwards the
 flag to the agent runner, and the **opencode** adapter turns it into a stricter
 `OPENCODE_PERMISSION` env var that **denies** the `bash`, `edit`, `write`,
-`multiedit`, and `patch` tools — see [opencode.ts](../src/agents/opencode.ts).
+`multiedit`, and `patch` tools — see [opencode.ts](../../src/agents/opencode.ts).
 
 - Opt out per deployment with **`jira-adapter.analysisReadOnly: false`** in your
   config if you genuinely want the agent to be able to apply fixes from Jira.
 - The default analysis prompt in
-  [local-repos-plugin/types.ts](../packages/local-repos-plugin/src/domain/types.ts)
+  [local-repos-plugin/types.ts](../../packages/local-repos-plugin/src/domain/types.ts)
   also instructs the agent to produce a written report only — this is the
   *soft* layer complementing the hard tool-permission layer.
 - You can confirm it's active by looking at the startup log for an analysis
@@ -256,7 +256,7 @@ With the server running (`pnpm dev`):
 pnpm run jira:webhook-smoke
 ```
 
-This POSTs [issue-created.json](../packages/jira-adapter/test/fixtures/issue-created.json) to the webhook. Expect **`{"status":"queued","taskId":...}`** and log lines for orchestration plus **`[MOCK]`** when `mockMode` is true.
+This POSTs [issue-created.json](../../packages/jira-adapter/test/fixtures/issue-created.json) to the webhook. Expect **`{"status":"queued","taskId":...}`** and log lines for orchestration plus **`[MOCK]`** when `mockMode` is true.
 
 Override URL:
 
@@ -282,7 +282,7 @@ JIRA_WEBHOOK_URL=https://your-tunnel.example/plugins/agent-detective-jira-adapte
 
 ## Related docs
 
-- [configuration.md](configuration.md) — config merge and env whitelist  
+- [configuration.md](../config/configuration.md) — config merge and env whitelist  
 - [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md) — manual test of Jira comment → PR pipeline (worktree, push, GitHub/Bitbucket)  
-- [docker.md](docker.md) — running in containers  
-- [development.md](development.md) — local dev and `mockMode` overview  
+- [docker.md](../operator/docker.md) — running in containers  
+- [development.md](../development/development.md) — local dev and `mockMode` overview  

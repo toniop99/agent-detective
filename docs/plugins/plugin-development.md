@@ -1,6 +1,6 @@
 # Third-Party Plugin Development Guide
 
-This guide explains how to develop and distribute third-party plugins for agent-detective.
+This guide explains how to **develop** and **build** third-party plugins (TypeScript, `dist/`, examples). **How to install and wire** a plugin in production (npm, private registry, `/app/plugins` mounts) is in **[extending-with-plugins.md](extending-with-plugins.md)** — read that first if you only need deployment steps.
 
 ## Table of Contents
 
@@ -15,14 +15,7 @@ This guide explains how to develop and distribute third-party plugins for agent-
 
 ## Overview
 
-Third-party plugins extend agent-detective's capabilities. They can be:
-
-- **Shared publicly** on npm or GitHub
-- **Distributed privately** within an organization
-
-Plugins are loaded from:
-1. **Bundled plugins** - Pre-installed in the official image
-2. **Third-party plugins** - Installed via volume mount in `/app/plugins/{plugin-name}/`
+Third-party plugins extend agent-detective's capabilities. They can be **published** to npm (or a private registry), **vendored** as a path on disk, or **added** to a fork under `packages/*` (see [extending-with-plugins.md](extending-with-plugins.md) for how the runtime resolves each case).
 
 ---
 
@@ -239,81 +232,16 @@ scp -r dist/ user@server:/path/to/plugins/my-plugin/
 
 ---
 
-## Installing Third-Party Plugins
+## Installing Third-Party Plugins (runtime)
 
-### Directory Structure
+See **[extending-with-plugins.md](extending-with-plugins.md)** for:
 
-When installing manually (volume mount), organize plugins as:
+- `package` specifiers (npm, path, monorepo `packages/*`)
+- `dependsOn` and load order
+- private registry / `.npmrc`
+- Docker **`plugins/`** volume and `/app/plugins/...` config
 
-```
-plugins/
-└── my-plugin/           # Plugin directory (same as package name)
-    ├── index.js         # Main entry (NOT in dist/)
-    └── index.d.ts       # Type declarations
-```
-
-### For Volume Mount Users
-
-```bash
-# Build the plugin
-cd my-plugin
-pnpm run build
-
-# Copy to plugins directory
-mkdir -p plugins
-cp -r dist plugins/my-plugin
-
-# Rename files
-mv plugins/my-plugin/index.js plugins/my-plugin/
-mv plugins/my-plugin/index.d.ts plugins/my-plugin/
-
-# Verify structure
-ls -la plugins/my-plugin/
-# index.js  index.d.ts
-```
-
-### Docker Run Example
-
-```bash
-docker run -d -p 3001:3001 \
-  -v $(pwd)/plugins:/app/plugins:ro \
-  ghcr.io/toniop99/agent-detective:latest
-```
-
-### Configuration
-
-Add to `config/default.json`:
-
-```json
-{
-  "plugins": [
-    {
-      "package": "/app/plugins/my-plugin",
-      "options": {
-        "enabled": true,
-        "webhookPath": "/plugins/agent-detective-my-plugin/webhook"
-      }
-    }
-  ]
-}
-```
-
-### Alternative: Package Name
-
-If your plugin is published to npm:
-
-```json
-{
-  "plugins": [
-    {
-      "package": "@myorg/agent-detective-my-plugin",
-      "options": {
-        "enabled": true
-      }
-    }
-  ]
-}
-```
+The sections above (**Distributing**) describe how to **publish or copy artifacts**; the extending guide ties that to a running server.
 
 ---
 

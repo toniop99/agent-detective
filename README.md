@@ -25,7 +25,7 @@ pnpm dev
 pnpm build && pnpm run build:app
 ```
 
-For day-to-day development you usually only need `pnpm dev`. CI and release images run `pnpm build` (packages) and `pnpm run build:app` (root `dist/`). See [Development Guide](docs/development.md#monorepo-layout-pnpm--turborepo).
+For day-to-day development you usually only need `pnpm dev`. CI and release images run `pnpm build` (packages) and `pnpm run build:app` (root `dist/`). See [Development Guide](docs/development/development.md#monorepo-layout-pnpm--turborepo).
 
 ## Packages
 
@@ -41,7 +41,7 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 
 ## Configuration
 
-See **[docs/configuration.md](docs/configuration.md)** for file precedence, env whitelist, and generated plugin schemas.
+Start with **[docs/config/configuration-hub.md](docs/config/configuration-hub.md)** (load order and top-level keys), then **[docs/config/configuration.md](docs/config/configuration.md)** for the full env and plugin tables, **[docs/reference/generated/app-config.md](docs/reference/generated/app-config.md)** for the top-level app schema (Zod/JSON), and **[docs/reference/generated/plugin-options.md](docs/reference/generated/plugin-options.md)** for bundled plugin fields.
 
 Configure via `config/default.json` (and optional `config/local.json`):
 
@@ -67,16 +67,21 @@ docker run -d -p 3001:3001 \
 
 Then check `http://localhost:3001/api/health`. The production image bundles the OpenCode CLI as `opencode` (installed from the npm package **`opencode-ai`** per [OpenCode’s install guide](https://opencode.ai/docs)). Configure providers and API keys per OpenCode; any `-e` variables you pass into the container are visible to that CLI.
 
-For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.ghcr.yml). Full detail: [docs/docker.md](docs/docker.md#published-image-ghcr).
+For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.ghcr.yml). Full detail: [docs/operator/docker.md](docs/operator/docker.md#published-image-ghcr).
 
 ## Documentation
 
-- [Configuration](docs/configuration.md)
-- [Architecture](docs/architecture.md)
-- [Plugin Development](docs/plugins.md)
-- [Development Guide](docs/development.md)
-- [Docker & CI images](docs/docker.md)
-- [Jira manual E2E (webhook + tunnel)](docs/jira-manual-e2e.md)
+- **Documentation site (Starlight):** `pnpm run docs:site` from the root builds the static site in [`apps/docs/`](apps/docs/README.md) (source markdown is [`docs/`](docs/README.md); a [sync script](scripts/sync-starlight-content.mjs) runs on build). **Published:** [https://agent-detective.chapascript.dev/docs/](https://agent-detective.chapascript.dev/docs/) (GitHub Pages + [custom domain in repo settings](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site), DNS in Cloudflare). **GitHub Actions** is the Pages source. CI: [.github/workflows/docs-site.yml](.github/workflows/docs-site.yml).
+
+- [Installation](docs/operator/installation.md) — deploy with Docker, from source, or bare metal
+- [Configuration (overview)](docs/config/configuration-hub.md) — [full reference](docs/config/configuration.md)
+- [Upgrading](docs/operator/upgrading.md) — releases, image tags, runbook
+- [Architecture](docs/architecture/architecture.md)
+- [Extending with custom plugins](docs/plugins/extending-with-plugins.md) — npm, paths, private registry
+- [Plugin development (full guide)](docs/plugins/plugins.md)
+- [Development Guide](docs/development/development.md)
+- [Docker & CI images](docs/operator/docker.md)
+- [Jira E2E (manual walkthroughs)](docs/e2e/) — webhooks, tunnel, pr-pipeline
 
 ## License
 

@@ -1,6 +1,6 @@
 # Docker
 
-Run **agent-detective** in containers for local development or production-style deployment on a single host.
+Run **agent-detective** in containers for local development or production-style deployment on a single host. For a comparison with bare-metal and from-source installs, see [installation.md](installation.md).
 
 ## Requirements
 
@@ -14,7 +14,7 @@ The image copies **`pnpm-workspace.yaml`** (workspace is **`packages/*`** plus t
 | Target | Purpose |
 |--------|---------|
 | **`dev`** (default) | Installs the monorepo with pnpm; use with **bind mounts** for `src/` and `packages/` so `pnpm dev` hot-reloads. |
-| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents via build-arg **`AGENTS`**: **`opencode`** from **`opencode-ai`** ([OpenCode docs](https://opencode.ai/docs)), **`claude`** from [**`@anthropic-ai/claude-code`**](https://www.npmjs.com/package/@anthropic-ai/claude-code). The **Cursor Agent CLI** (`agent` on `PATH`) is not installed in the default image — use the [official install script](https://cursor.com/docs/cli/installation) on the host or extend the image (see [cursor-agent.md](cursor-agent.md)). |
+| **`production`** | Builds workspace packages, bundles the app with **tsup**, prunes devDependencies, runs **`node dist/index.js`**. Optional CLI agents via build-arg **`AGENTS`**: **`opencode`** from **`opencode-ai`** ([OpenCode docs](https://opencode.ai/docs)), **`claude`** from [**`@anthropic-ai/claude-code`**](https://www.npmjs.com/package/@anthropic-ai/claude-code). The **Cursor Agent CLI** (`agent` on `PATH`) is not installed in the default image — use the [official install script](https://cursor.com/docs/cli/installation) on the host or extend the image (see [cursor-agent.md](../development/cursor-agent.md)). |
 
 ### Health checks
 
@@ -50,7 +50,7 @@ docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Environment variables (see also [configuration.md](configuration.md) and `config/default.json`):
+Environment variables (see also [configuration.md](../config/configuration.md) and `config/default.json`):
 
 | Variable | Description |
 |----------|-------------|
@@ -59,12 +59,14 @@ Environment variables (see also [configuration.md](configuration.md) and `config
 | `AGENTS` | Build-arg when building: comma-separated agents to `npm install -g` in the image |
 | `AGENT` | Default agent id (e.g. `opencode`) |
 | `LOG_LEVEL` | Aliased to `OBSERVABILITY_LOG_LEVEL` when the latter is unset (`debug` \| `info` \| `warn` \| `error`) |
-| `AGENTS_*_MODEL` | Model overrides per agent (see [configuration.md](configuration.md)) |
-| `AGENTS_RUNNER_*`, `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | See [configuration.md](configuration.md#core-env-whitelist) |
-| `REPO_CONTEXT_*`, `SUMMARY_MAX_OUTPUT_CHARS`, `JIRA_*` | As in [configuration.md](configuration.md#plugin-env-whitelist-first-party) |
+| `AGENTS_*_MODEL` | Model overrides per agent (see [configuration.md](../config/configuration.md)) |
+| `AGENTS_RUNNER_*`, `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | See [configuration.md](../config/configuration.md#core-env-whitelist) |
+| `REPO_CONTEXT_*`, `SUMMARY_MAX_OUTPUT_CHARS`, `JIRA_*` | As in [configuration.md](../config/configuration.md#plugin-env-whitelist-first-party) |
 | `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` | Jira adapter when that plugin is listed in config |
 
 **Jira secrets:** pass `JIRA_API_TOKEN`, `JIRA_EMAIL`, and `JIRA_BASE_URL` in the environment (`.env` next to compose, CI variables, or your orchestrator). This repository’s compose file does **not** require Docker Swarm-style secret files.
+
+**TLS in front of the app:** The nginx `server` / `proxy_pass` **example** (long timeouts, headers for the API) lives in a single place: [deployment.md#reverse-proxy-nginx](deployment.md#reverse-proxy-nginx) — set `proxy_pass` to the host port that maps to the container’s `3001` (or your `PORT`).
 
 ### Build production image only
 
@@ -87,7 +89,7 @@ Image: **`ghcr.io/<owner>/<repo>`** (repository name lowercased by the registry)
 
 ## Published image (GHCR)
 
-Images are published to **`ghcr.io/<owner>/<repo>`** (for this upstream repo: **`ghcr.io/toniop99/agent-detective`**). Pushes to **`main`** produce **`latest`** (multi-arch **linux/amd64** and **linux/arm64**) with **`AGENTS=opencode`** baked in. Version tags (for example **`stable`**, **`1.x.x`**) come from the release workflow and may include additional CLIs; see [.github/workflows/release.yml](../.github/workflows/release.yml).
+Images are published to **`ghcr.io/<owner>/<repo>`** (for this upstream repo: **`ghcr.io/toniop99/agent-detective`**). Pushes to **`main`** produce **`latest`** (multi-arch **linux/amd64** and **linux/arm64**) with **`AGENTS=opencode`** baked in. Version tags (for example **`stable`**, **`1.x.x`**) come from the release workflow and may include additional CLIs; see [.github/workflows/release.yml](../../.github/workflows/release.yml).
 
 ### Pull and run (Docker CLI)
 
@@ -99,11 +101,11 @@ docker run -d --name agent-detective -p 3001:3001 \
   ghcr.io/toniop99/agent-detective:latest
 ```
 
-Optional: mount custom plugins and pass Jira or model overrides (same variables as [docker-compose.prod.yml](../docker-compose.prod.yml)).
+Optional: mount custom plugins and pass Jira or model overrides (same variables as [docker-compose.prod.yml](../../docker-compose.prod.yml)).
 
 ### Pull and run (Compose, no build)
 
-From a directory that contains **`config/`** (copy [`config/default.json`](../config/default.json) from the repo or your own files) and optionally **`plugins/`**:
+From a directory that contains **`config/`** (copy [`config/default.json`](../../config/default.json) from the repo or your own files) and optionally **`plugins/`**:
 
 ```bash
 docker compose -f docker-compose.ghcr.yml pull
@@ -141,6 +143,11 @@ docker run --rm -p 3001:3001 -v "$(pwd)/config:/app/config:ro" agent-detective:l
 # In another terminal:
 wget -qO- http://127.0.0.1:3001/api/health
 ```
+
+## See also
+
+- [installation.md](installation.md) · [configuration-hub.md](../config/configuration-hub.md) · [upgrading.md](upgrading.md)
+- [deployment.md](deployment.md) — bare metal, systemd, and the **single** [nginx](deployment.md#reverse-proxy-nginx) example referenced above
 
 ## Troubleshooting
 

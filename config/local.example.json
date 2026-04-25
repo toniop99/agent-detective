@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to config/local.json (gitignored). Merged over default.json — see docs/configuration.md and docs/CHANGELOG.md",
+  "_comment": "Copy to config/local.json (gitignored). Merged over default.json — see docs/config/configuration.md and docs/reference/CHANGELOG.md",
   "port": 3001,
   "agent": "opencode",
   "agents": {
@@ -72,6 +72,6 @@
       }
     }
   ],
-  "_jira_secrets": "Prefer env: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (see docs/configuration.md). Cooldowns: JIRA_AUTO_ANALYSIS_COOLDOWN_MS, JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS.",
-  "_pr_secrets": "PR pipeline: prefer env — GITHUB_TOKEN or GH_TOKEN; Bitbucket access token BITBUCKET_TOKEN (or app password: BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD). File: githubToken, bitbucketToken, bitbucketUsername, bitbucketAppPassword on @agent-detective/pr-pipeline. Env overrides file. See docs/configuration.md (PR pipeline section)."
+  "_jira_secrets": "Prefer env: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (see docs/config/configuration.md). Cooldowns: JIRA_AUTO_ANALYSIS_COOLDOWN_MS, JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS.",
+  "_pr_secrets": "PR pipeline: prefer env — GITHUB_TOKEN or GH_TOKEN; Bitbucket access token BITBUCKET_TOKEN (or app password: BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD). File: githubToken, bitbucketToken, bitbucketUsername, bitbucketAppPassword on @agent-detective/pr-pipeline. Env overrides file. See docs/config/configuration.md (PR pipeline section)."
 }

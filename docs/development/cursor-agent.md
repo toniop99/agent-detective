@@ -31,7 +31,7 @@ In `config/default.json` (or `local.json`):
 }
 ```
 
-Or set **`AGENT=cursor`** and optional **`AGENTS_CURSOR_MODEL=...`** (see [configuration.md](configuration.md)).
+Or set **`AGENT=cursor`** and optional **`AGENTS_CURSOR_MODEL=...`** (see [configuration.md](../config/configuration.md)).
 
 ## Behavior
 
@@ -53,4 +53,4 @@ Auth for the CLI (login, API keys, etc.) is handled by the Cursor tool and envir
 | Subprocess | no PTY | PTY | no PTY |
 | Concurrency | `singleInstance: true` | normal | normal |
 
-`threadId` is passed from [`RunAgentOptions`](../packages/types/src/index.ts) through the agent runner into each adapter’s `buildCommand`.
+`threadId` is passed from [`RunAgentOptions`](../../packages/types/src/index.ts) through the agent runner into each adapter’s `buildCommand`.

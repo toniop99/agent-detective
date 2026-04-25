@@ -2,7 +2,14 @@
 
 ## Project
 
-TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main Express app). **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development.md` (Monorepo layout).
+TypeScript monorepo (**pnpm** 10): **`packages/*`**, optional **`apps/*`** (e.g. **Starlight** docs in `apps/docs`), **root** = main Express app. **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development/development.md` (Monorepo layout).
+
+## Documentation
+
+- **Prose in git** lives under `docs/`, grouped for operators and authors: `docs/operator/` (install, deploy, docker, upgrade, observability), `docs/config/` (hub + full reference), `docs/plugins/`, `docs/development/`, `docs/architecture/` (includes `adr/`), `docs/e2e/`, `docs/reference/` (CHANGELOG + `reference/generated/*` from `pnpm docs:config` / `pnpm docs:plugins`). Start from `docs/README.md`.
+- **Starlight static site** is `apps/docs/` (Astro + `@astrojs/starlight` + MDX). The published URL is **https://agent-detective.chapascript.dev/docs/** (`site` + `base: '/docs'` in `apps/docs/astro.config.mjs`; DNS via Cloudflare, custom domain in **GitHub → Settings → Pages**). The build nests output into `dist/docs/` via `scripts/stage-docs-dist.mjs` after `astro build`. The sync link prefix `BASE` in `scripts/sync-starlight-content.mjs` must match `base`.
+- **Source of truth for markdown content** is always `docs/**/*.md` in the repo. `scripts/sync-starlight-content.mjs` copies that tree into `apps/docs/src/content/docs/` (mirrors paths), rewrites links for the site, and maps `docs/README.md` → `overview`. It **does not** overwrite the Starlight home: `apps/docs/src/content/docs/index.mdx` (journey + `LinkCard` grid) is hand-edited in `apps/docs` only.
+- **Commands (repo root):** `pnpm run docs:site:sync` (sync only), `pnpm run docs:site:dev` (dev server), `pnpm run docs:site` (production build), `pnpm docs:config` / `pnpm docs:plugins` (regenerate `docs/reference/generated/*.md`). CI runs `docs:config:check` and `docs:plugins:check`; the docs site workflow builds `apps/docs` on pushes affecting docs or the sync script.
 
 **Packages** (`packages/*`):
 - `@agent-detective/types` — Shared types (single source of truth)
@@ -15,7 +22,7 @@ TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main 
 
 ## Configuration
 
-Runtime config: `config/default.json` + optional `config/local.json` (deep merge), then an explicit env whitelist — see `docs/configuration.md`. Plugin option Zod schemas: `packages/jira-adapter/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`; generated reference: `docs/generated/plugin-options.md`.
+Runtime config: `config/default.json` + optional `config/local.json` (deep merge), then an explicit env whitelist — see `docs/config/configuration.md`. Top-level app Zod: `src/config/schema.ts` (`pnpm docs:config` → `docs/reference/generated/app-config.md`). Plugin option Zod: `packages/jira-adapter/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts` (`pnpm docs:plugins` → `docs/reference/generated/plugin-options.md`).
 
 ## Golden Rules
 
@@ -136,11 +143,13 @@ packages/
 └── jira-adapter/src/
 
 test/                         # *.test.ts files (tsx --test)
+
+docs/                         # See “Documentation” above (operator, config, plugins, …)
 ```
 
 ## Docker
 
-See [docs/docker.md](docs/docker.md): `docker compose` for local **dev** (bind mounts), `docker-compose.prod.yml` for **production** image, and GitHub Actions workflows for GHCR.
+See [docs/operator/docker.md](docs/operator/docker.md): `docker compose` for local **dev** (bind mounts), `docker-compose.prod.yml` for **production** image, and GitHub Actions workflows for GHCR.
 
 ## Essential Commands
 
@@ -177,5 +186,9 @@ pnpm turbo clean  # Clear build cache if odd issues occur
 | `packages/types/src/index.ts` | All shared type definitions |
 | `src/core/plugin-system.ts` | Plugin loading; `createPluginSystem({ agentRunner, events, taskQueue? })` returns `.enqueue` |
 | `src/core/agent-runner.ts` | Agent execution |
-| `docs/plugins.md` | Full plugin development guide |
-| `docs/publishing.md` | Package publishing workflow |
+| `docs/README.md` | Map of the `docs/` tree (operator, config, plugins, …) |
+| `docs/plugins/plugins.md` | Full plugin development guide |
+| `docs/plugins/publishing.md` | Package publishing workflow |
+| `apps/docs/astro.config.mjs` | Starlight sidebar, `site` + `base` (published at `/docs/` on the custom host) |
+| `apps/docs/src/content/docs/index.mdx` | Doc site home (not synced from `docs/`) |
+| `scripts/sync-starlight-content.mjs` | Mirror `docs/**` into the Starlight content dir |
