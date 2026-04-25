@@ -2,7 +2,7 @@
 
 ## Project
 
-TypeScript monorepo (**pnpm** 10 workspaces under `packages/*`, **root** = main Express app). **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development.md` (Monorepo layout).
+TypeScript monorepo (**pnpm** 10): **`packages/*`**, optional **`apps/*`** (e.g. **Starlight** docs in `apps/docs`), **root** = main Express app. **Turborepo** runs `build` / `typecheck` / `lint` / `clean` / `test` (where defined) across packages; **`pnpm test`** runs `turbo run test` then root `tsx` tests. Shared versions use **`catalog:`** in `pnpm-workspace.yaml`. **TypeScript 6** + **Zod 4** at the repo root and in packages. See `docs/development.md` (Monorepo layout).
 
 **Packages** (`packages/*`):
 - `@agent-detective/types` — Shared types (single source of truth)

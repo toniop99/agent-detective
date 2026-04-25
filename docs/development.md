@@ -70,7 +70,7 @@ End-to-end Jira webhook testing (tunnel, labels, smoke script): [e2e/jira-manual
 ## Monorepo layout (pnpm + Turborepo)
 
 - **Root** [`package.json`](../package.json) is the **main Express app** (`src/`, `test/`). It is not a separate package under `packages/`, but it depends on workspace packages via `workspace:*`.
-- **Workspace packages** live under [`packages/*`](../packages/) and are listed in [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) (only `packages/*`; add `apps/*` later if you introduce an app package). Shared dependency versions use the **`catalog:`** protocol defined in that file.
+- **Workspace packages** live under [`packages/*`](../packages/) and an optional app package under [`apps/*`](../apps/) (the documentation site is in [`apps/docs`](../apps/docs/)). All are listed in [`pnpm-workspace.yaml`](../pnpm-workspace.yaml). Shared dependency versions use the **`catalog:`** protocol defined in that file.
 - **`pnpm run build`** runs **Turborepo** (`turbo run build`) and builds every workspace package’s `dist/`. It does **not** bundle the root server by itself.
 - **`pnpm run build:app`** runs **tsup** on the root entrypoint and writes **`dist/index.js`** for `pnpm start` / production images (the Dockerfile runs both workspace build and `build:app`).
 - **`pnpm run typecheck`** runs `turbo run typecheck` for packages **and** `tsc --noEmit` at the repo root for `src/` + `test/`.

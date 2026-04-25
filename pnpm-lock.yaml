@@ -103,6 +103,18 @@ importers:
         specifier: 'catalog:'
         version: 8.58.2(eslint@10.2.1)(typescript@6.0.3)
 
+  apps/docs:
+    dependencies:
+      '@astrojs/starlight':
+        specifier: ^0.38.4
+        version: 0.38.4(astro@6.1.9(@types/node@25.6.0)(rollup@4.60.2)(tsx@4.21.0)(typescript@6.0.3))
+      astro:
+        specifier: ^6.1.9
+        version: 6.1.9(@types/node@25.6.0)(rollup@4.60.2)(tsx@4.21.0)(typescript@6.0.3)
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+
   packages/core:
     dependencies:
       '@agent-detective/types':
@@ -254,18 +266,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-
-  website:
-    dependencies:
-      '@astrojs/starlight':
-        specifier: ^0.38.4
-        version: 0.38.4(astro@6.1.9(@types/node@25.6.0)(rollup@4.60.2)(tsx@4.21.0)(typescript@6.0.3))
-      astro:
-        specifier: ^6.1.9
-        version: 6.1.9(@types/node@25.6.0)(rollup@4.60.2)(tsx@4.21.0)(typescript@6.0.3)
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
 
 packages:
 

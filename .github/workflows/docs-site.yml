@@ -1,0 +1,47 @@
+name: Docs site (Starlight)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/docs/**'
+      - 'docs/**'
+      - 'scripts/sync-starlight-content.mjs'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/docs-site.yml'
+
+  workflow_dispatch: {}
+
+concurrency:
+  group: pages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with: { version: 10.33.0 }
+      - uses: actions/setup-node@v6
+        with: { node-version: '24', cache: pnpm, cache-dependency-path: pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - name: Build Starlight
+        run: pnpm --filter agent-detective-docs build
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: apps/docs/dist }
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pages: write
+    environment: { name: github-pages }
+    steps:
+      - id: deploy
+        name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

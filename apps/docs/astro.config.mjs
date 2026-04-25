@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 // https://starlight.astro.build/reference/configuration/
+// GitHub project Pages: https://<user>.github.io/agent-detective/
 export default defineConfig({
   site: 'https://toniop99.github.io',
   base: '/agent-detective',
@@ -19,13 +20,24 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Get started',
-          items: [
-            { label: 'Overview', slug: 'index' },
-            { label: 'Installation', link: 'https://github.com/toniop99/agent-detective/blob/main/docs/installation.md' },
-            { label: 'Configuration hub', link: 'https://github.com/toniop99/agent-detective/blob/main/docs/configuration-hub.md' },
-            { label: 'Upgrading', link: 'https://github.com/toniop99/agent-detective/blob/main/docs/upgrading.md' },
-          ],
+          label: 'Overview',
+          items: [{ label: 'Home', slug: 'index' }],
+        },
+        {
+          label: 'Guides',
+          autogenerate: { directory: 'pages' },
+        },
+        {
+          label: 'Jira (E2E)',
+          autogenerate: { directory: 'e2e' },
+        },
+        {
+          label: 'Architecture (ADR)',
+          autogenerate: { directory: 'adr' },
+        },
+        {
+          label: 'Reference (generated)',
+          autogenerate: { directory: 'generated' },
         },
       ],
     }),

@@ -71,7 +71,7 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 
 ## Documentation
 
-- **Static site (WIP):** from the repo root, `pnpm run docs:site` builds the [Astro Starlight](https://starlight.astro.build/) app in [`website/`](website/README.md). Full markdown is still in [`docs/`](docs/README.md) until the site fully mirrors it.
+- **Documentation site (Starlight):** `pnpm run docs:site` from the root builds the static site in [`apps/docs/`](apps/docs/README.md) (source markdown is [`docs/`](docs/README.md); a [sync script](scripts/sync-starlight-content.mjs) runs on build). **Published:** [https://toniop99.github.io/agent-detective/](https://toniop99.github.io/agent-detective/) (enable **GitHub Pages** with the **GitHub Actions** source on your fork if needed). CI: [.github/workflows/docs-site.yml](.github/workflows/docs-site.yml).
 
 - [Installation](docs/installation.md) — deploy with Docker, from source, or bare metal
 - [Configuration (overview)](docs/configuration-hub.md) — [full reference](docs/configuration.md)

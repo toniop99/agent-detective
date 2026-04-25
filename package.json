@@ -16,6 +16,7 @@
     "test:watch": "tsx --test --watch 'test/**/*.test.ts'",
     "docs:plugins": "tsx scripts/generate-plugin-config-docs.ts",
     "docs:plugins:check": "pnpm docs:plugins && git diff --exit-code docs/generated/plugin-options.md",
+    "docs:site:sync": "node scripts/sync-starlight-content.mjs",
     "docs:site": "pnpm --filter agent-detective-docs build",
     "docs:site:dev": "pnpm --filter agent-detective-docs dev",
     "clean": "turbo run clean",
