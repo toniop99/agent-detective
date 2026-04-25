@@ -7,7 +7,7 @@ TypeScript monorepo (**pnpm** 10): **`packages/*`**, optional **`apps/*`** (e.g.
 ## Documentation
 
 - **Prose in git** lives under `docs/`, grouped for operators and authors: `docs/operator/` (install, deploy, docker, upgrade, observability), `docs/config/` (hub + full reference), `docs/plugins/`, `docs/development/`, `docs/architecture/` (includes `adr/`), `docs/e2e/`, `docs/reference/` (CHANGELOG + `reference/generated/*` from `pnpm docs:config` / `pnpm docs:plugins`). Start from `docs/README.md`.
-- **Starlight static site** is `apps/docs/` (Astro + `@astrojs/starlight` + MDX). The **published** URL uses GitHub project Pages (see root `README.md`); `site` / `base` in `apps/docs/astro.config.mjs` must match the deployment (forks may need changes).
+- **Starlight static site** is `apps/docs/` (Astro + `@astrojs/starlight` + MDX). The published URL is **https://agent-detective.chapascript.dev/docs/** (`site` + `base: '/docs'` in `apps/docs/astro.config.mjs`; DNS via Cloudflare, custom domain in **GitHub → Settings → Pages**). The build nests output into `dist/docs/` via `scripts/stage-docs-dist.mjs` after `astro build`. The sync link prefix `BASE` in `scripts/sync-starlight-content.mjs` must match `base`.
 - **Source of truth for markdown content** is always `docs/**/*.md` in the repo. `scripts/sync-starlight-content.mjs` copies that tree into `apps/docs/src/content/docs/` (mirrors paths), rewrites links for the site, and maps `docs/README.md` → `overview`. It **does not** overwrite the Starlight home: `apps/docs/src/content/docs/index.mdx` (journey + `LinkCard` grid) is hand-edited in `apps/docs` only.
 - **Commands (repo root):** `pnpm run docs:site:sync` (sync only), `pnpm run docs:site:dev` (dev server), `pnpm run docs:site` (production build), `pnpm docs:config` / `pnpm docs:plugins` (regenerate `docs/reference/generated/*.md`). CI runs `docs:config:check` and `docs:plugins:check`; the docs site workflow builds `apps/docs` on pushes affecting docs or the sync script.
 
@@ -189,6 +189,6 @@ pnpm turbo clean  # Clear build cache if odd issues occur
 | `docs/README.md` | Map of the `docs/` tree (operator, config, plugins, …) |
 | `docs/plugins/plugins.md` | Full plugin development guide |
 | `docs/plugins/publishing.md` | Package publishing workflow |
-| `apps/docs/astro.config.mjs` | Starlight sidebar, `site` / `base` for GitHub Pages |
+| `apps/docs/astro.config.mjs` | Starlight sidebar, `site` + `base` (published at `/docs/` on the custom host) |
 | `apps/docs/src/content/docs/index.mdx` | Doc site home (not synced from `docs/`) |
 | `scripts/sync-starlight-content.mjs` | Mirror `docs/**` into the Starlight content dir |

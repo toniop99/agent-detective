@@ -4,10 +4,11 @@ import mdx from '@astrojs/mdx';
 import starlight from '@astrojs/starlight';
 
 // https://starlight.astro.build/reference/configuration/
-// GitHub project Pages: https://<user>.github.io/agent-detective/
+// Published at https://agent-detective.chapascript.dev/docs/ (custom domain in GitHub Settings → Pages; DNS e.g. Cloudflare CNAME → toniop99.github.io).
+// Build nests output under dist/docs/ via scripts/stage-docs-dist.mjs so the site is served at /docs/ on the host.
 export default defineConfig({
-  site: 'https://toniop99.github.io',
-  base: '/agent-detective',
+  site: 'https://agent-detective.chapascript.dev',
+  base: '/docs',
   integrations: [
     starlight({
       title: 'Agent Detective',
