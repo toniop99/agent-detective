@@ -133,26 +133,6 @@ function parseOutput(output: string): AgentOutput {
     return { text: accumulated.trim(), threadId: sessionId, sawJson: true };
   }
 
-  // Fallback: legacy single-JSON format (--output-format json)
-  if (lines.length === 1) {
-    const payload = safeJsonParse(lines[0].trim());
-    if (payload && typeof payload === 'object') {
-      const sid = sanitizeSessionId(
-        (payload as Record<string, string>).session_id ??
-        (payload as Record<string, string>).sessionId ??
-        (payload as Record<string, string>).conversation_id ??
-        (payload as Record<string, string>).conversationId ??
-        undefined
-      );
-      const txt = (payload as Record<string, string>).result ??
-        (payload as Record<string, string>).text ??
-        (payload as Record<string, string>).output;
-      if (typeof txt === 'string') {
-        return { text: txt.trim(), threadId: sid ?? sessionId, sawJson: true };
-      }
-    }
-  }
-
   return { text: cleaned.trim(), threadId: sessionId, sawJson: false };
 }
 

@@ -2,7 +2,7 @@
 
 Do not edit by hand. Regenerate with `pnpm docs:config`.
 
-Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are allowed; see `additionalProperties` in the JSON below).
+Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are rejected; see `additionalProperties` in the JSON below).
 
 ## Top-level keys
 
@@ -90,7 +90,7 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
             "additionalProperties": {}
           }
         },
-        "additionalProperties": {}
+        "additionalProperties": false
       }
     },
     "observability": {
@@ -107,6 +107,6 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
       "type": "string"
     }
   },
-  "additionalProperties": {}
+  "additionalProperties": false
 }
 ```

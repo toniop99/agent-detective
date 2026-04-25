@@ -21,10 +21,12 @@ export function validatePluginSchema(pluginExport: unknown): true {
     throw new Error('Plugin must export a register function');
   }
 
-  if (plugin.schemaVersion && plugin.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(
-      `Plugin schema version mismatch: expected ${SCHEMA_VERSION}, got ${plugin.schemaVersion}`
-    );
+  if (!plugin.schemaVersion) {
+    throw new Error(`Plugin must declare schemaVersion: '${SCHEMA_VERSION}'`);
+  }
+
+  if (plugin.schemaVersion !== SCHEMA_VERSION) {
+    throw new Error(`Plugin schema version mismatch: expected ${SCHEMA_VERSION}, got ${plugin.schemaVersion}`);
   }
 
   return true;

@@ -1,9 +1,11 @@
 import * as z from 'zod';
 
-const pluginEntrySchema = z.looseObject({
+const pluginEntrySchema = z
+  .object({
   package: z.string().optional(),
   options: z.record(z.string(), z.unknown()).optional(),
-});
+})
+  .strict();
 
 const agentsRunnerConfigSchema = z
   .object({
@@ -24,17 +26,19 @@ const agentModelConfigSchema = z
 const agentsEntrySchema = z.union([agentModelConfigSchema, agentsRunnerConfigSchema]);
 
 /**
- * Validated application config (files + env whitelist). Unknown top-level keys are preserved for forward compatibility.
+ * Validated application config (files + env whitelist).
  */
-export const appConfigSchema = z.looseObject({
-  port: z.number().optional(),
-  agent: z.string().optional(),
-  agents: z.record(z.string(), agentsEntrySchema).optional(),
-  plugins: z.array(pluginEntrySchema).optional(),
-  /** Merged into `createObservability` / request logger; `requestLogger.excludePaths` is read in `server.ts`. */
-  observability: z.record(z.string(), z.unknown()).optional(),
-  docsAuthRequired: z.boolean().optional(),
-  docsApiKey: z.string().optional(),
-});
+export const appConfigSchema = z
+  .object({
+    port: z.number().optional(),
+    agent: z.string().optional(),
+    agents: z.record(z.string(), agentsEntrySchema).optional(),
+    plugins: z.array(pluginEntrySchema).optional(),
+    /** Merged into `createObservability` / request logger; `requestLogger.excludePaths` is read in `server.ts`. */
+    observability: z.record(z.string(), z.unknown()).optional(),
+    docsAuthRequired: z.boolean().optional(),
+    docsApiKey: z.string().optional(),
+  })
+  .strict();
 
 export type AppConfig = z.infer<typeof appConfigSchema>;

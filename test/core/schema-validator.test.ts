@@ -9,6 +9,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
         register: () => {},
       };
 
@@ -48,6 +49,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test-plugin',
         version: '1.0.0',
+        schemaVersion: '1.0',
       };
 
       assert.throws(() => validatePluginSchema(plugin), /must export a register function/);

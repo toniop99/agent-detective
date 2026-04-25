@@ -20,11 +20,8 @@
  * Crucially, this token is embedded in ordinary Markdown (an `hr` + italic
  * paragraph) so it **survives the Markdown → ADF → webhook-echo round
  * trip**. The previous implementation used an HTML comment marker
- * (`<!-- agent-detective:v1 -->`), but `marked`'s HTML-comment handling is
- * inconsistent across configurations and Jira's ADF pipeline will drop it
- * in some setups — the reminder comment then got treated as a user trigger
- * (because the reminder body itself quotes `#agent-detective analyze` as
- * instructions) and spammed the ticket. See the loop protection notes in
+ * that was not reliably preserved across Markdown/ADF round-trips, which
+ * could cause webhook-echo loops. See the loop protection notes in
  * `docs/e2e/jira-manual-e2e.md`.
  */
 export const AGENT_DETECTIVE_MARKER = 'agent-detective · ad-v1';
@@ -36,13 +33,6 @@ export const AGENT_DETECTIVE_MARKER = 'agent-detective · ad-v1';
  * every downstream renderer.
  */
 const MARKER_FOOTER_MARKDOWN = `\n\n---\n_— Posted by ${AGENT_DETECTIVE_MARKER}_`;
-
-/**
- * Legacy HTML-comment marker kept in the recognition list only — `stampComment`
- * no longer emits it. Any comment the adapter posted before this change is
- * still recognized as own-authored on replay.
- */
-const LEGACY_HTML_MARKER = '<!-- agent-detective:v1 -->';
 
 /**
  * Returns `body` with a visible marker footer appended. Idempotent: if the
@@ -107,9 +97,6 @@ export function isOwnComment(
 ): boolean {
   if (typeof body === 'string') {
     if (body.includes(AGENT_DETECTIVE_MARKER)) return true;
-    // Recognize comments stamped with the pre-v1-footer HTML marker so
-    // existing tickets don't loop when the adapter restarts.
-    if (body.includes(LEGACY_HTML_MARKER)) return true;
   }
   if (!author || !ownUser) return false;
   if (ownUser.accountId && author.accountId && ownUser.accountId === author.accountId) {

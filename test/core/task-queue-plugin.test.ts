@@ -43,6 +43,7 @@ describe('TaskQueue / registerTaskQueue', () => {
     const queuePlugin: Plugin = {
       name: '@test/queue-plugin',
       version: '1.0.0',
+      schemaVersion: '1.0',
       register(_app, context) {
         context.registerTaskQueue(customQueue);
       },
@@ -87,6 +88,7 @@ describe('TaskQueue / registerTaskQueue', () => {
     const p: Plugin = {
       name: '@test/replace-queue',
       version: '1.0.0',
+      schemaVersion: '1.0',
       register(_app, ctx) {
         ctx.registerTaskQueue(second);
       },

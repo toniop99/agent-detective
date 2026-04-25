@@ -169,10 +169,6 @@ means one of the upstream guards (1–3) is misbehaving and should be
 investigated — the breakers keep things safe but they are diagnostics
 of a real misconfiguration, not a design endpoint.
 
-Comments stamped with the legacy `<!-- agent-detective:v1 -->` marker
-(anything posted before the footer change) are still recognized as
-adapter-authored so historical tickets don't suddenly flap.
-
 ### Multiple repos per issue (fan-out)
 
 A single Jira ticket can legitimately touch more than one repository

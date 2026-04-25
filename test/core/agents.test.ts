@@ -111,7 +111,7 @@ describe('agents', () => {
       assert.ok(cmd.includes('claude'));
       assert.ok(cmd.includes('-p'));
       assert.ok(cmd.includes('--output-format'));
-      assert.ok(cmd.includes('json'));
+      assert.ok(cmd.includes('stream-json'));
     });
 
     it('builds command with custom model', () => {
@@ -142,11 +142,14 @@ describe('agents', () => {
       assert.ok(!cleaned.text.includes('\x1B['));
     });
 
-    it('parses JSON output correctly', () => {
-      const output = JSON.stringify({
-        result: 'Claude response text',
-        session_id: '12345678-1234-5234-8234-123456789012',
-      });
+    it('parses stream-json result output correctly', () => {
+      const output = [
+        JSON.stringify({
+          type: 'result',
+          result: 'Claude response text',
+          session_id: '12345678-1234-5234-8234-123456789012',
+        }),
+      ].join('\n');
       const parsed = claudeAgent.parseOutput!(output);
       assert.equal(parsed.text, 'Claude response text');
       assert.equal(parsed.threadId, '12345678-1234-5234-8234-123456789012');

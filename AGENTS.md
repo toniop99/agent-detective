@@ -71,7 +71,7 @@ Runtime config: `config/default.json` + optional `config/local.json` (deep merge
 interface Plugin {
   name: string;
   version: string;
-  schemaVersion?: '1.0';
+  schemaVersion: '1.0';
   schema?: PluginSchema;
   dependsOn?: string[];           // Loaded before this plugin
   register(app: Application, context: PluginContext): void;
