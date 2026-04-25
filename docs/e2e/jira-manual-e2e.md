@@ -4,7 +4,7 @@ This guide walks through testing the full path locally, including how Jira Cloud
 
 ## Prerequisites (local machine)
 
-1. **Node 24+** and **pnpm** — see [development.md](../development.md).
+1. **Node 24+** and **pnpm** — see [development.md](../development/development.md).
 2. **Agent CLI** on your `PATH` for dev (`pnpm dev`): install [OpenCode](https://opencode.ai/docs) with `npm install -g opencode-ai` (or use another registered agent with credentials configured).
 3. **LLM / provider credentials** for that agent (environment variables or OpenCode config).
 4. A **git checkout** on disk you can point the local-repos plugin at (your “test repo” containing the error or stack trace you will paste into Jira).
@@ -282,7 +282,7 @@ JIRA_WEBHOOK_URL=https://your-tunnel.example/plugins/agent-detective-jira-adapte
 
 ## Related docs
 
-- [configuration.md](../configuration.md) — config merge and env whitelist  
+- [configuration.md](../config/configuration.md) — config merge and env whitelist  
 - [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md) — manual test of Jira comment → PR pipeline (worktree, push, GitHub/Bitbucket)  
-- [docker.md](../docker.md) — running in containers  
-- [development.md](../development.md) — local dev and `mockMode` overview  
+- [docker.md](../operator/docker.md) — running in containers  
+- [development.md](../development/development.md) — local dev and `mockMode` overview  

@@ -1,8 +1,12 @@
 # Configuration overview
 
-This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](generated/plugin-options.md)**.
+:::caution[Secrets]
+Prefer environment variables on the **whitelist** for production; see the tables in [configuration.md](configuration.md).
+:::
 
-**Other operator hubs:** [installation.md](installation.md) (where to run the app) · [upgrading.md](upgrading.md) (releases and image tags).
+This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](../reference/generated/plugin-options.md)**.
+
+**Other operator hubs:** [installation.md](../operator/installation.md) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and image tags).
 
 ## Where configuration lives
 
@@ -25,7 +29,7 @@ If the same value is set in both JSON and env, **env wins** for the keys covered
 
 ## Top-level application shape (Zod)
 
-The server validates the merged result with [`src/config/schema.ts`](../src/config/schema.ts). **Known** top-level fields include:
+The server validates the merged result with [`src/config/schema.ts`](../../src/config/schema.ts). **Known** top-level fields include:
 
 | Key | Role |
 |-----|------|
@@ -38,9 +42,11 @@ The server validates the merged result with [`src/config/schema.ts`](../src/conf
 
 The schema allows **unknown top-level keys** for forward compatibility, but you should not rely on undocumented keys.
 
-**Plugin `options`:** not listed in the table above — each plugin’s keys are defined in that plugin’s Zod schema and in **[generated/plugin-options.md](generated/plugin-options.md)**.
+A **table and full JSON Schema (draft-7) kept in sync with Zod** are in **[generated/app-config.md](../reference/generated/app-config.md)** — regenerate with `pnpm docs:config` after changing `src/config/schema.ts` (the same way `pnpm docs:plugins` updates plugin options).
 
-## Regenerating the plugin options doc
+**Plugin `options`:** not listed in the table above — each plugin’s keys are defined in that plugin’s Zod schema and in **[generated/plugin-options.md](../reference/generated/plugin-options.md)**.
+
+## Regenerating generated references
 
 When you change Zod in `packages/*/src/application/options-schema.ts` (bundled plugins), regenerate the markdown reference and commit the diff:
 
@@ -48,16 +54,23 @@ When you change Zod in `packages/*/src/application/options-schema.ts` (bundled p
 pnpm docs:plugins
 ```
 
-In CI, `pnpm docs:plugins:check` fails if [generated/plugin-options.md](generated/plugin-options.md) is out of date. Paths: [architecture-layering.md](architecture-layering.md).
+When you change the top-level app schema in `src/config/schema.ts`:
+
+```bash
+pnpm docs:config
+```
+
+In CI, `pnpm docs:plugins:check` and `pnpm docs:config:check` fail if the generated files are out of date. Paths: [architecture-layering.md](../architecture/architecture-layering.md).
 
 ## Read next
 
 | Need | Document |
 |------|----------|
 | Full env reference, Jira, pr-pipeline, local-repos, validation | [configuration.md](configuration.md) |
-| Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](generated/plugin-options.md) |
-| Plugin system and `schema` in code | [plugins.md](plugins.md) (e.g. schema system) |
-| Custom plugins (npm, path, `plugins/` mount) | [extending-with-plugins.md](extending-with-plugins.md) |
-| Install paths and `config` mounts | [installation.md](installation.md) |
-| New releases, GHCR tags, git pull | [upgrading.md](upgrading.md) |
-| Docker-specific env | [docker.md](docker.md#production-style-run-single-host) |
+| Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](../reference/generated/plugin-options.md) |
+| Top-level app config table + JSON Schema (from Zod) | [generated/app-config.md](../reference/generated/app-config.md) |
+| Plugin system and `schema` in code | [plugins.md](../plugins/plugins.md) (e.g. schema system) |
+| Custom plugins (npm, path, `plugins/` mount) | [extending-with-plugins.md](../plugins/extending-with-plugins.md) |
+| Install paths and `config` mounts | [installation.md](../operator/installation.md) |
+| New releases, GHCR tags, git pull | [upgrading.md](../operator/upgrading.md) |
+| Docker-specific env | [docker.md](../operator/docker.md#production-style-run-single-host) |

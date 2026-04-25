@@ -1,5 +1,5 @@
 /**
- * Writes JSON Schema (from Zod) for first-party plugin options into docs/generated/plugin-options.md.
+ * Writes JSON Schema (from Zod) for first-party plugin options into docs/reference/generated/plugin-options.md.
  * Run after changing `options-schema.ts` in a plugin package.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/sr
 import { prPipelineOptionsSchema } from '../packages/pr-pipeline/src/application/options-schema.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outPath = join(__dirname, '..', 'docs', 'generated', 'plugin-options.md');
+const outPath = join(__dirname, '..', 'docs', 'reference', 'generated', 'plugin-options.md');
 
 function block(title: string, id: string, schema: Record<string, unknown>): string {
   return `### ${title}\n\nAnchor: \`${id}\`\n\n\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\`\n\n`;

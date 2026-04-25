@@ -384,7 +384,7 @@ curl -H "X-API-KEY: your-api-key" http://localhost:3001/docs
 
 ### Plugin API Documentation
 
-All plugins that register HTTP endpoints will automatically have their routes appear in the `/docs` UI. Plugins can provide OpenAPI metadata (summary, description, responses) via the `openapi` property on the plugin object. See [Plugin Development Guide](./plugin-development.md#api-documentation-openapi) for details.
+All plugins that register HTTP endpoints will automatically have their routes appear in the `/docs` UI. Plugins can provide OpenAPI metadata (summary, description, responses) via the `openapi` property on the plugin object. See [Plugin Development Guide](../plugins/plugin-development.md#api-documentation-openapi) for details.
 
 ## Notes
 

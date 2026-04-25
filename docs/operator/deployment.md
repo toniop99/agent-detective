@@ -1,6 +1,6 @@
 # Deployment guide
 
-Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md), [configuration-hub.md](configuration-hub.md), and [configuration.md](configuration.md). When you’ve deployed before and need **new tags or git pulls**, see [upgrading.md](upgrading.md).
+Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md), [configuration-hub.md](../config/configuration-hub.md), and [configuration.md](../config/configuration.md). When you’ve deployed before and need **new tags or git pulls**, see [upgrading.md](upgrading.md).
 
 ## Prerequisites
 
@@ -30,19 +30,19 @@ pnpm run build:app
 
 Use your own fork’s `https://github.com/<owner>/<repo>.git` URL if you are not building from the upstream repository.
 
-Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](configuration.md).
+Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](../config/configuration.md).
 
 ```bash
 pnpm start
 ```
 
-For development with hot reload: `pnpm run dev`. See [development.md](development.md).
+For development with hot reload: `pnpm run dev`. See [development.md](../development/development.md).
 
 ## Configuration reference (summary)
 
-[configuration-hub.md](configuration-hub.md) documents merge order and top-level keys. **Repository context** (e.g. `gitLogMaxCommits`) belongs under **local-repos-plugin** `options`, not as a root `repoContext` key.
+[configuration-hub.md](../config/configuration-hub.md) documents merge order and top-level keys. **Repository context** (e.g. `gitLogMaxCommits`) belongs under **local-repos-plugin** `options`, not as a root `repoContext` key.
 
-**Example** `config/default.json` skeleton for a bare-metal install (full plugin fields: [generated/plugin-options.md](generated/plugin-options.md)):
+**Example** `config/default.json` skeleton for a bare-metal install (full plugin fields: [generated/plugin-options.md](../reference/generated/plugin-options.md)):
 
 ```json
 {
@@ -71,7 +71,7 @@ For development with hot reload: `pnpm run dev`. See [development.md](developmen
 }
 ```
 
-Full options: [generated/plugin-options.md](generated/plugin-options.md), [plugins.md](plugins.md#14-official-bundled-plugins).
+Full options: [generated/plugin-options.md](../reference/generated/plugin-options.md), [plugins.md](../plugins/plugins.md#14-official-bundled-plugins).
 
 ## Process management (systemd)
 
@@ -142,7 +142,7 @@ server {
 ## Security
 
 - Restrict firewall to SSH, HTTP, HTTPS as needed: `sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw enable`
-- Jira: configure webhook URL and, if used, shared secrets in Jira; prefer `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` from the environment (see [configuration.md](configuration.md)) instead of tokens in config files.
+- Jira: configure webhook URL and, if used, shared secrets in Jira; prefer `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` from the environment (see [configuration.md](../config/configuration.md)) instead of tokens in config files.
 
 ## Health checks
 
@@ -158,7 +158,7 @@ curl -sS http://localhost:3001/api/agent/list
 
 ## Log management
 
-Structured logs go to **stdout/stderr** (captured by journald under systemd). Set log level via `observability` / `LOG_LEVEL` / `OBSERVABILITY_LOG_LEVEL` (see [configuration.md](configuration.md)).
+Structured logs go to **stdout/stderr** (captured by journald under systemd). Set log level via `observability` / `LOG_LEVEL` / `OBSERVABILITY_LOG_LEVEL` (see [configuration.md](../config/configuration.md)).
 
 ## Troubleshooting
 
@@ -175,6 +175,6 @@ For Docker-specific issues, see [docker.md](docker.md#troubleshooting).
 ## See also
 
 - [installation.md](installation.md) — choose bare metal vs container first
-- [configuration-hub.md](configuration-hub.md) — config load order
+- [configuration-hub.md](../config/configuration-hub.md) — config load order
 - [upgrading.md](upgrading.md) — pin image tags and upgrade runbooks
 - [docker.md](docker.md) — containers and GHCR

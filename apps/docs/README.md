@@ -2,7 +2,7 @@
 
 Astro + [Starlight](https://starlight.astro.build/) under **`apps/docs`**, next to the main app under the monorepo root. Build output: `dist/`.
 
-- **Prerequisite:** the sync step copies and rewrites `../../docs` into `src/content/docs` (excludes `index.md` and a few paths). `prebuild` runs that automatically. Generated folders are [gitignored](.gitignore).
+- **Prerequisite:** the sync step copies and rewrites `../../docs/**` into `src/content/docs/**` (mirrors subfolders such as `operator/`, `config/`, `plugins/`, …). It skips `index.md` / `index.mdx` (the Starlight home). `prebuild` runs sync automatically. Mirrored content is [gitignored](.gitignore).
 
 - **Local dev** (serves with base path `/agent-detective` to match [GitHub project Pages](https://docs.github.com/en/pages)):
 

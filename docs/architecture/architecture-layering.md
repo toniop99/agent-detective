@@ -4,7 +4,7 @@ This repository uses a **pragmatic hexagonal (ports & adapters) + layered** layo
 
 ## Concepts
 
-- **Ports** — Interfaces and DTOs in [`@agent-detective/types`](../packages/types/src/index.ts) (`TaskEvent`, `AgentRunner`, `RepoMatcher`, `PrWorkflowService`, etc.).
+- **Ports** — Interfaces and DTOs in [`@agent-detective/types`](../../packages/types/src/index.ts) (`TaskEvent`, `AgentRunner`, `RepoMatcher`, `PrWorkflowService`, etc.).
 - **Driving adapters** — HTTP entry points (e.g. Jira webhook controller).
 - **Application** — Use cases: webhook dispatch, handler routing, config schemas for a plugin.
 - **Domain** — Pure logic without Express or network I/O (normalization, trigger rules, plugin-local types).
@@ -21,7 +21,7 @@ This repository uses a **pragmatic hexagonal (ports & adapters) + layered** layo
 | Domain           | `src/domain/` (types, normalizer, comment triggers) |
 | Infrastructure   | `src/infrastructure/` (Jira clients, markdown→ADF) |
 
-Entry point remains [`src/index.ts`](../packages/jira-adapter/src/index.ts) (plugin registration / composition).
+Entry point remains [`src/index.ts`](../../packages/jira-adapter/src/index.ts) (plugin registration / composition).
 
 ### `@agent-detective/pr-pipeline`
 
@@ -30,7 +30,7 @@ Entry point remains [`src/index.ts`](../packages/jira-adapter/src/index.ts) (plu
 | Application      | `src/application/` (`run-pr-workflow`, `options-schema`) |
 | Infrastructure   | `src/infrastructure/` (GitHub, Bitbucket, tokens, Jira stamping helpers) |
 
-Entry point remains [`src/index.ts`](../packages/pr-pipeline/src/index.ts).
+Entry point remains [`src/index.ts`](../../packages/pr-pipeline/src/index.ts).
 
 ### `@agent-detective/local-repos-plugin`
 
@@ -41,7 +41,7 @@ Entry point remains [`src/index.ts`](../packages/pr-pipeline/src/index.ts).
 | Domain           | `src/domain/` (`types`, `repo-matcher`, `validate`) |
 | Infrastructure   | `src/infrastructure/` (`tech-stack-detector`, `summary-generator`, `repo-context`) |
 
-Entry point remains [`src/index.ts`](../packages/local-repos-plugin/src/index.ts).
+Entry point remains [`src/index.ts`](../../packages/local-repos-plugin/src/index.ts).
 
 ## Root app (`src/`)
 

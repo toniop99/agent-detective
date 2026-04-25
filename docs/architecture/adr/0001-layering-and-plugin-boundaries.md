@@ -15,7 +15,7 @@ We want:
 
 ## Decision
 
-1. **Monolith-first** — One process, explicit plugin loading ([`createPluginSystem`](../../src/core/plugin-system.ts)). No microservices unless multi-tenant hosting demands it later.
+1. **Monolith-first** — One process, explicit plugin loading ([`createPluginSystem`](../../../src/core/plugin-system.ts)). No microservices unless multi-tenant hosting demands it later.
 
 2. **Ports in `@agent-detective/types`** — Shared contracts stay in the types package; plugins implement or consume them via the service registry. Avoid compile-time imports from another plugin package for **interfaces** (prefer types + `getService`).
 

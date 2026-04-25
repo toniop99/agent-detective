@@ -321,7 +321,7 @@ docker build --target production \
   -t agent-detective:multi .
 
 # Available agents for AGENTS build-arg: opencode, claude (npm global).
-# Cursor Agent CLI (in-app id: cursor) is not installed via npm; see docs/cursor-agent.md.
+# Cursor Agent CLI (in-app id: cursor) is not installed via npm; see ../development/cursor-agent.md.
 ```
 
 ### Docker Image Structure

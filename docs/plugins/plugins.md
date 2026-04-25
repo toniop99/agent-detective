@@ -2,7 +2,7 @@
 
 Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers the plugin **APIs** and **patterns** for authors. For **where to point `config.plugins[].package` and how to use Docker / npm** for custom plugins, see [extending-with-plugins.md](extending-with-plugins.md) first.
 
-**Bundled plugin options (Zod → JSON Schema):** after changing the Zod options schema in `@agent-detective/jira-adapter` (`src/application/options-schema.ts`), `@agent-detective/local-repos-plugin` (`src/application/options-schema.ts`), or `@agent-detective/pr-pipeline` (`src/application/options-schema.ts`), run `pnpm docs:plugins` and commit [generated/plugin-options.md](generated/plugin-options.md). See [configuration.md](configuration.md).
+**Bundled plugin options (Zod → JSON Schema):** after changing the Zod options schema in `@agent-detective/jira-adapter` (`src/application/options-schema.ts`), `@agent-detective/local-repos-plugin` (`src/application/options-schema.ts`), or `@agent-detective/pr-pipeline` (`src/application/options-schema.ts`), run `pnpm docs:plugins` and commit [generated/plugin-options.md](../reference/generated/plugin-options.md). See [configuration.md](../config/configuration.md).
 
 ## Table of Contents
 
@@ -1139,7 +1139,7 @@ bare-issue payloads never get mis-routed into `analyze`. Together these
 layers guarantee result comments and reminders can never loop back into
 the retry handler. There is no agent-driven discovery fallback. See the "Matching
 a ticket to a repository" section in
-[e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md) for the full flow.
+[e2e/jira-manual-e2e.md](../e2e/jira-manual-e2e.md) for the full flow.
 
 #### Analysis Configuration
 

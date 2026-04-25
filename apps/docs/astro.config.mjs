@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 import starlight from '@astrojs/starlight';
 
 // https://starlight.astro.build/reference/configuration/
@@ -20,26 +21,42 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Overview',
-          items: [{ label: 'Home', slug: 'index' }],
+          label: 'Start here',
+          items: [
+            { label: 'Home', slug: 'index' },
+            { label: 'Documentation index', slug: 'overview' },
+          ],
         },
         {
-          label: 'Guides',
-          autogenerate: { directory: 'pages' },
+          label: 'Run the server',
+          autogenerate: { directory: 'operator' },
+        },
+        {
+          label: 'Configuration',
+          autogenerate: { directory: 'config' },
+        },
+        {
+          label: 'Plugins',
+          autogenerate: { directory: 'plugins' },
+        },
+        {
+          label: 'Develop the monorepo',
+          autogenerate: { directory: 'development' },
+        },
+        {
+          label: 'Architecture',
+          autogenerate: { directory: 'architecture' },
         },
         {
           label: 'Jira (E2E)',
           autogenerate: { directory: 'e2e' },
         },
         {
-          label: 'Architecture (ADR)',
-          autogenerate: { directory: 'adr' },
-        },
-        {
-          label: 'Reference (generated)',
-          autogenerate: { directory: 'generated' },
+          label: 'Reference',
+          autogenerate: { directory: 'reference' },
         },
       ],
     }),
+    mdx(),
   ],
 });

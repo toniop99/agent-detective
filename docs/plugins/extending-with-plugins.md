@@ -1,10 +1,10 @@
 # Extending the app with custom plugins
 
-Use a **Plugin** (see `Plugin` in [`@agent-detective/types`](../packages/types/src/index.ts)) to add HTTP routes, services, and event handling. This page explains how to **install and wire** a plugin in your deployment. For the full API, patterns, and official bundles, see [plugins.md](plugins.md). For a **TypeScript project template** and long examples, see [plugin-development.md](plugin-development.md).
+Use a **Plugin** (see `Plugin` in [`@agent-detective/types`](../../packages/types/src/index.ts)) to add HTTP routes, services, and event handling. This page explains how to **install and wire** a plugin in your deployment. For the full API, patterns, and official bundles, see [plugins.md](plugins.md). For a **TypeScript project template** and long examples, see [plugin-development.md](plugin-development.md).
 
 ## How plugins are loaded
 
-The core resolves each `plugins[]` entry’s `package` string at startup (see [`importPluginModuleFromSpecifier` in `src/core/plugin-system.ts`](../src/core/plugin-system.ts)):
+The core resolves each `plugins[]` entry’s `package` string at startup (see [`importPluginModuleFromSpecifier` in `src/core/plugin-system.ts`](../../src/core/plugin-system.ts)):
 
 | Specifier | Resolution |
 |-----------|------------|
@@ -16,7 +16,7 @@ A failed import logs a warning and the plugin is skipped (other plugins still lo
 
 ## `config` entry
 
-List plugins in `config/default.json` (and overrides), as described in [configuration-hub.md](configuration-hub.md):
+List plugins in `config/default.json` (and overrides), as described in [configuration-hub.md](../config/configuration-hub.md):
 
 ```json
 {
@@ -30,11 +30,11 @@ List plugins in `config/default.json` (and overrides), as described in [configur
 ```
 
 - **`package`:** one of the specifiers in the table above.  
-- **`options`:** merged with your plugin’s JSON `schema` defaults and validated; bundled plugins also use Zod in code — see [generated/plugin-options.md](generated/plugin-options.md) for first-party packages only.
+- **`options`:** merged with your plugin’s JSON `schema` defaults and validated; bundled plugins also use Zod in code — see [generated/plugin-options.md](../reference/generated/plugin-options.md) for first-party packages only.
 
 ## `dependsOn`
 
-If your plugin’s `name` is `@myorg/b` and it calls `getService` from another plugin, set **`dependsOn: ['@myorg/a']`** on the plugin object (use the **Plugin `name`**, not necessarily the package string). The core orders loads topologically. First-party example: [AGENTS.md](../AGENTS.md) (`dependsOn` in practice).
+If your plugin’s `name` is `@myorg/b` and it calls `getService` from another plugin, set **`dependsOn: ['@myorg/a']`** on the plugin object (use the **Plugin `name`**, not necessarily the package string). The core orders loads topologically. First-party example: [AGENTS.md](../../AGENTS.md) (`dependsOn` in practice).
 
 ## Public npm (or GitHub Packages)
 
@@ -56,7 +56,7 @@ If your plugin’s `name` is `@myorg/b` and it calls `getService` from another p
 
 Use **absolute** paths in Docker so they do not depend on `docker compose` context:
 
-- Mount the directory into the container (compose files in this repo use **`./plugins:/app/plugins:ro`**) and set **`"package": "/app/plugins/my-adapter"`** (see [docker.md](docker.md), [docker-compose.prod.yml](../docker-compose.prod.yml)).
+- Mount the directory into the container (compose files in this repo use **`./plugins:/app/plugins:ro`**) and set **`"package": "/app/plugins/my-adapter"`** (see [docker.md](../operator/docker.md), [docker-compose.prod.yml](../../docker-compose.prod.yml)).
 
 The mounted folder must be importable as an ES module (e.g. `index.js` at the entry the path resolves to — match how you `import` a package root).
 
@@ -66,11 +66,11 @@ The volume approach above — mount **`plugins/`** and reference **`/app/plugins
 
 ## After changing code in this monorepo
 
-If you add a new workspace package under `packages/*`, add it to the root `config.plugins` with **`"@agent-detective/your-pkg"`** (or a relative path) and run **`pnpm install`** / **`pnpm run build`** as in [development.md](development.md).
+If you add a new workspace package under `packages/*`, add it to the root `config.plugins` with **`"@agent-detective/your-pkg"`** (or a relative path) and run **`pnpm install`** / **`pnpm run build`** as in [development.md](../development/development.md).
 
 ## See also
 
 - [plugin-development.md](plugin-development.md) — build, `package.json`, decorators, long examples  
 - [plugins.md](plugins.md#9-publishing-a-plugin-as-an-npm-package) — publishing a plugin as an npm package (in-guide)  
-- [configuration.md](configuration.md) — env merging into `plugins`  
-- [installation.md](installation.md) — Docker mounts and deploy paths
+- [configuration.md](../config/configuration.md) — env merging into `plugins`  
+- [installation.md](../operator/installation.md) — Docker mounts and deploy paths

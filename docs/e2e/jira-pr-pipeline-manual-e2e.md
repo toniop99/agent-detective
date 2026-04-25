@@ -16,7 +16,7 @@ If `@agent-detective/pr-pipeline` is not loaded, the Jira handler posts a short 
 
 ## Prerequisites (local machine)
 
-1. **Node 24+** and **pnpm** — [development.md](../development.md).
+1. **Node 24+** and **pnpm** — [development.md](../development/development.md).
 2. **OpenCode** (or the agent you configure for pr-pipeline) on your `PATH`, plus **LLM / provider** credentials.
 3. A **bare-metal git clone** on disk (the **local-repos** `path`) whose **`origin` remote** points at the same GitHub or Bitbucket repository you will open PRs against. The pipeline runs `git fetch` / `git worktree` / `git push` against that remote; **`base` branch** must exist on the remote (see `prBaseBranch` below).
 4. **Jira Cloud** with permission to add **webhooks** (or **Automation** rules) and, for real Jira comments, a **Jira API** app password or token (`mockMode: false`).
@@ -31,7 +31,7 @@ You already need everything from [Jira → localhost](jira-manual-e2e.md#how-jir
 
 ## Configuration checklist
 
-Work from `config/local.json` (see [config/local.example.json](../../config/local.example.json) and [configuration.md](../configuration.md)).
+Work from `config/local.json` (see [config/local.example.json](../../config/local.example.json) and [configuration.md](../config/configuration.md)).
 
 ### 1. Plugins: order and presence
 
@@ -75,13 +75,13 @@ Work from `config/local.json` (see [config/local.example.json](../../config/loca
   2. Else if **`retryTriggerPhrase`** is present (default `#agent-detective analyze`) → **read-only analysis** (TASK_CREATED fan-out), when labels match.
   3. If **both** phrases appear in the same comment, **PR wins** (PR is checked first).
   4. If **neither** phrase appears → no workflow; the comment is ignored for automation.
-- **`prTriggerPhrase`** (default `#agent-detective pr`) — case-insensitive substring; text **before/after** the first occurrence of this phrase (with the phrase removed) becomes **`prCommentContext`** for the agent (see the PR pipeline section in [configuration.md](../configuration.md) — “Extra context in the same comment”).
+- **`prTriggerPhrase`** (default `#agent-detective pr`) — case-insensitive substring; text **before/after** the first occurrence of this phrase (with the phrase removed) becomes **`prCommentContext`** for the agent (see the PR pipeline section in [configuration.md](../config/configuration.md) — “Extra context in the same comment”).
 - **`retryTriggerPhrase`** (default `#agent-detective analyze`) — case-insensitive substring for analysis retries. **`jira:issue_created`** with `"action": "analyze"` is unrelated to these phrases: new issues always go through **label match → analysis** only (no comment trigger).
 
 ### 4. pr-pipeline plugin
 
 - **`prDryRun: true`** (default in [default.json](../../config/default.json)) — **no** `git push`, **no** host API PR; a Jira comment describes what **would** happen. Use this first.
-- **`prBranchPrefix`**, **`prTitleTemplate`** — see [plugin-options.md](../generated/plugin-options.md) (pr-pipeline block).
+- **`prBranchPrefix`**, **`prTitleTemplate`** — see [plugin-options.md](../reference/generated/plugin-options.md) (pr-pipeline block).
 - **`worktreeSetupCommands`** — array of shell commands run in the worktree (cwd = worktree root) after checkout and before the agent. Use them to install dependencies, copy gitignored files, or run any repo-specific setup. The token `{{mainPath}}` is replaced with the absolute path of the source repo. Each command is run via `sh -c`; failures are logged as warnings and do not abort the workflow. Example:
   ```json
   “worktreeSetupCommands”: [
@@ -89,7 +89,7 @@ Work from `config/local.json` (see [config/local.example.json](../../config/loca
     “cp {{mainPath}}/docker/.env docker/.env”
   ]
   ```
-- **Secrets** (env overrides file; see “Host credentials precedence” in [configuration.md](../configuration.md))  
+- **Secrets** (env overrides file; see “Host credentials precedence” in [configuration.md](../config/configuration.md))  
   - **GitHub:** `GITHUB_TOKEN` or `GH_TOKEN`, or `githubToken` in config.  
   - **Bitbucket (recommended — new API token):** `BITBUCKET_USERNAME` (your Bitbucket username, not email) + `BITBUCKET_EMAIL` (your email, for REST API) + `BITBUCKET_APP_PASSWORD` (the API token value from *Personal settings → API tokens*). Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`.  
   - **Bitbucket (legacy — workspace/repo access token):** `BITBUCKET_TOKEN` or `bitbucketToken`. Uses `x-token-auth` for Git; only for older token types.
@@ -132,7 +132,7 @@ If the issue has **no matching label**, you get the same **missing-labels remind
 ## Step-by-step: real push and PR (Bitbucket Cloud)
 
 1. Set **`prDryRun: false`** and **`"vcs": { "provider": "bitbucket", ... }`** with correct **workspace** and **repo slug**.
-2. Prefer **`BITBUCKET_TOKEN`** (repository or workspace access token) with **repository write** and **pull request** permissions, *or* **username + app password** — see [configuration.md](../configuration.md).
+2. Prefer **`BITBUCKET_TOKEN`** (repository or workspace access token) with **repository write** and **pull request** permissions, *or* **username + app password** — see [configuration.md](../config/configuration.md).
 3. If Bitbucket requires a **bot email** for Git commits tied to the token, you may need to adjust **`git config user.email`** in automation; the pipeline sets a generic local name/email for the commit in the worktree (you can extend this later if your workspace enforces a policy).
 4. Post the Jira **PR** comment as for GitHub.
 5. **Expected:** push to `bitbucket.org`, PR via REST **Bearer** (token) or **Basic** (app password), Jira comment with the PR link.
@@ -151,7 +151,7 @@ The bundled [jira:webhook-smoke](../../package.json) script posts **`issue_creat
 |--------|----------------|
 | “pr-pipeline is not loaded” | Add **`@agent-detective/pr-pipeline`** to `plugins` and restart. |
 | “no source config for repo” | **`repos[].name`** must match a label; **`path`** must be configured for that name. |
-| “set `vcs`” / token errors in Jira | **`vcs`**, **`prDryRun`**, and **host tokens** per [configuration.md](../configuration.md) (PR pipeline). |
+| “set `vcs`” / token errors in Jira | **`vcs`**, **`prDryRun`**, and **host tokens** per [configuration.md](../config/configuration.md) (PR pipeline). |
 | `Base ref origin/… not found` | **`prBaseBranch`** and **`git fetch`**: branch must exist on **origin**. |
 | Agent makes no file changes | Jira comment shows “no file changes” and agent output; refine the **issue description** or **PR comment context**. |
 | PR API 401/403 | Token scopes, repository access, or app password permissions. |
@@ -195,5 +195,5 @@ This section describes what the [run-pr-workflow implementation](../../packages/
 ## Related docs
 
 - [jira-manual-e2e.md](jira-manual-e2e.md) — tunnels, labels, analyze flow, `mockMode`  
-- [configuration.md](../configuration.md) — env whitelist, PR pipeline, tokens, `vcs`  
-- [plugin-options.md](../generated/plugin-options.md) — generated Jira and pr-pipeline options  
+- [configuration.md](../config/configuration.md) — env whitelist, PR pipeline, tokens, `vcs`  
+- [plugin-options.md](../reference/generated/plugin-options.md) — generated Jira and pr-pipeline options  

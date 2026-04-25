@@ -55,7 +55,7 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | `BITBUCKET_TOKEN` | `options.bitbucketToken` on pr-pipeline (access token; env overrides file). |
 | `BITBUCKET_USERNAME`, `BITBUCKET_APP_PASSWORD` | `options.bitbucketUsername` / `options.bitbucketAppPassword` (app password; env overrides file). Ignored if a Bitbucket access token is set. |
 
-For a step-by-step local webhook test (tunnel, labels, smoke script), see [e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md). For **Jira → pull request** (pr-pipeline), see [e2e/jira-pr-pipeline-manual-e2e.md](e2e/jira-pr-pipeline-manual-e2e.md).
+For a step-by-step local webhook test (tunnel, labels, smoke script), see [e2e/jira-manual-e2e.md](../e2e/jira-manual-e2e.md). For **Jira → pull request** (pr-pipeline), see [e2e/jira-pr-pipeline-manual-e2e.md](../e2e/jira-pr-pipeline-manual-e2e.md).
 
 ## PR pipeline (`@agent-detective/pr-pipeline`)
 
@@ -133,7 +133,7 @@ flowchart LR
 4. If not dry-run, it **pushes** to `origin` on the chosen host and **opens a PR** using the **resolved tokens** above.  
 5. A **Jira comment** includes the PR URL or an error.
 
-Option reference: [docs/generated/plugin-options.md](generated/plugin-options.md) (block **@agent-detective/pr-pipeline**, anchor `pr-pipeline`).
+Option reference: [docs/reference/generated/plugin-options.md](../reference/generated/plugin-options.md) (block **@agent-detective/pr-pipeline**, anchor `pr-pipeline`).
 
 ## Validation
 
@@ -143,9 +143,9 @@ After merge and env application, the top-level config is validated with **Zod** 
 
 Zod option schemas for bundled plugins drive both runtime validation in `register()` and generated reference docs:
 
-- [docs/generated/plugin-options.md](generated/plugin-options.md)
+- [docs/reference/generated/plugin-options.md](../reference/generated/plugin-options.md)
 
-Regenerate after editing the bundled plugins’ Zod schemas (see [architecture-layering.md](architecture-layering.md) for paths; e.g. `packages/jira-adapter/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`):
+Regenerate after editing the bundled plugins’ Zod schemas (see [architecture-layering.md](../architecture/architecture-layering.md) for paths; e.g. `packages/jira-adapter/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`):
 
 ```bash
 pnpm docs:plugins
@@ -156,7 +156,7 @@ CI enforces that the generated file is up to date (`pnpm docs:plugins:check`).
 ## See also
 
 - [Configuration overview (hub)](configuration-hub.md)
-- [Upgrading and releases](upgrading.md)
-- [Docker environment variables](docker.md#production-style-run-single-host)
-- [Development guide](development.md#configuration)
-- [Plugin development](plugins.md#3-schema-system)
+- [Upgrading and releases](../operator/upgrading.md)
+- [Docker environment variables](../operator/docker.md#production-style-run-single-host)
+- [Development guide](../development/development.md#configuration)
+- [Plugin development](../plugins/plugins.md#3-schema-system)
