@@ -64,7 +64,9 @@ The core is **source-agnostic**: plugins normalize external events into a shared
 
 ## Jira (local E2E)
 
-[jira-manual-e2e.md](jira-manual-e2e.md)
+- [e2e/README.md](e2e/README.md) — index
+- [e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md) — webhook, tunnel, analyze flow
+- [e2e/jira-pr-pipeline-manual-e2e.md](e2e/jira-pr-pipeline-manual-e2e.md) — Jira → PR pipeline
 
 ## Agents (shell CLIs)
 

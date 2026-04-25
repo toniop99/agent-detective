@@ -295,7 +295,7 @@ describe('Handler Registry', () => {
       assert.equal(emittedEvents.length, 0);
     });
 
-    // Regression for the webhook-echo loop described in docs/jira-manual-e2e.md.
+    // Regression for the webhook-echo loop described in docs/e2e/jira-manual-e2e.md.
     // When the adapter posts an analysis comment, Jira Automation rules that
     // fire on "issue updated" can POST the issue back to us. The event
     // classifier normally catches these via `detectChangelogActivity`, but

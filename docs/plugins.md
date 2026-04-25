@@ -1139,7 +1139,7 @@ bare-issue payloads never get mis-routed into `analyze`. Together these
 layers guarantee result comments and reminders can never loop back into
 the retry handler. There is no agent-driven discovery fallback. See the "Matching
 a ticket to a repository" section in
-[jira-manual-e2e.md](./jira-manual-e2e.md) for the full flow.
+[e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md) for the full flow.
 
 #### Analysis Configuration
 

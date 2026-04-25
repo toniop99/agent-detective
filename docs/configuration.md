@@ -55,7 +55,7 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | `BITBUCKET_TOKEN` | `options.bitbucketToken` on pr-pipeline (access token; env overrides file). |
 | `BITBUCKET_USERNAME`, `BITBUCKET_APP_PASSWORD` | `options.bitbucketUsername` / `options.bitbucketAppPassword` (app password; env overrides file). Ignored if a Bitbucket access token is set. |
 
-For a step-by-step local webhook test (tunnel, labels, smoke script), see [jira-manual-e2e.md](jira-manual-e2e.md). For **Jira → pull request** (pr-pipeline), see [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md).
+For a step-by-step local webhook test (tunnel, labels, smoke script), see [e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md). For **Jira → pull request** (pr-pipeline), see [e2e/jira-pr-pipeline-manual-e2e.md](e2e/jira-pr-pipeline-manual-e2e.md).
 
 ## PR pipeline (`@agent-detective/pr-pipeline`)
 

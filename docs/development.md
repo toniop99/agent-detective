@@ -65,7 +65,7 @@ pnpm start
 pnpm run dev
 ```
 
-End-to-end Jira webhook testing (tunnel, labels, smoke script): [jira-manual-e2e.md](jira-manual-e2e.md).
+End-to-end Jira webhook testing (tunnel, labels, smoke script): [e2e/jira-manual-e2e.md](e2e/jira-manual-e2e.md).
 
 ## Monorepo layout (pnpm + Turborepo)
 

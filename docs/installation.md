@@ -38,6 +38,7 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 | systemd, nginx, health checks, troubleshooting (no Docker) | [deployment.md](deployment.md) |
 | Config files, env, plugins | [configuration.md](configuration.md) |
 | Releases, pinning images, git upgrade | [upgrading.md](upgrading.md) |
+| Jira E2E (tunnel, webhooks, pr-pipeline) | [e2e/README.md](e2e/README.md) |
 | Day-to-day monorepo development | [development.md](development.md) |
 
 ## Clone URL (from source)
