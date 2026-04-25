@@ -66,6 +66,8 @@ Environment variables (see also [configuration.md](configuration.md) and `config
 
 **Jira secrets:** pass `JIRA_API_TOKEN`, `JIRA_EMAIL`, and `JIRA_BASE_URL` in the environment (`.env` next to compose, CI variables, or your orchestrator). This repository’s compose file does **not** require Docker Swarm-style secret files.
 
+**TLS in front of the app:** The nginx `server` / `proxy_pass` **example** (long timeouts, headers for the API) lives in a single place: [deployment.md#reverse-proxy-nginx](deployment.md#reverse-proxy-nginx) — set `proxy_pass` to the host port that maps to the container’s `3001` (or your `PORT`).
+
 ### Build production image only
 
 ```bash
@@ -141,6 +143,11 @@ docker run --rm -p 3001:3001 -v "$(pwd)/config:/app/config:ro" agent-detective:l
 # In another terminal:
 wget -qO- http://127.0.0.1:3001/api/health
 ```
+
+## See also
+
+- [installation.md](installation.md) · [configuration-hub.md](configuration-hub.md) · [upgrading.md](upgrading.md)
+- [deployment.md](deployment.md) — bare metal, systemd, and the **single** [nginx](deployment.md#reverse-proxy-nginx) example referenced above
 
 ## Troubleshooting
 

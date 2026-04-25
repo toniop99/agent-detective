@@ -1,6 +1,6 @@
 # Deployment guide
 
-Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md) and [configuration.md](configuration.md).
+Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md), [configuration-hub.md](configuration-hub.md), and [configuration.md](configuration.md). When you’ve deployed before and need **new tags or git pulls**, see [upgrading.md](upgrading.md).
 
 ## Prerequisites
 
@@ -40,7 +40,9 @@ For development with hot reload: `pnpm run dev`. See [development.md](developmen
 
 ## Configuration reference (summary)
 
-Core settings and plugins live in `config/default.json`. Repository context **git** limits belong under **local-repos-plugin** `options`, not as a root `repoContext` key.
+[configuration-hub.md](configuration-hub.md) documents merge order and top-level keys. **Repository context** (e.g. `gitLogMaxCommits`) belongs under **local-repos-plugin** `options`, not as a root `repoContext` key.
+
+**Example** `config/default.json` skeleton for a bare-metal install (full plugin fields: [generated/plugin-options.md](generated/plugin-options.md)):
 
 ```json
 {
@@ -112,7 +114,7 @@ View logs: `sudo journalctl -u agent-detective -f`.
 
 ## Reverse proxy (nginx)
 
-Example HTTPS with long timeouts for agent sessions:
+**Canonical** HTTPS example in this repo (use this; do not maintain a second copy in other docs). If you run **Docker** and put nginx on the host, `proxy_pass` to the **published** port; timing and headers below still apply. Compose and ports: [docker.md](docker.md#production-style-run-single-host).
 
 ```nginx
 server {
@@ -169,3 +171,10 @@ Structured logs go to **stdout/stderr** (captured by journald under systemd). Se
 | High memory | Lower `repoContext.gitLogMaxCommits` in local-repos options |
 
 For Docker-specific issues, see [docker.md](docker.md#troubleshooting).
+
+## See also
+
+- [installation.md](installation.md) — choose bare metal vs container first
+- [configuration-hub.md](configuration-hub.md) — config load order
+- [upgrading.md](upgrading.md) — pin image tags and upgrade runbooks
+- [docker.md](docker.md) — containers and GHCR

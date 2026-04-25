@@ -5,6 +5,7 @@ AI-powered code analysis that responds to events from Jira, Telegram, Slack, and
 ## Install and run
 
 - **[installation.md](installation.md)** — choose Docker/GHCR, Compose, or bare metal; links to the detailed guides
+- **[configuration-hub.md](configuration-hub.md)** · **[upgrading.md](upgrading.md)** — config overview and staying current (with installation, these are the three **operator hubs**)
 
 ## Configuration
 

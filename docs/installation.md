@@ -2,6 +2,8 @@
 
 Choose how you run agent-detective on a host or in your cluster. This page is the **entry point**; the detailed guides are linked below.
 
+**Typical reading order:** this page (choose how you run) → [configuration hub](configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and image tags).
+
 ## Choose a deployment style
 
 | Path | When to use | What you need |
@@ -51,7 +53,8 @@ Replace `toniop99/agent-detective` with your fork’s `owner/name` on GitHub if 
 
 ## See also
 
-- Root [README.md](../README.md) — quick start and GHCR one-liner
+- [configuration-hub.md](configuration-hub.md) — config load order and top-level keys
 - [upgrading.md](upgrading.md) — image tags, releases, and upgrade runbook
+- Root [README.md](../README.md) — quick start and GHCR one-liner
 - [publishing.md](publishing.md) — building and publishing the image (maintainers)
 - [CHANGELOG.md](CHANGELOG.md) — breaking config and behavior notes

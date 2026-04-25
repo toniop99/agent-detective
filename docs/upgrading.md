@@ -2,6 +2,8 @@
 
 Use this page when you deploy from a **released image**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together [CHANGELOG.md](CHANGELOG.md), [migration.md](migration.md), and the container registry.
 
+**Other operator hubs:** [installation.md](installation.md) (deploy paths) · [configuration-hub.md](configuration-hub.md) (config load order and keys).
+
 ## How to learn about changes
 
 | Channel | Use for |
@@ -67,6 +69,7 @@ Workspace packages may be published per [publishing.md](publishing.md). When you
 
 ## See also
 
-- [installation.md](installation.md) — deployment paths
+- [configuration-hub.md](configuration-hub.md) — where settings live
 - [docker.md](docker.md#published-image-ghcr) — pull, compose, env
+- [installation.md](installation.md) — deployment paths
 - [publishing.md](publishing.md) — image tags and release automation (maintainers)

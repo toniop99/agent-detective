@@ -2,6 +2,8 @@
 
 This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](generated/plugin-options.md)**.
 
+**Other operator hubs:** [installation.md](installation.md) (where to run the app) · [upgrading.md](upgrading.md) (releases and image tags).
+
 ## Where configuration lives
 
 | Source | Location |
