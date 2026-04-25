@@ -71,6 +71,8 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 
 ## Documentation
 
+- **Static site (WIP):** from the repo root, `pnpm run docs:site` builds the [Astro Starlight](https://starlight.astro.build/) app in [`website/`](website/README.md). Full markdown is still in [`docs/`](docs/README.md) until the site fully mirrors it.
+
 - [Installation](docs/installation.md) — deploy with Docker, from source, or bare metal
 - [Configuration (overview)](docs/configuration-hub.md) — [full reference](docs/configuration.md)
 - [Upgrading](docs/upgrading.md) — releases, image tags, runbook
