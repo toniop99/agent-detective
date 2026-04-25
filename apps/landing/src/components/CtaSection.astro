@@ -1,0 +1,79 @@
+---
+const github = 'https://github.com/toniop99/agent-detective';
+---
+
+<section
+  id="next-step"
+  data-section="next-step"
+  class="ad-reveal mt-20 scroll-mt-28 sm:mt-28"
+  aria-labelledby="cta-heading"
+>
+  <div
+    class="border-amber-400/20 from-ink-800/40 border bg-linear-to-br to-ink-1000/95 relative overflow-hidden [box-shadow:0_0_0_1px_rgba(232,168,73,0.08),0_40px_100px_-50px_rgba(0,0,0,0.9)]"
+  >
+    <div
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_100%_20%,rgba(61,122,232,0.12),transparent_55%)]"
+      aria-hidden="true"
+    />
+    <div
+      class="relative grid gap-8 p-6 sm:p-10 lg:grid-cols-12 lg:gap-0 lg:p-0"
+    >
+      <div
+        class="flex flex-col justify-center space-y-5 lg:col-span-6 lg:px-10 lg:py-12 xl:px-14"
+      >
+        <h2
+          id="cta-heading"
+          class="text-paper-50 font-display text-3xl font-semibold text-balance sm:text-4xl"
+        >
+          Ready to wire your first incident?
+        </h2>
+        <p
+          class="text-paper-200/85 text-base leading-relaxed sm:text-lg"
+        >
+          The docs walk through plugins, <span
+            class="text-paper-200/90 font-mono text-sm"
+          >config/default.json</span
+          >, Docker, and production checks—no guesswork.
+        </p>
+        <div
+          class="flex flex-wrap items-center gap-3 pt-1"
+        >
+          <a
+            class="text-ink-1000 bg-amber-400/95 focus:ring-ink-1000/80 group relative inline-flex min-h-12 items-center justify-center overflow-hidden border border-amber-200/20 px-6 font-mono text-sm font-semibold shadow-[0_12px_40px_-20px_rgba(232,168,73,0.45)] transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-ink-1000/0"
+            href="/docs/"
+          >
+            <span
+              class="to-transparent from-white/0 absolute inset-0 bg-linear-to-b via-white/10 to-white/0 opacity-0 transition group-hover:opacity-100"
+              aria-hidden="true"
+            />
+            <span
+              class="relative"
+            >Get started</span
+            >
+          </a>
+          <a
+            class="text-paper-50 focus:ring-evidence-400/80 min-h-12 inline-flex items-center border border-paper-200/15 bg-ink-900/30 px-5 font-mono text-sm font-medium backdrop-blur-sm transition hover:border-paper-200/25 focus:outline-none focus:ring-2"
+            href={github}
+          >Open GitHub</a
+          >
+        </div>
+      </div>
+      <div
+        class="min-h-[200px] lg:col-span-6 lg:min-h-[min(380px,50vh)]"
+      >
+        <div
+          class="relative h-full min-h-[200px] overflow-hidden sm:min-h-[260px] lg:min-h-full"
+        >
+          <img
+            src="/og-image.png"
+            width={1200}
+            height={630}
+            class="h-48 w-full object-cover object-center opacity-90 sm:h-64 lg:h-full [mask-image:linear-gradient(to_top,transparent_0%,black_100%)] lg:min-h-full lg:object-right lg:opacity-95 lg:[mask-image:linear-gradient(to_left,transparent_0%,black_40%,black_100%)]"
+            alt=""
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

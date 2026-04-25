@@ -1,0 +1,200 @@
+---
+---
+
+<nav
+  class="ad-scroll-rail text-paper-200/50 pointer-events-none fixed right-2 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-2.5 py-2 lg:flex"
+  role="navigation"
+  aria-label="On this page"
+>
+  {
+    [
+      { href: '#top', label: 'Start' },
+      { href: '#pipeline', label: 'Pipeline' },
+      { href: '#evidence', label: 'Case notes' },
+      { href: '#docket', label: 'Docket' },
+      { href: '#next-step', label: 'Get started' },
+    ].map((x) => (
+      <a
+        class="pointer-events-auto"
+        href={x.href}
+      >
+        <span class="sr-only">
+          {x.label}
+        </span>
+      </a>
+    ))
+  }
+</nav>
+
+<div
+  id="ad-copy-toast"
+  class="text-paper-200/80 border-paper-200/10 pointer-events-none fixed right-4 bottom-4 z-50 max-w-sm translate-y-2 rounded border px-3 py-2 font-mono text-sm opacity-0 shadow-lg backdrop-blur transition invisible aria-[hidden=false]:visible aria-[hidden=false]:translate-y-0 aria-[hidden=false]:opacity-100"
+  role="status"
+  aria-hidden="true"
+  aria-live="polite"
+>
+  Copied to clipboard
+</div>
+
+<script is:inline>
+  (function () {
+    var THEME_KEY = 'ad-landing-theme';
+    var sectionIds = ['top', 'pipeline', 'evidence', 'docket', 'next-step'];
+    var root = document.documentElement;
+
+    function applyTheme(t) {
+      if (t !== 'ink' && t !== 'casefile') t = 'ink';
+      root.setAttribute('data-theme', t);
+      try {
+        localStorage.setItem(THEME_KEY, t);
+      } catch (e) {}
+      var btn = document.getElementById('ad-theme-btn');
+      if (btn) {
+        btn.setAttribute('aria-pressed', t === 'casefile' ? 'true' : 'false');
+        btn.setAttribute('aria-label', t === 'ink' ? 'Use warm case file colors' : 'Use default night ink colors');
+        var span = btn.querySelector('.ad-theme-label');
+        if (span) span.textContent = t === 'ink' ? 'Case file' : 'Night';
+      }
+    }
+
+    var saved;
+    try {
+      saved = localStorage.getItem(THEME_KEY);
+    } catch (e) {
+      saved = null;
+    }
+    if (saved === 'ink' || saved === 'casefile') {
+      applyTheme(saved);
+    } else {
+      applyTheme('ink');
+    }
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      root.setAttribute('data-ad-pipeline-motion', '1');
+    }
+
+    var btn = document.getElementById('ad-theme-btn');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'casefile' ? 'ink' : 'casefile';
+        applyTheme(next);
+      });
+    }
+
+    function doReveal() {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var els = document.querySelectorAll('.ad-reveal');
+      function markVisible() {
+        for (var i = 0; i < els.length; i++) {
+          var r = els[i].getBoundingClientRect();
+          if (r.top < window.innerHeight * 0.92 && r.bottom > 0) {
+            els[i].classList.add('is-inview');
+          }
+        }
+      }
+      if (reduce) {
+        for (var j = 0; j < els.length; j++) els[j].classList.add('is-inview');
+        return;
+      }
+      markVisible();
+      if (!('IntersectionObserver' in window)) {
+        for (var k = 0; k < els.length; k++) els[k].classList.add('is-inview');
+        return;
+      }
+      var obs = new IntersectionObserver(
+        function (entries) {
+          for (var m = 0; m < entries.length; m++) {
+            if (entries[m].isIntersecting) {
+              entries[m].target.classList.add('is-inview');
+            }
+          }
+        },
+        { rootMargin: '0px 0px -5% 0px', threshold: 0.08 }
+      );
+      for (var n = 0; n < els.length; n++) obs.observe(els[n]);
+    }
+
+    var dots = document.querySelectorAll('.ad-scroll-rail a[href^="#"]');
+
+    function setActiveById(id) {
+      if (!dots || !dots.length) return;
+      for (var i = 0; i < dots.length; i++) {
+        var a = dots[i];
+        var href = a.getAttribute('href') || '';
+        if (href === '#' + id) a.classList.add('is-active');
+        else a.classList.remove('is-active');
+      }
+    }
+
+    function onScrollNav() {
+      var y = window.innerHeight * 0.32;
+      var id = 'top';
+      for (var i = sectionIds.length - 1; i >= 0; i--) {
+        var el = document.getElementById(sectionIds[i]);
+        if (!el) continue;
+        var r = el.getBoundingClientRect();
+        if (r.top <= y) {
+          id = sectionIds[i];
+          break;
+        }
+      }
+      setActiveById(id);
+    }
+
+    function scrollSpy() {
+      onScrollNav();
+      window.addEventListener('scroll', onScrollNav, { passive: true });
+      window.addEventListener('resize', onScrollNav, { passive: true });
+    }
+
+    var toast = document.getElementById('ad-copy-toast');
+    var toastT;
+
+    function showToast() {
+      if (!toast) return;
+      toast.setAttribute('aria-hidden', 'false');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () {
+        toast.setAttribute('aria-hidden', 'true');
+      }, 2200);
+    }
+
+    function wireCopy() {
+      document.body.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (!t || !t.getAttribute) return;
+        if (t.getAttribute('data-ad-copy') == null) return;
+        var text = t.getAttribute('data-ad-copy') || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(showToast).catch(function () {});
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+      var k = e.key;
+      if (k < '1' || k > '5') return;
+      var idx = parseInt(k, 10) - 1;
+      if (sectionIds[idx] && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var el = document.getElementById(sectionIds[idx]);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        doReveal();
+        scrollSpy();
+        wireCopy();
+      });
+    } else {
+      doReveal();
+      scrollSpy();
+      wireCopy();
+    }
+  })();
+</script>

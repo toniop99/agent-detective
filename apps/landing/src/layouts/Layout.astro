@@ -1,0 +1,126 @@
+---
+import '../styles/global.css';
+import LandingInteractivity from '../components/LandingInteractivity.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImagePath?: string;
+}
+
+const { title, description, ogImagePath = 'og-image.png' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site!);
+const ogUrl = new URL(ogImagePath, Astro.site!);
+const githubUrl = 'https://github.com/toniop99/agent-detective';
+---
+
+<!doctype html>
+<html lang="en" data-theme="ink" class="min-h-svh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="canonical" href={canonical} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogUrl.href} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl.href} />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-ink-1000 text-paper-50 relative min-h-svh overflow-x-hidden font-sans antialiased">
+    <a
+      href="#main"
+      class="bg-evidence-400 text-ink-1000 focus:ring-ink-1000 focus:ring-offset-paper-50 sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:px-3 focus:py-2 focus:ring-2 focus:ring-offset-2"
+    >
+      Skip to content
+    </a>
+    <div
+      class="ad-grain pointer-events-none fixed inset-0 z-0 mix-blend-overlay opacity-[0.06]"
+      aria-hidden="true"
+    />
+    <div
+      class="pointer-events-none fixed inset-0 z-0 bg-linear-to-b from-ink-950 via-transparent to-ink-1000"
+      aria-hidden="true"
+    />
+    <div class="relative z-10">
+      <header
+        class="border-paper-200/10 supports-[backdrop-filter]:bg-ink-950/60 sticky top-0 z-40 border-b bg-ink-950/85 backdrop-blur-md"
+        role="banner"
+      >
+        <div
+          class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 sm:py-4"
+        >
+          <a
+            class="text-paper-200 group font-display text-xl font-semibold tracking-tight sm:text-2xl"
+            href="/"
+            aria-label="Agent Detective home"
+          >
+            Agent <span class="text-evidence-300/95">Detective</span>
+          </a>
+          <div
+            class="flex flex-wrap items-center gap-2 sm:gap-4"
+          >
+            <button
+              type="button"
+              id="ad-theme-btn"
+              class="text-paper-200/80 hover:text-paper-50 focus:ring-evidence-400/70 border-paper-200/20 rounded-sm border px-2 py-1 font-mono text-[0.7rem] font-medium focus:ring-2 focus:ring-offset-2 focus:ring-offset-ink-1000/0 sm:text-xs"
+              aria-pressed="false"
+              aria-label="Use warm case file colors"
+            >
+              <span class="ad-theme-label"
+              >Case file</span
+              >
+            </button>
+            <nav
+            class="flex flex-wrap items-center gap-3 font-mono text-sm sm:gap-5"
+            aria-label="Main"
+          >
+            <a
+              class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
+              href="/docs/"
+            >Docs</a>
+            <a
+              class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
+              href={githubUrl}
+            >GitHub</a>
+          </nav>
+          </div>
+        </div>
+      </header>
+      <slot />
+      <footer
+        class="border-t border-paper-200/10"
+        role="contentinfo"
+      >
+        <div
+          class="mx-auto max-w-6xl px-4 py-10 sm:px-6"
+        >
+          <p class="text-paper-200/60 font-mono text-sm">
+            MIT License ·
+            <a class="text-evidence-300/90 underline-offset-2 hover:underline" href={githubUrl}
+              >Source on GitHub</a
+            >
+            ·
+            <a class="text-evidence-300/90 underline-offset-2 hover:underline" href="/docs/"
+              >Documentation</a
+            >
+          </p>
+        </div>
+      </footer>
+    </div>
+    <LandingInteractivity />
+  </body>
+</html>
