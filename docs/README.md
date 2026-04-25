@@ -6,6 +6,12 @@ AI-powered code analysis that responds to events from Jira, Telegram, Slack, and
 
 - **[installation.md](installation.md)** — choose Docker/GHCR, Compose, or bare metal; links to the detailed guides
 
+## Configuration
+
+- **[configuration-hub.md](configuration-hub.md)** — load order, top-level app keys, links to the full reference and generated plugin options
+- [configuration.md](configuration.md) — full detail (env, plugins, pr-pipeline)
+- [generated/plugin-options.md](generated/plugin-options.md) — generated option reference for bundled plugins
+
 ## Concept
 
 The core is **source-agnostic**: plugins normalize external events into a shared shape the server processes the same way.
@@ -27,8 +33,8 @@ The core is **source-agnostic**: plugins normalize external events into a shared
 ## Plugins
 
 - Full guide: [plugins.md](plugins.md)
-- Options reference: [generated/plugin-options.md](generated/plugin-options.md)
-- Configuration merge rules: [configuration.md](configuration.md)
+- Options reference: [generated/plugin-options.md](generated/plugin-options.md) (see also [Configuration](#configuration) above)
+- Merge rules and env: [configuration.md](configuration.md); overview: [configuration-hub.md](configuration-hub.md)
 
 `PluginContext` has **`getService` / `registerService`**, not a `plugins` map. For repos, consumers use the **local-repos** service or **`REPO_MATCHER_SERVICE`** (see [plugins.md](plugins.md)).
 

@@ -1,5 +1,7 @@
 # Application configuration
 
+**Short index:** [configuration-hub.md](configuration-hub.md) (load order, top-level keys, where to look next).
+
 Configuration is loaded at process startup from JSON files under the **`config/`** directory relative to the current working directory (`process.cwd()`), then merged with a small **environment whitelist** (no generic nested env keys such as `FOO__bar__baz`).
 
 ## Files
@@ -153,6 +155,7 @@ CI enforces that the generated file is up to date (`pnpm docs:plugins:check`).
 
 ## See also
 
+- [Configuration overview (hub)](configuration-hub.md)
 - [Docker environment variables](docker.md#production-style-run-single-host)
 - [Development guide](development.md#configuration)
 - [Plugin development](plugins.md#3-schema-system)

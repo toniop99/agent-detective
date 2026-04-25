@@ -41,7 +41,7 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 
 ## Configuration
 
-See **[docs/configuration.md](docs/configuration.md)** for file precedence, env whitelist, and generated plugin schemas.
+Start with **[docs/configuration-hub.md](docs/configuration-hub.md)** (load order and top-level keys), then **[docs/configuration.md](docs/configuration.md)** for the full env and plugin tables, and **[docs/generated/plugin-options.md](docs/generated/plugin-options.md)** for bundled plugin fields.
 
 Configure via `config/default.json` (and optional `config/local.json`):
 
@@ -72,7 +72,7 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 ## Documentation
 
 - [Installation](docs/installation.md) — deploy with Docker, from source, or bare metal
-- [Configuration](docs/configuration.md)
+- [Configuration (overview)](docs/configuration-hub.md) — [full reference](docs/configuration.md)
 - [Architecture](docs/architecture.md)
 - [Plugin Development](docs/plugins.md)
 - [Development Guide](docs/development.md)

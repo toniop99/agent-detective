@@ -17,7 +17,7 @@ pnpm install
 
 ## Configuration
 
-See **[configuration.md](configuration.md)** for `default.json` / `local.json` merge rules, supported environment variables, and generated plugin option schemas.
+See **[configuration-hub.md](configuration-hub.md)** for load order and top-level keys, then **[configuration.md](configuration.md)** for `default.json` / `local.json` merge rules, supported environment variables, and generated plugin option schemas.
 
 ### Edit `config/default.json`
 

@@ -23,9 +23,10 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 
 ## Configuration (all paths)
 
-1. Start from `config/default.json` in this repo and merge [configuration.md](configuration.md) with your options.
-2. Use `config/local.json` and/or the **env whitelist** for secrets in production.
-3. For plugin option fields, use [generated/plugin-options.md](generated/plugin-options.md).
+1. Read the **[configuration hub](configuration-hub.md)** for load order and top-level `config` shape.
+2. Use [configuration.md](configuration.md) for the full env whitelist and plugin narratives.
+3. Use `config/local.json` and/or the **env whitelist** for secrets in production.
+4. For plugin option fields, use [generated/plugin-options.md](generated/plugin-options.md).
 
 ## Detailed guides
 

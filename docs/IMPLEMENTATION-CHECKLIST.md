@@ -7,7 +7,7 @@ Use this list for reviewable PRs. Step IDs match the project plan; merge top to 
 | Step | ID | Deliverable |
 |------|-----|-------------|
 | 1 | `step-01-installation-overview` | Installation / deployment hub page; fix placeholder clone URL in `deployment.md` **(done — review)** |
-| 2 | `step-02-configuration-hub` | Configuration index (precedence, links to `configuration.md`, `generated/plugin-options.md`, `pnpm docs:plugins`) |
+| 2 | `step-02-configuration-hub` | Configuration index (precedence, links to `configuration.md`, `generated/plugin-options.md`, `pnpm docs:plugins`) **(done — review)** |
 | 3 | `step-03-upgrading` | New `upgrading.md` (image tags, releases, CHANGELOG, migration, runbook) |
 | 4 | `step-04-cross-links` | Cross-link hub pages; dedupe "see also" for nginx/systemd where duplicated |
 | 5 | `step-05-external-plugins-guide` | Single "extending with custom plugins" doc (loader: npm path vs `plugins/` mount) |
