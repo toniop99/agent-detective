@@ -1,6 +1,6 @@
 # Docker
 
-Run **agent-detective** in containers for local development or production-style deployment on a single host.
+Run **agent-detective** in containers for local development or production-style deployment on a single host. For a comparison with bare-metal and from-source installs, see [installation.md](installation.md).
 
 ## Requirements
 

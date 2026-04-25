@@ -71,6 +71,7 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 
 ## Documentation
 
+- [Installation](docs/installation.md) — deploy with Docker, from source, or bare metal
 - [Configuration](docs/configuration.md)
 - [Architecture](docs/architecture.md)
 - [Plugin Development](docs/plugins.md)

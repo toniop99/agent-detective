@@ -2,6 +2,10 @@
 
 AI-powered code analysis that responds to events from Jira, Telegram, Slack, and other sources. Same product name as the root [README.md](../README.md).
 
+## Install and run
+
+- **[installation.md](installation.md)** — choose Docker/GHCR, Compose, or bare metal; links to the detailed guides
+
 ## Concept
 
 The core is **source-agnostic**: plugins normalize external events into a shared shape the server processes the same way.

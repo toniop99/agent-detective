@@ -1,6 +1,6 @@
 # Deployment guide
 
-Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md) and [configuration.md](configuration.md).
+Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md) and [configuration.md](configuration.md).
 
 ## Prerequisites
 
@@ -21,12 +21,14 @@ Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. F
 ## Installation (from source)
 
 ```bash
-git clone https://github.com/your-org/agent-detective.git
+git clone https://github.com/toniop99/agent-detective.git
 cd agent-detective
 pnpm install
 pnpm run build
 pnpm run build:app
 ```
+
+Use your own fork’s `https://github.com/<owner>/<repo>.git` URL if you are not building from the upstream repository.
 
 Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](configuration.md).
 
