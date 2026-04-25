@@ -1,0 +1,194 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Noir “case file” + evidence accent — not default slate/indigo */
+  --color-ink-1000: #050506;
+  --color-ink-950: #0a0a0b;
+  --color-ink-800: #141416;
+  --color-ink-900: #0d0d10;
+  --color-ink-700: #1e1e22;
+  --color-paper-50: #f5f2eb;
+  --color-paper-200: #e0dbd1;
+  --color-evidence-300: #7ab3ff;
+  --color-evidence-400: #3d7ae8;
+  --color-amber-400: #e8a849;
+  --font-display: 'Newsreader', ui-serif, Georgia, serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .ad-motion-safe,
+    .ad-fade-in,
+    .ad-fade-up {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+@layer components {
+  .ad-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .ad-section-label {
+    @apply text-[0.7rem] font-mono font-medium uppercase tracking-[0.22em] text-amber-400/90;
+  }
+
+  .ad-hero-orb {
+    @apply pointer-events-none absolute rounded-full;
+    background: radial-gradient(closest-side, rgba(61, 122, 232, 0.22) 0%, transparent 70%);
+  }
+
+  .ad-fade-up {
+    animation: ad-fade-up 0.7s ease-out both;
+  }
+
+  .ad-fade-in {
+    animation: ad-fade-in 0.6s ease-out both;
+  }
+
+  .ad-delay-1 {
+    animation-delay: 80ms;
+  }
+  .ad-delay-2 {
+    animation-delay: 160ms;
+  }
+  .ad-delay-3 {
+    animation-delay: 240ms;
+  }
+  .ad-delay-4 {
+    animation-delay: 320ms;
+  }
+
+  .ad-card-raise {
+    @apply border-paper-200/10 bg-ink-800/15 transition-shadow duration-300;
+    box-shadow: 0 0 0 0 transparent;
+  }
+
+  .ad-card-raise:hover {
+    box-shadow:
+      0 0 0 1px rgba(232, 168, 73, 0.12),
+      0 18px 40px -20px rgba(0, 0, 0, 0.75);
+  }
+
+  .ad-reveal {
+    @apply will-change-[opacity,transform];
+    transform: translate3d(0, 1rem, 0);
+    opacity: 0;
+    transition:
+      opacity 0.75s ease-out,
+      transform 0.75s ease-out;
+  }
+
+  .ad-reveal.is-inview {
+    @apply opacity-100;
+    transform: translate3d(0, 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ad-fade-up,
+    .ad-fade-in,
+    .ad-card-raise {
+      animation: none;
+    }
+
+    .ad-reveal,
+    .ad-reveal.is-inview {
+      transform: none !important;
+      opacity: 1 !important;
+      transition: none;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Warm “case file” film — not a light theme, still legible in dim rooms */
+html[data-theme='casefile'] {
+  --color-ink-1000: #0a0705;
+  --color-ink-950: #100b08;
+  --color-ink-800: #1a130e;
+  --color-ink-900: #0c0806;
+  --color-ink-700: #241a12;
+  --color-paper-50: #f0e5d8;
+  --color-paper-200: #cbbfa8;
+  --color-evidence-300: #8ec8ff;
+  --color-evidence-400: #5a9eff;
+  --color-amber-400: #f2b64d;
+}
+
+html[data-theme='casefile'] .ad-hero-orb {
+  background: radial-gradient(closest-side, rgba(242, 182, 77, 0.14) 0%, transparent 70%);
+}
+
+html[data-theme='casefile'] .ad-grain {
+  opacity: 0.04 !important;
+}
+
+html[data-ad-pipeline-motion='1'] .ad-pipeline-slow {
+  animation: ad-pan-x 32s ease-in-out infinite alternate;
+}
+
+@layer components {
+  .ad-scroll-rail a {
+    @apply border-paper-200/25 from-paper-200/40 to-paper-200/10 flex h-2.5 w-2.5 items-center justify-center rounded-full border bg-linear-to-b opacity-50 transition;
+  }
+
+  .ad-scroll-rail a:hover,
+  .ad-scroll-rail a:focus-visible {
+    @apply border-amber-400/50 opacity-100 ring-1 ring-amber-400/30;
+  }
+
+  .ad-scroll-rail a.is-active {
+    @apply border-amber-400/80 scale-110 bg-amber-400/30 opacity-100 ring-1 ring-amber-400/50;
+  }
+
+  #ad-copy-toast[aria-hidden='false'] {
+    @apply border-paper-200/15 bg-ink-800/90 visible translate-y-0 opacity-100 shadow-lg backdrop-blur;
+  }
+}
+
+@keyframes ad-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ad-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ad-pan-x {
+  0% {
+    object-position: 22% 50%;
+  }
+  100% {
+    object-position: 78% 50%;
+  }
+}

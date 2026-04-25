@@ -1,0 +1,18 @@
+{
+  "name": "agent-detective-landing",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "prebuild": "node ./scripts/generate-favicons.mjs",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "astro": "^6.1.9",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.11"
+  }
+}

@@ -1,0 +1,170 @@
+---
+const features = [
+  {
+    n: '01',
+    title: 'Source-agnostic events',
+    body:
+      'Webhooks and adapters become one task model—Jira, chat, or your own plugin. The agent runner does not care who knocked.',
+  },
+  {
+    n: '02',
+    title: 'Repo-grounded analysis',
+    body:
+      'Local repositories and matching connect incidents to the right tree. Output stays honest to the code you run.',
+  },
+  {
+    n: '03',
+    title: 'Operator-ready',
+    body:
+      'Express, health, metrics, structured logs, JSON and env. Ship with Docker from GHCR when you are done iterating locally.',
+  },
+] as const;
+---
+
+<section
+  id="evidence"
+  data-section="evidence"
+  class="ad-reveal mt-20 scroll-mt-28 sm:mt-24"
+  aria-labelledby="features-heading"
+>
+  <div
+    class="text-center lg:text-left"
+  >
+    <h2
+      id="features-heading"
+      class="ad-section-label"
+    >Case notes</h2
+    >
+    <p
+      class="text-paper-50 font-display mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+    >
+      Built for real incidents, not slide decks
+    </p>
+    <p
+      class="text-paper-200/80 mx-auto mt-3 max-w-2xl text-lg italic sm:text-xl lg:mx-0"
+    >
+      “One process from signal to story—tickets in, diffs and comments out.”
+    </p>
+  </div>
+
+  <div
+    class="mt-12 grid items-stretch gap-5 lg:grid-cols-12 lg:gap-6"
+  >
+    <ul
+      class="flex flex-col gap-4 lg:col-span-7"
+      role="list"
+    >
+      {
+        features.map((f, i) => (
+          <li
+            class:list={[
+              'ad-card-raise group relative overflow-hidden p-5 pl-5 transition-transform duration-300 hover:-translate-y-0.5 sm:pl-6',
+              i === 0
+                ? 'border-paper-200/8 border-l-4 border-t border-r border-b border-l-evidence-400/70'
+                : 'border-paper-200/8 border',
+            ]}
+          >
+            {i === 0 && (
+              <div
+                class="to-transparent pointer-events-none absolute inset-0 bg-linear-to-r from-evidence-400/5 opacity-0 transition-opacity group-hover:opacity-100"
+                aria-hidden="true"
+              />
+            )}
+            <div class="relative flex gap-4">
+              <div
+                class="text-paper-200/50 font-mono text-xs font-medium"
+              >{f.n}
+              </div>
+              <div class="min-w-0 flex-1">
+                <h3
+                  class="text-paper-50 font-display text-xl font-semibold tracking-tight"
+                >{f.title}
+                </h3>
+                <p
+                  class="text-paper-200/78 mt-2 text-sm leading-relaxed sm:text-[0.95rem] sm:leading-7"
+                >{f.body}
+                </p>
+              </div>
+              {i === 0 && (
+                <div
+                  class="text-evidence-400/35 hidden shrink-0 sm:block"
+                  aria-hidden="true"
+                >
+                  <svg
+                    class="h-9 w-9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    ><rect x="3" y="3" width="7" height="7" rx="0.3" />
+                    <rect x="14" y="3" width="7" height="7" rx="0.3" />
+                    <rect x="3" y="14" width="7" height="7" rx="0.3" />
+                    <path
+                      d="M14.5 14.5L18 19M14 19l3.5-4.5M18 10v-2h-2M10 8V6M10 6H8"
+                    />
+                  </svg>
+                </div>
+              )}
+              {i === 1 && (
+                <div
+                  class="text-amber-400/30 hidden shrink-0 sm:block"
+                  aria-hidden="true"
+                >
+                  <svg
+                    class="h-9 w-9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    ><path
+                      d="M4 4h6v4H4V4zM4 10h6v4H4v-4zM4 16h6v4H4v-4zM12 4h8v4h-8V4zM12 10h8v4h-8v-4zM12 16h4v1h-2v-1M16 20h-2v-2M14 20h-2M18 20h-2M18 16h2v2M20 20v-2"
+                    />
+                  </svg>
+                </div>
+              )}
+              {i === 2 && (
+                <div
+                  class="text-paper-200/20 hidden shrink-0 sm:block"
+                  aria-hidden="true"
+                >
+                  <svg
+                    class="h-9 w-9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    ><circle cx="12" cy="12" r="8" />
+                    <path d="M12 6v2M12 16v0M6 12h0M16 12h0" />
+                    <path d="M8.5 8.5L10 10M14 8.5L12.5 10M8.5 15.5L10 14M15.5 8.5L14 10" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div
+      class="lg:col-span-5"
+    >
+      <figure
+        class="border-paper-200/10 bg-ink-800/20 relative h-full min-h-[280px] overflow-hidden border [box-shadow:inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+      >
+        <img
+          src="/images/flow-outcome.png"
+          width={900}
+          height={675}
+          class="h-full w-full object-cover"
+          alt="Risograph-style three-step flow: alert, lens, branch—outcome, not a generic diagram"
+          loading="lazy"
+        />
+        <figcaption
+          class="text-paper-200/50 ad-section-label border-paper-200/8 absolute right-0 bottom-0 left-0 border-t bg-ink-950/70 px-3 py-2 text-left text-[0.65rem] backdrop-blur-sm"
+        >
+          Fig. 1 — risograph-style path: signal to write-up
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>

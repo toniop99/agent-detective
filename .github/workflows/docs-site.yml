@@ -1,12 +1,14 @@
-name: Docs site (Starlight)
+name: GitHub Pages (landing + Starlight)
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/docs/**'
+      - 'apps/landing/**'
       - 'docs/**'
       - 'scripts/sync-starlight-content.mjs'
+      - 'scripts/merge-landing-into-docs-dist.mjs'
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
@@ -30,6 +32,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build Starlight
         run: pnpm --filter agent-detective-docs build
+      - name: Build marketing landing
+        run: pnpm --filter agent-detective-landing build
+      - name: Merge landing into Pages root
+        run: node scripts/merge-landing-into-docs-dist.mjs
       - uses: actions/upload-pages-artifact@v3
         with: { path: apps/docs/dist }
 

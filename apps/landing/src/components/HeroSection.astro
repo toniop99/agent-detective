@@ -1,0 +1,190 @@
+---
+const github = 'https://github.com/toniop99/agent-detective';
+const starsBadge =
+  'https://img.shields.io/github/stars/toniop99/agent-detective?style=for-the-badge&logo=github&label=Stars&color=0d0d10&logoColor=e0dbd1';
+const licenseBadge =
+  'https://img.shields.io/github/license/toniop99/agent-detective?style=for-the-badge&label=License&color=0d0d10';
+---
+
+<section
+  id="top"
+  data-section="top"
+  class="ad-reveal relative scroll-mt-28 overflow-hidden pb-12 pt-4 sm:pb-16 sm:pt-6 lg:pb-20"
+  aria-labelledby="hero-heading"
+>
+  <div
+    class="ad-hero-orb ad-motion-safe ad-fade-in -right-24 -top-16 h-[min(52vw,420px)] w-[min(52vw,420px)] sm:right-0 sm:top-0"
+    aria-hidden="true"
+  />
+  <div
+    class="ad-hero-orb ad-motion-safe ad-fade-in ad-delay-1 left-[-30%] top-1/3 h-80 w-80 opacity-70 sm:left-[-10%]"
+    aria-hidden="true"
+  />
+
+  <div class="relative z-[1] mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,1.08fr)] lg:gap-14">
+    <div class="max-w-xl lg:max-w-none">
+      <div
+        class="ad-motion-safe ad-fade-up flex flex-wrap items-center gap-2"
+      >
+        <span
+          class="border-amber-400/35 bg-ink-800/60 text-amber-400/95 font-mono text-[0.65rem] uppercase tracking-widest backdrop-blur-sm px-2.5 py-1 border"
+        >Open source</span
+        >
+        <span
+          class="border-paper-200/10 text-paper-200/60 font-mono text-[0.65rem] uppercase tracking-widest px-2.5 py-1 border"
+        >Self-hosted</span
+        >
+        <span
+          class="border-paper-200/10 text-paper-200/60 font-mono text-[0.65rem] uppercase tracking-widest px-2.5 py-1 border"
+        >Plugin architecture</span
+        >
+      </div>
+
+      <h1
+        id="hero-heading"
+        class="ad-motion-safe ad-fade-up ad-delay-1 text-balance text-paper-50 font-display mt-6 text-4xl font-semibold leading-[1.06] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.4rem] xl:text-[3.6rem]"
+      >
+        Triage at the
+        <span
+          class="text-paper-50/95 not-italic underline decoration-amber-400/80 [text-decoration-skip-ink:none] [text-decoration-thickness:2px] [text-underline-offset:0.18em]"
+          >codebase</span
+        >, not just the ticket
+      </h1>
+
+      <p
+        class="ad-motion-safe ad-fade-up ad-delay-2 text-paper-200/90 mt-6 text-lg leading-relaxed sm:max-w-xl sm:text-xl"
+      >
+        Your agents listen where work happens—<strong
+          class="text-paper-50 font-medium">Jira, Telegram, Slack</strong>—and answer with
+        <span class="text-evidence-300/90">grounded, repo-level insight</span>, not generic filler.
+        One core; plugins and config define the rest.
+      </p>
+
+      <div
+        class="ad-motion-safe ad-fade-up ad-delay-3 mt-8 flex flex-wrap items-center gap-3 sm:gap-4"
+      >
+        <a
+          class="text-ink-1000 group shadow-amber-400/10 hover:shadow-amber-400/20 bg-paper-50 focus:ring-ink-1000 font-mono text-sm font-semibold shadow-lg transition [box-shadow:0_0_0_1px_rgba(255,255,255,0.08),0_20px_50px_-18px_rgba(0,0,0,0.85)] hover:bg-paper-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-ink-1000/0 active:scale-[0.99] inline-flex min-h-12 min-w-[10rem] items-center justify-center px-6 py-3"
+          href="/docs/"
+        >Read the docs</a
+        >
+        <a
+          class="focus:ring-evidence-400/80 min-h-12 font-mono text-sm font-medium text-evidence-300/95 underline decoration-evidence-400/45 decoration-2 underline-offset-[5px] transition hover:decoration-evidence-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-ink-1000/0"
+          href={github}
+        >View on GitHub</a
+        >
+      </div>
+
+      <div class="ad-motion-safe ad-fade-up ad-delay-3 mt-6 max-w-xl">
+        <div
+          class="border-paper-200/10 bg-ink-900/30 border p-3"
+        >
+          <p
+            class="ad-section-label mb-2.5"
+          >Pull image
+          </p>
+          <div
+            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+          >
+            <code
+              class="text-evidence-300/90 font-mono text-[0.7rem] leading-relaxed break-all sm:text-[0.8rem]"
+            >docker pull ghcr.io/toniop99/agent-detective:latest
+            </code>
+            <button
+              type="button"
+              class="text-ink-1000 bg-amber-400/90 focus:ring-ink-1000/80 shrink-0 self-start font-mono text-xs font-semibold focus:ring-2 focus:outline-none"
+              data-ad-copy="docker pull ghcr.io/toniop99/agent-detective:latest"
+            >Copy
+            </button>
+          </div>
+        </div>
+        <p
+          class="text-paper-200/40 mt-2 font-mono text-[0.65rem] leading-relaxed"
+        >Press
+          <kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">1</kbd>–<kbd
+            class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5"
+          >5</kbd
+        > to jump sections (desktop)
+        </p>
+      </div>
+
+      <div
+        class="ad-motion-safe ad-fade-up ad-delay-4 mt-6 flex flex-wrap items-center gap-3"
+      >
+        <img
+          src={starsBadge}
+          width="120"
+          height="28"
+          class="h-7 w-auto"
+          alt="GitHub star count for agent-detective"
+          loading="lazy"
+        />
+        <img
+          src={licenseBadge}
+          width="100"
+          height="28"
+          class="h-7 w-auto"
+          alt="Repository license"
+          loading="lazy"
+        />
+      </div>
+
+      <p class="text-paper-200/45 mt-5 max-w-lg font-mono text-xs leading-relaxed">
+        Container-ready (GHCR), JSON + env configuration, Zod-typed options.
+        <a
+          class="text-evidence-300/80 hover:underline"
+          href="/docs/config/configuration-hub"
+        >Configuration hub</a> ·
+        <a class="text-evidence-300/80 hover:underline" href="/docs/operator/docker/">Docker</a>
+      </p>
+    </div>
+
+    <div
+      class="ad-motion-safe ad-fade-up ad-delay-2 relative mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none"
+    >
+      <div
+        class="from-evidence-400/25 via-amber-400/15 to-transparent p-[1px] relative rounded-sm bg-linear-to-br"
+      >
+        <div
+          class="bg-ink-1000/20 relative overflow-hidden rounded-sm [box-shadow:0_25px_80px_-30px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+        >
+          <p
+            class="ad-section-label border-paper-200/10 z-20 border-b bg-ink-900/60 px-3 py-2.5 text-[0.65rem] backdrop-blur-md"
+          >
+            Exhibit A — case visualization
+          </p>
+          <div class="relative">
+            <img
+              src="/images/hero.png"
+              width={1200}
+              height={800}
+              class="h-auto w-full object-cover [aspect-ratio:3/2] sm:[aspect-ratio:auto]"
+              alt="Risograph-style artwork: magnifier, case tab, and code marks—triage, not stock tech art"
+              fetchpriority="high"
+            />
+            <div
+              class="from-ink-1000/20 pointer-events-none absolute inset-0 bg-linear-to-t via-transparent to-ink-1000/50"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </div>
+      <span
+        class="border-amber-400/50 pointer-events-none absolute -left-1.5 -top-1.5 h-4 w-4 border-l-2 border-t-2"
+        aria-hidden="true"
+      />
+      <span
+        class="border-amber-400/50 pointer-events-none absolute -right-1.5 -top-1.5 h-4 w-4 border-r-2 border-t-2"
+        aria-hidden="true"
+      />
+      <span
+        class="border-amber-400/50 pointer-events-none absolute -bottom-1.5 -left-1.5 h-4 w-4 border-b-2 border-l-2"
+        aria-hidden="true"
+      />
+      <span
+        class="border-amber-400/50 pointer-events-none absolute -bottom-1.5 -right-1.5 h-4 w-4 border-b-2 border-r-2"
+        aria-hidden="true"
+      />
+    </div>
+  </div>
+</section>

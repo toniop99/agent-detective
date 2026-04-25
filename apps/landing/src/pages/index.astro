@@ -1,0 +1,28 @@
+---
+import CtaSection from '../components/CtaSection.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import FlowSection from '../components/FlowSection.astro';
+import HeroSection from '../components/HeroSection.astro';
+import PipelineBand from '../components/PipelineBand.astro';
+import Layout from '../layouts/Layout.astro';
+
+const pageTitle = 'Agent Detective';
+const description =
+  'Event-driven AI code analysis. Plugins normalize Jira, Telegram, Slack and more; repo-grounded insight, optional PR automation, self-hosted observability.';
+---
+
+<Layout
+  title={pageTitle}
+  description={description}
+>
+  <main
+    id="main"
+    class="mx-auto max-w-6xl px-4 pb-24 sm:px-6"
+  >
+    <HeroSection />
+    <PipelineBand />
+    <FeatureGrid />
+    <FlowSection />
+    <CtaSection />
+  </main>
+</Layout>
