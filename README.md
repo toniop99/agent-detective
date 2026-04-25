@@ -75,7 +75,8 @@ For Compose (pull only, no build), use [docker-compose.ghcr.yml](docker-compose.
 - [Configuration (overview)](docs/configuration-hub.md) — [full reference](docs/configuration.md)
 - [Upgrading](docs/upgrading.md) — releases, image tags, runbook
 - [Architecture](docs/architecture.md)
-- [Plugin Development](docs/plugins.md)
+- [Extending with custom plugins](docs/extending-with-plugins.md) — npm, paths, private registry
+- [Plugin development (full guide)](docs/plugins.md)
 - [Development Guide](docs/development.md)
 - [Docker & CI images](docs/docker.md)
 - [Jira manual E2E (webhook + tunnel)](docs/jira-manual-e2e.md)

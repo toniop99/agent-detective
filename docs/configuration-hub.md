@@ -57,6 +57,7 @@ In CI, `pnpm docs:plugins:check` fails if [generated/plugin-options.md](generate
 | Full env reference, Jira, pr-pipeline, local-repos, validation | [configuration.md](configuration.md) |
 | Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](generated/plugin-options.md) |
 | Plugin system and `schema` in code | [plugins.md](plugins.md) (e.g. schema system) |
+| Custom plugins (npm, path, `plugins/` mount) | [extending-with-plugins.md](extending-with-plugins.md) |
 | Install paths and `config` mounts | [installation.md](installation.md) |
 | New releases, GHCR tags, git pull | [upgrading.md](upgrading.md) |
 | Docker-specific env | [docker.md](docker.md#production-style-run-single-host) |

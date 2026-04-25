@@ -114,6 +114,8 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ## For External Plugin Developers
 
+Wiring a published or private package into a **running** app (`plugins` in `config`, Docker volume paths, pnpm in the app root) is covered in **[extending-with-plugins.md](extending-with-plugins.md)**. Below: **`@agent-detective/types`** and publish mechanics.
+
 ### Installing Types Package
 
 ```bash

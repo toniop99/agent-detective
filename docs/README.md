@@ -35,6 +35,8 @@ The core is **source-agnostic**: plugins normalize external events into a shared
 ## Plugins
 
 - Full guide: [plugins.md](plugins.md)
+- **Custom / third-party:** [extending-with-plugins.md](extending-with-plugins.md) (install paths, registries, Docker)
+- Authoring (TypeScript template): [plugin-development.md](plugin-development.md)
 - Options reference: [generated/plugin-options.md](generated/plugin-options.md) (see also [Configuration](#configuration) above)
 - Merge rules and env: [configuration.md](configuration.md); overview: [configuration-hub.md](configuration-hub.md)
 

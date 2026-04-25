@@ -1,6 +1,6 @@
 # Plugin Development Guide
 
-Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers everything you need to build a plugin.
+Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers the plugin **APIs** and **patterns** for authors. For **where to point `config.plugins[].package` and how to use Docker / npm** for custom plugins, see [extending-with-plugins.md](extending-with-plugins.md) first.
 
 **Bundled plugin options (Zod → JSON Schema):** after changing the Zod options schema in `@agent-detective/jira-adapter` (`src/application/options-schema.ts`), `@agent-detective/local-repos-plugin` (`src/application/options-schema.ts`), or `@agent-detective/pr-pipeline` (`src/application/options-schema.ts`), run `pnpm docs:plugins` and commit [generated/plugin-options.md](generated/plugin-options.md). See [configuration.md](configuration.md).
 
@@ -991,57 +991,7 @@ test('mock client stores comments', () => {
 
 ## 13. Third-Party Plugins
 
-### Installing Third-Party Plugins
-
-Third-party plugins can be installed via volume mount in Docker:
-
-```bash
-# Plugin structure
-plugins/
-└── my-plugin/
-    ├── index.js      # Main entry
-    └── index.d.ts    # Type declarations
-```
-
-```bash
-# Run with plugins
-docker run -d -p 3001:3001 \
-  -v $(pwd)/plugins:/app/plugins:ro \
-  ghcr.io/toniop99/agent-detective:latest
-```
-
-### Enabling Third-Party Plugins
-
-Add to `config/default.json`:
-
-```json
-{
-  "plugins": [
-    {
-      "package": "/app/plugins/my-plugin",
-      "options": {
-        "enabled": true,
-        "someOption": "value"
-      }
-    }
-  ]
-}
-```
-
-### Plugin Package Structure
-
-Third-party plugins should follow this structure:
-
-```
-my-plugin/
-├── package.json
-├── dist/
-│   ├── index.js
-│   └── index.d.ts
-└── README.md
-```
-
-For full plugin development guide, see [docs/plugin-development.md](plugin-development.md).
+Installing and wiring **custom** plugins (npm, private registry, path / Docker volume) is covered in one place: **[extending-with-plugins.md](extending-with-plugins.md)**. The rest of this document describes APIs, patterns, and the official bundles. For a step-by-step TypeScript template and long examples, see [plugin-development.md](plugin-development.md).
 
 ---
 
