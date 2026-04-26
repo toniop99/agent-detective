@@ -11,7 +11,7 @@
     "build:app": "tsup --config tsup.config.ts",
     "build:types": "pnpm --filter @agent-detective/types build",
     "typecheck": "turbo run typecheck && tsc --noEmit",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint && node scripts/check-package-root-imports.mjs && node scripts/check-plugin-cross-imports.mjs && node scripts/check-docs-internal-links.mjs",
     "test": "turbo run test && tsx --test 'test/**/*.test.ts'",
     "test:watch": "tsx --test --watch 'test/**/*.test.ts'",
     "docs:plugins": "tsx scripts/generate-plugin-config-docs.ts",

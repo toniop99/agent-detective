@@ -4,7 +4,7 @@ This repository uses a **pragmatic hexagonal (ports & adapters) + layered** layo
 
 ## Concepts
 
-- **Ports** — Interfaces and DTOs in [`@agent-detective/types`](../../packages/types/src/index.ts) (`TaskEvent`, `AgentRunner`, `RepoMatcher`, `PrWorkflowService`, etc.).
+- **Ports** — Interfaces and DTOs in [`@agent-detective/types`](../../packages/types/src/index.ts) (`TaskEvent`, `AgentRunner`, `RepoMatcher`, `PrWorkflowService`, `LocalReposService`, etc.).
 - **Driving adapters** — HTTP entry points (e.g. Jira webhook controller).
 - **Application** — Use cases: webhook dispatch, handler routing, config schemas for a plugin.
 - **Domain** — Pure logic without Express or network I/O (normalization, trigger rules, plugin-local types).

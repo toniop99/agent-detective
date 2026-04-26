@@ -88,6 +88,59 @@ export interface Commit {
   date?: string;
 }
 
+/**
+ * Local repository plugin port types (registered at runtime via
+ * {@link PluginContext.registerService}; consumers use {@link PluginContext.getService}).
+ * @see ADR 0001 — shared contracts live in this package, not via compile-time imports between plugins.
+ */
+
+/** VCS for opening pull requests (see pr-pipeline plugin). */
+export type RepoVcsProvider = 'github' | 'bitbucket';
+
+export interface RepoVcsConfig {
+  provider: RepoVcsProvider;
+  /** For GitHub: `owner` + `name`; for Bitbucket Cloud: use `owner` = workspace, `name` = repo slug. */
+  owner: string;
+  name: string;
+}
+
+export interface RepoConfig {
+  name: string;
+  path: string;
+  description?: string;
+  techStack?: string[];
+  /** Base ref for the PR (e.g. `main`, `develop`). */
+  prBaseBranch?: string;
+  /** Per-repo override; falls back to pr-pipeline default (e.g. `hotfix/`). */
+  prBranchPrefix?: string;
+  vcs?: RepoVcsConfig;
+}
+
+export interface ValidatedRepo {
+  name: string;
+  path: string;
+  exists: boolean;
+  description?: string;
+  techStack: string[];
+  summary: string;
+  commits: Commit[];
+  lastChecked: Date;
+}
+
+export interface LocalReposContext {
+  repos: ValidatedRepo[];
+  getRepo(name: string): ValidatedRepo | null;
+  getAllRepos(): ValidatedRepo[];
+}
+
+export interface LocalReposService {
+  localRepos: LocalReposContext;
+  buildRepoContext: (repoPath: string, options?: BuildRepoContextOptions) => Promise<unknown>;
+  formatRepoContextForPrompt: (context: unknown) => string;
+  /** Raw `repos[]` entry from plugin config (path, vcs, pr settings). */
+  getSourceRepoConfig(name: string): RepoConfig | undefined;
+}
+
 export interface RepoContext {
   repoName: string;
   repoPath: string;

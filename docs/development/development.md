@@ -1,5 +1,7 @@
 # Development Guide
 
+**Agents and quick verify:** [Agent harness](./agent-harness.md) · **Do / don’t / pitfalls:** [Agent golden rules](./agent-golden-rules.md) · **Root index:** [AGENTS.md](../../AGENTS.md)
+
 ## Prerequisites
 
 - Node.js 24+

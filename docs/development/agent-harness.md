@@ -1,0 +1,100 @@
+# Agent harness — runbook
+
+This page is for **humans steering and agents executing**: how to boot the app, verify changes, and find signals when something breaks. Keep long prose in **`docs/`**; keep **`AGENTS.md`** as a short index.
+
+## Quick verify (from repo root)
+
+```bash
+pnpm install
+pnpm run build          # workspace packages (Turbo)
+pnpm run typecheck
+pnpm run lint           # includes package-root import guard (see below)
+pnpm test
+```
+
+After config or plugin option schema edits, regenerate and check drift:
+
+```bash
+pnpm docs:config
+pnpm docs:plugins
+# CI equivalents:
+pnpm run docs:config:check
+pnpm run docs:plugins:check
+```
+
+## Run the server
+
+```bash
+pnpm run dev            # tsx watch — local development
+pnpm run build:app && pnpm start   # production-style bundle
+```
+
+Default config: **`config/default.json`**; overrides: **`config/local.json`** (deep merge). See [Configuration hub](../config/configuration-hub.md).
+
+## Plugin / integration smoke
+
+- **Jira webhook smoke** (server must be listening on `PORT`): `pnpm run jira:webhook-smoke`
+- **Manual Jira E2E** (tunnel, labels): [e2e/jira-manual-e2e.md](../e2e/jira-manual-e2e.md)
+
+## Logs and observability
+
+- Tune level via **`observability`** in config or env (see [Observability](../operator/observability.md)).
+- Request logging excludes paths such as **`/api/health`** and **`/api/metrics`** — adjust in config if you add new high-chatter routes.
+
+## Worktrees and agents
+
+- Use a **clean worktree** per task when possible; run **`pnpm install`** if dependencies changed.
+- Prefer **absolute paths** in `config/local.json` for repo entries so worktrees do not depend on cwd.
+
+### Parallel runs (PORT)
+
+When two clones or worktrees run the server locally, set a **distinct `PORT`** per instance (environment or config) so listeners and smoke scripts do not collide. Example:
+
+```bash
+PORT=3001 pnpm run dev
+```
+
+Then hit health on that port (see below).
+
+### Quick HTTP checks
+
+With the server listening (dev or `pnpm start` after `build:app`):
+
+```bash
+curl -sf "http://127.0.0.1:${PORT:-3000}/api/health"
+curl -sf "http://127.0.0.1:${PORT:-3000}/api/metrics" | head
+```
+
+Adjust the path if your deployment uses a different base URL. High-chatter routes may be excluded from **request** logs; use structured logs for deep debugging — see [Observability](../operator/observability.md).
+
+## Plans and acceptance criteria
+
+- **Architecture decisions:** [docs/architecture/adr/](../architecture/adr/) — link new behavior-changing work to an ADR when appropriate.
+- **Large multi-step work:** use [Execution plans](../exec-plans/README.md) under **`docs/exec-plans/active/`** (move to **`completed/`** when done) so intent lives in git, not only in chat.
+
+## Site and docs builds
+
+```bash
+pnpm run docs:site:sync    # mirror docs/ → Starlight content
+pnpm run docs:site:dev     # Starlight dev
+pnpm run docs:site:landing # docs + landing for same artifact as GitHub Pages
+```
+
+Starlight home **`apps/docs/src/content/docs/index.mdx`** is **not** overwritten by sync — see [apps/docs/README.md](../../apps/docs/README.md).
+
+## Mechanical guards (lint)
+
+`pnpm run lint` includes:
+
+- **`scripts/check-package-root-imports.mjs`** — fails if **`packages/*/src/**`** reaches root **`src/`** via a relative import.
+- **`scripts/check-plugin-cross-imports.mjs`** — fails if one **plugin** package compile-imports another (ADR 0001); use **`@agent-detective/types`** and **`getService()`**.
+- **`scripts/check-docs-internal-links.mjs`** — fails on broken **relative** links from **`docs/**/*.md`** into the repo.
+
+**Remediation:** [Agent golden rules](./agent-golden-rules.md) · [ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md).
+
+## Related
+
+- [Agent workflow](./agent-workflow.md) — suggested PR loop and review expectations.
+- [Agent golden rules](./agent-golden-rules.md) — do / don’t / common failures.
+- [Development guide](./development.md) — monorepo and tooling detail.
+- [Documentation map](../README.md) — all `docs/` areas.

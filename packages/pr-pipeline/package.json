@@ -23,7 +23,6 @@
   ],
   "dependencies": {
     "@agent-detective/core": "workspace:*",
-    "@agent-detective/local-repos-plugin": "workspace:*",
     "@agent-detective/process-utils": "workspace:*",
     "@agent-detective/types": "workspace:*",
     "zod": "catalog:"
