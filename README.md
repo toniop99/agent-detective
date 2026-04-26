@@ -32,8 +32,8 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 | Package | Description |
 |---------|-------------|
 | Root app | Fastify server (`src/`, not under `packages/`) |
-| `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/sdk` | Plugin-author SDK: `defineRoute`, `registerRoutes`, `zodToPluginSchema` (HTTP types live in `@agent-detective/types`) |
+| `@agent-detective/types` | Host-internal type-only contract package (re-exported through `@agent-detective/sdk`; plugins should not depend on it directly) |
+| `@agent-detective/sdk` | Plugin-author SDK — single dependency for plugins. Bundles `defineRoute`, `registerRoutes`, `definePlugin`, `zodToPluginSchema`, service-name constants (`REPO_MATCHER_SERVICE`, `PR_WORKFLOW_SERVICE`), `StandardEvents`, and re-exports every plugin-facing type from `@agent-detective/types` |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |

@@ -25,7 +25,6 @@
   "dependencies": {
     "@agent-detective/process-utils": "workspace:*",
     "@agent-detective/sdk": "workspace:*",
-    "@agent-detective/types": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import type { PluginContext, TaskEvent } from '@agent-detective/types';
-import { StandardEvents } from '@agent-detective/types';
+import type { PluginContext, TaskEvent } from '@agent-detective/sdk';
+import { StandardEvents } from '@agent-detective/sdk';
 import type {
   LocalReposContext,
   ValidatedRepo,

@@ -6,5 +6,5 @@ export default defineConfig({
   dts: { compilerOptions: { ignoreDeprecations: '6.0' } },
   splitting: false,
   clean: true,
-  external: ['@agent-detective/types', '@agent-detective/sdk'],
+  external: ['@agent-detective/sdk'],
 });

@@ -6,6 +6,8 @@ export type {
   RouteSchema,
   RouteDefinition,
   FastifyScope,
+  FastifyRequest,
+  FastifyReply,
   TagGroup,
   ApplyTagGroupsOptions,
 } from './http.js';
@@ -338,9 +340,6 @@ export interface RepoMatcher {
   listConfiguredLabels(): string[];
 }
 
-/** Service-registry key under which a `RepoMatcher` is registered. */
-export const REPO_MATCHER_SERVICE = 'repo-matcher';
-
 export interface BuildCommandOptions {
   prompt: string;
   promptExpression: string;
@@ -446,20 +445,6 @@ export interface EventBus {
   emit(event: string, ...args: unknown[]): void;
   invokeAsync<T>(event: string, ...args: unknown[]): Promise<T[]>;
 }
-
-export const StandardEvents = {
-  TASK_CREATED: 'task:created',
-  TASK_GATHER_CONTEXT: 'task:gather_context',
-  TASK_COMPLETED: 'task:completed',
-  TASK_FAILED: 'task:failed',
-} as const;
-
-/**
- * Jira-adapter–agnostic hook for the PR workflow (implemented by
- * `@agent-detective/pr-pipeline`). The Jira plugin resolves this at runtime; do
- * not import the implementation from `@agent-detective/types`.
- */
-export const PR_WORKFLOW_SERVICE = 'pr-workflow' as const;
 
 /** Minimal Jira client surface for posting follow-up comments from the PR module. */
 export interface PrJiraClient {

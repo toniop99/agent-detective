@@ -7,7 +7,6 @@ export default defineConfig({
   splitting: false,
   clean: true,
   external: [
-    '@agent-detective/types',
     '@agent-detective/sdk',
     '@agent-detective/process-utils',
     'zod',

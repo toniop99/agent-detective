@@ -7,6 +7,8 @@ export type {
   RouteSchema,
   RouteDefinition,
   FastifyScope,
+  FastifyRequest,
+  FastifyReply,
 } from '@agent-detective/types';
 
 /**

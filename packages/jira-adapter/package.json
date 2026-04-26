@@ -30,7 +30,6 @@
   "license": "MIT",
   "dependencies": {
     "@agent-detective/sdk": "workspace:*",
-    "@agent-detective/types": "workspace:*",
     "jira.js": "catalog:",
     "marked": "catalog:",
     "zod": "catalog:"

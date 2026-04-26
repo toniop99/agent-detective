@@ -10,8 +10,7 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@agent-detective/types": ["../../types/src/index.ts"]
+      "@/*": ["src/*"]
     }
   },
   "include": ["src/**/*"],

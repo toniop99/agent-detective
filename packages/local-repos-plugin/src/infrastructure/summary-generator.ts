@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AgentRunner, Logger } from '@agent-detective/types';
+import type { AgentRunner, Logger } from '@agent-detective/sdk';
 import type { SummaryGenerationConfig } from '../domain/types.js';
 import { execLocal } from '@agent-detective/process-utils';
 

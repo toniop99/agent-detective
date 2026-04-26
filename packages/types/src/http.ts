@@ -56,6 +56,13 @@ export interface RouteDefinition {
 export type FastifyScope = FastifyInstance;
 
 /**
+ * Re-exported Fastify request and reply types so plugin authors can stay on
+ * a single dependency (`@agent-detective/sdk`, which re-exports from here)
+ * without taking a direct dep on `fastify` for type imports.
+ */
+export type { FastifyRequest, FastifyReply } from 'fastify';
+
+/**
  * Scalar's `x-tagGroups` extension entry — used by the host's
  * `applyTagGroups` helper to render "Core" and "Plugins" sections in the
  * `/docs` sidebar.

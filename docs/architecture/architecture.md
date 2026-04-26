@@ -17,12 +17,10 @@ For **hexagonal-style layering** inside first-party plugins (presentation / appl
 
 ## Type System
 
-All shared types are defined in `@agent-detective/types` package (`packages/types/src/index.ts`).
-
-Plugin developers should import types from `@agent-detective/types`:
+All shared types are defined in `@agent-detective/types` (`packages/types/src/index.ts`) — a host-internal, type-only package. Plugin authors do **not** import it directly; the public surface is `@agent-detective/sdk`, which re-exports every plugin-facing type:
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@agent-detective/types';
+import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@agent-detective/sdk';
 ```
 
 ### Core Types
@@ -38,7 +36,7 @@ import type { Plugin, PluginContext, TaskEvent, AgentRunner } from '@agent-detec
 ## Plugin Interface
 
 ```typescript
-import type { Plugin, PluginContext } from '@agent-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/sdk';
 
 const plugin: Plugin = {
   name: '@agent-detective/plugin-name',

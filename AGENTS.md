@@ -27,8 +27,8 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 
 | Package | Role |
 |---------|------|
-| `@agent-detective/types` | Shared types |
-| `@agent-detective/sdk` | Plugin SDK runtime helpers (`defineRoute`, `registerRoutes`, `zodToPluginSchema`) |
+| `@agent-detective/types` | Host-internal type-only contract package (re-exported via sdk) |
+| `@agent-detective/sdk` | Single plugin-author dependency: types + runtime helpers (`defineRoute`, `registerRoutes`, `definePlugin`, `zodToPluginSchema`) + service constants (`REPO_MATCHER_SERVICE`, `PR_WORKFLOW_SERVICE`, `StandardEvents`) |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process helpers |
 | `@agent-detective/local-repos-plugin` | Repos + `RepoMatcher` |
@@ -37,7 +37,7 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 
 ## Golden rules (summary)
 
-**Do:** `@agent-detective/types` for shared types · `.ts` / `.test.ts` · ESM **`from './x.js'`** · `pnpm run build` (+ `build:app` for root `dist/`).
+**Do:** `@agent-detective/sdk` for plugin authoring (types + runtime + constants) · `@agent-detective/types` only inside the host · `.ts` / `.test.ts` · ESM **`from './x.js'`** · `pnpm run build` (+ `build:app` for root `dist/`).
 
 **Don’t:** edit **`dist/`** · deep relatives from **`packages/*`** into root **`src/`** (CI rejects) · **`.js`** next to **`.ts`** · bad **`rootDir`**.
 

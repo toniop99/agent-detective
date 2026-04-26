@@ -218,8 +218,8 @@ Check the console output - plugins log warnings instead of crashing.
 
 For a complete plugin development guide, see [plugins.md](../plugins/plugins.md).
 
-For type definitions, plugins should import from `@agent-detective/types`:
+Plugin authors import everything from `@agent-detective/sdk` (types and runtime helpers). `@agent-detective/types` is host-internal:
 
 ```typescript
-import type { Plugin, PluginContext } from '@agent-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/sdk';
 ```

@@ -8,8 +8,8 @@ The **root** `agent-detective` app is **`"private": true`** and is **not** publi
 
 | Package | Description |
 |---------|-------------|
-| `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/sdk` | Plugin SDK runtime helpers (`defineRoute`, `registerRoutes`, `zodToPluginSchema`) |
+| `@agent-detective/types` | Host-internal type-only contract package (re-exported through `@agent-detective/sdk` for plugins) |
+| `@agent-detective/sdk` | Plugin SDK — single dependency for plugin authors (types, `defineRoute`, `registerRoutes`, `definePlugin`, `zodToPluginSchema`, service-name constants, `StandardEvents`) |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repo + matcher plugin |
@@ -70,7 +70,7 @@ When you run `pnpm changeset`, it creates a file in `.changeset/` with this form
 
 ```markdown
 ---
-"@agent-detective/types": patch
+"@agent-detective/sdk": patch
 "@agent-detective/jira-adapter": minor
 ---
 
@@ -107,27 +107,32 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Version Compatibility
 
-| @agent-detective/types | agent-detective |
+| @agent-detective/sdk | agent-detective |
 |----------------------|----------------|
 | 1.x | 0.x |
 | 2.x | 1.x (when released) |
 
 ## For External Plugin Developers
 
-Wiring a published or private package into a **running** app (`plugins` in `config`, Docker volume paths, pnpm in the app root) is covered in **[extending-with-plugins.md](extending-with-plugins.md)**. Below: **`@agent-detective/types`** and publish mechanics.
+Wiring a published or private package into a **running** app (`plugins` in `config`, Docker volume paths, pnpm in the app root) is covered in **[extending-with-plugins.md](extending-with-plugins.md)**. Below: **`@agent-detective/sdk`** and publish mechanics.
 
-### Installing Types Package
+### Installing the SDK
 
 ```bash
-npm install @agent-detective/types
+npm install @agent-detective/sdk
 # or
-pnpm add @agent-detective/types
+pnpm add @agent-detective/sdk
 ```
 
-### Using Types in Your Plugin
+### Using the SDK in Your Plugin
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
+import {
+  definePlugin,
+  type Plugin,
+  type PluginContext,
+  type TaskEvent,
+} from '@agent-detective/sdk';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-adapter',
@@ -156,7 +161,7 @@ Within the monorepo, packages use `workspace:*` for dependencies:
 // packages/jira-adapter/package.json
 {
   "dependencies": {
-    "@agent-detective/types": "workspace:*"
+    "@agent-detective/sdk": "workspace:*"
   }
 }
 ```
@@ -232,10 +237,10 @@ If you need to unpublish a version:
 
 ```bash
 # Unpublish specific version
-npm unpublish @agent-detective/types@1.0.1
+npm unpublish @agent-detective/sdk@1.0.1
 
 # Unpublish entire package (use with caution)
-npm unpublish @agent-detective/types --force
+npm unpublish @agent-detective/sdk --force
 ```
 
 Note: You cannot unpublish a version if another package depends on it.

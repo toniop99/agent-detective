@@ -3,10 +3,11 @@ import {
   defineRoute,
   registerRoutes,
   type RouteDefinition,
+  type FastifyScope,
+  type FastifyRequest,
+  type Logger,
 } from '@agent-detective/sdk';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { JiraWebhookResponse } from '../domain/webhook-types.js';
-import type { Logger } from '@agent-detective/types';
 import { JiraWebhookPayloadError } from '../application/webhook-handler.js';
 
 type JiraWebhookHandler = ReturnType<typeof import('../application/webhook-handler.js').createJiraWebhookHandler>;
@@ -105,7 +106,7 @@ export function buildJiraWebhookRoutes(deps: JiraWebhookRouteDeps): RouteDefinit
   return [handle];
 }
 
-export function registerJiraWebhookRoutes(app: FastifyInstance, deps: JiraWebhookRouteDeps): void {
+export function registerJiraWebhookRoutes(app: FastifyScope, deps: JiraWebhookRouteDeps): void {
   registerRoutes(app, buildJiraWebhookRoutes(deps));
 }
 

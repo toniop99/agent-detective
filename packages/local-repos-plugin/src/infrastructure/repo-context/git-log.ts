@@ -1,5 +1,5 @@
 import { execLocal } from '@agent-detective/process-utils';
-import type { Commit, Logger } from '@agent-detective/types';
+import type { Commit, Logger } from '@agent-detective/sdk';
 
 type WarnLog = Pick<Logger, 'warn'>;
 

@@ -56,12 +56,10 @@ my-plugin/
   },
   "keywords": ["agent-detective", "plugin"],
   "peerDependencies": {
-    "@agent-detective/types": "^1.0.0",
     "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@agent-detective/types": "^1.0.0",
     "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0",
     "typescript": "^5.7.0"
@@ -100,7 +98,7 @@ my-plugin/
 
 > **Note:** No decorator flags are required. Routes are described with Zod schemas via `defineRoute()` (see [API Documentation (OpenAPI)](#api-documentation-openapi) below); the same schemas drive runtime validation and the OpenAPI spec at `/docs`.
 
-Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins should use a **semver** range and depend on the npm release of `@agent-detective/types`.
+Monorepo-only: use `"@agent-detective/sdk": "workspace:*"`; published plugins should use a **semver** range and depend on the npm release of `@agent-detective/sdk`. Plugins should **not** depend on `@agent-detective/types` directly — it's a host-internal, type-only contract package, and every plugin-facing type is re-exported through `@agent-detective/sdk`.
 
 ---
 
@@ -110,14 +108,18 @@ Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins 
 
 ```typescript
 // src/index.ts
-import type { Plugin, PluginContext } from '@agent-detective/types';
-import { defineRoute, registerRoutes } from '@agent-detective/sdk';
+import {
+  definePlugin,
+  defineRoute,
+  registerRoutes,
+  type PluginContext,
+} from '@agent-detective/sdk';
 import { z } from 'zod';
 
 const WebhookBody = z.object({ event: z.string() });
 const WebhookResponse = z.object({ status: z.literal('received') });
 
-const myPlugin: Plugin = {
+export default definePlugin({
   name: '@myorg/agent-detective-my-plugin',
   version: '1.0.0',
   schemaVersion: '1.0',
@@ -154,9 +156,7 @@ const myPlugin: Plugin = {
 
     logger.info('My plugin registered successfully');
   }
-};
-
-export default myPlugin;
+});
 ```
 
 > `scope` is a Fastify instance already encapsulated under `/plugins/agent-detective-my-plugin`. The route above mounts at `POST /plugins/agent-detective-my-plugin/webhook` automatically — do not hard-code the prefix.
@@ -188,7 +188,7 @@ pnpm init
 ### 2. Install dependencies
 
 ```bash
-pnpm add @agent-detective/types @agent-detective/sdk zod
+pnpm add @agent-detective/sdk zod
 pnpm add -D typescript tsx
 ```
 
@@ -296,7 +296,6 @@ my-jira-plugin/
     "build": "tsc -p tsconfig.build.json"
   },
   "peerDependencies": {
-    "@agent-detective/types": "^1.0.0",
     "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0"
   }
@@ -306,8 +305,13 @@ my-jira-plugin/
 ### src/index.ts
 
 ```typescript
-import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
-import { defineRoute, registerRoutes } from '@agent-detective/sdk';
+import {
+  defineRoute,
+  registerRoutes,
+  type Plugin,
+  type PluginContext,
+  type TaskEvent,
+} from '@agent-detective/sdk';
 import { z } from 'zod';
 
 const PLUGIN_TAG = '@myorg/agent-detective-jira-plus';
@@ -473,7 +477,7 @@ export function registerMyRoutes(scope: FastifyScope, service: MyService) {
 `scope` is a Fastify instance encapsulated under `/plugins/{sanitized-name}`; routes mount at that prefix automatically.
 
 ```typescript
-import type { Plugin } from '@agent-detective/types';
+import type { Plugin } from '@agent-detective/sdk';
 import { registerMyRoutes } from './my-routes.js';
 
 const myPlugin: Plugin = {
@@ -579,7 +583,7 @@ Or via config:
 
 ### Type Errors
 
-1. Ensure `@agent-detective/types` version is compatible
+1. Ensure `@agent-detective/sdk` version is compatible
 2. Run `pnpm run build` to generate `.d.ts` files
 3. Use `import type` for type-only imports
 

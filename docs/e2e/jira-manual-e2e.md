@@ -51,7 +51,7 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 
 - Set **`repos`** with an absolute **`path`** and a short stable **`name`** (e.g. `my-test-repo`).
 - In Jira, add an issue **label** identical to that **`name`** — this is the only way the adapter links a ticket to a repo (see "Matching a ticket to a repository" below). Labels are matched case-insensitively against `repos[].name`.
-- The plugin exposes a **`RepoMatcher`** service (`REPO_MATCHER_SERVICE` from `@agent-detective/types`) that the Jira adapter calls before dispatching any analysis. It returns the first configured repo whose `name` matches any of the issue's labels, or `null`.
+- The plugin exposes a **`RepoMatcher`** service (`REPO_MATCHER_SERVICE` from `@agent-detective/sdk`) that the Jira adapter calls before dispatching any analysis. It returns the first configured repo whose `name` matches any of the issue's labels, or `null`.
 
 ### Jira adapter
 

@@ -5,7 +5,7 @@ import type {
   ValidatedRepo,
   LocalReposContext,
   LocalReposService,
-} from '@agent-detective/types';
+} from '@agent-detective/sdk';
 
 export type {
   RepoVcsProvider,

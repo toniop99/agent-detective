@@ -1,4 +1,4 @@
-import type { Logger } from '@agent-detective/types';
+import type { Logger } from '@agent-detective/sdk';
 import type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
 export type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';

@@ -1,76 +1,34 @@
 # @agent-detective/types
 
-Shared TypeScript type definitions for agent-detective core and plugins.
+**Host-internal, type-only contract package** for agent-detective.
 
-## Installation
+This package emits **zero runtime code** — every export is an `interface` or `type` alias. It exists as the single source of truth for the shared contract between the host (the `agent-detective` app under `src/`) and the workspace packages (plugins, observability, process-utils).
 
-```bash
-npm install @agent-detective/types
-```
+## Audience
 
-## Usage
+Plugin authors should **not** depend on this package directly.
 
-```typescript
-import type { Plugin, PluginContext } from '@agent-detective/types';
-```
-
-## Types Included
-
-### Core Interfaces
-
-- **TaskEvent** - The common interface that all adapters produce
-- **TaskContext** - Context information for a task
-- **ReplyTarget** - Where to send responses
-
-### Plugin Interface
-
-- **Plugin** - What a plugin must export
-- **PluginSchema** - Configuration schema for a plugin
-- **PluginContext** - What the core injects into plugins
-- **Logger** - Logging interface
-
-### Agent Interfaces
-
-- **Agent** - AI agent definition
-- **AgentRunner** - Interface for running agents
-- **AgentOutput** - Output from an agent
-- **StreamingOutput** - Streaming agent output
-
-### Repository Interfaces
-
-- **RepoContext** - Repository context information
-- **RepoMapping** - Interface for resolving repository paths
-- **Commit** - Git commit information
-
-### Process Interfaces
-
-- **ExecLocalOptions** - Options for local command execution
-- **ProcessUtils** - Process utility functions
-
-## For Plugin Developers
-
-When building a plugin for agent-detective, import the types you need:
+The plugin-author surface lives in [`@agent-detective/sdk`](../sdk/README.md), which re-exports every plugin-facing type from this package alongside the runtime helpers (`defineRoute`, `registerRoutes`, `definePlugin`, `zodToPluginSchema`) and the service-name constants (`REPO_MATCHER_SERVICE`, `PR_WORKFLOW_SERVICE`, `StandardEvents`).
 
 ```typescript
-import type { Plugin, PluginSchema, PluginContext } from '@agent-detective/types';
-
-const myPlugin: Plugin = {
-  name: '@myorg/my-plugin',
-  version: '1.0.0',
-  schema: { type: 'object', properties: {}, required: [] },
-  register(app, context: PluginContext) {
-    // Your plugin logic
-  }
-};
-
-export default myPlugin;
+// In a plugin: pull everything from sdk
+import {
+  definePlugin,
+  type Plugin,
+  type PluginContext,
+  type RepoMatcher,
+  REPO_MATCHER_SERVICE,
+} from '@agent-detective/sdk';
 ```
 
-## Version Compatibility
+## What lives here
 
-| @agent-detective/types | agent-detective |
-|----------------------|----------------|
-| 1.x | 0.x |
+- Plugin contract: `Plugin`, `PluginContext`, `LoadedPlugin`, `PluginSchema`, `PluginSchemaProperty`.
+- Task / event types: `TaskEvent`, `TaskContext`, `ReplyTarget`, `EventBus`, `EventBusHandler`, `Logger`, `TaskQueue`, `EnqueueFn`.
+- Service contracts: `RepoMatcher`, `LocalReposService`, `PrWorkflowService`, `RepoConfig`, `ValidatedRepo`, `Commit`, etc.
+- Agent contract: `AgentRunner`, `Agent`, `AgentInfo`, `AgentOutput`, `StreamingOutput`, `RunAgentOptions`, `BuildCommandOptions`.
+- HTTP contract (`./http.ts`): `RouteDefinition`, `RouteSchema`, `HttpMethod`, `FastifyScope`, `FastifyRequest`, `FastifyReply`, `TagGroup`, `ApplyTagGroupsOptions`.
+- Host-only types: `ProcessUtils`, `ExecLocalOptions`, `ExecLocalStreamingOptions` — used by `@agent-detective/process-utils` and the host, **not** re-exported through sdk.
 
 ## License
 
