@@ -9,7 +9,6 @@ export default defineConfig({
   external: [
     '@agent-detective/types',
     '@agent-detective/core',
-    '@agent-detective/local-repos-plugin',
     '@agent-detective/process-utils',
     'zod',
   ],

@@ -8,6 +8,11 @@ AI-powered code analysis (Jira, webhooks, PR pipeline, local repos, and more). T
 | **Configuration** | [config/](config/) | Load order, env whitelist, long reference |
 | **Plugins** | [plugins/](plugins/) | API guide, custom plugins, development template, publishing |
 | **Contribute to the repo** | [development/](development/) | pnpm, Turbo, agents (Cursor), migration notes |
+| **Agent harness (boot, verify, logs)** | [development/agent-harness.md](development/agent-harness.md) | Runbook for humans + coding agents |
+| **Agent workflow (PR loop)** | [development/agent-workflow.md](development/agent-workflow.md) | Suggested steps before/during/after changes |
+| **Execution plans & tech debt** | [exec-plans/](exec-plans/) | Versioned multi-step intent; rolling debt notes |
+| **Short tool references** | [references/](references/) | pnpm, Turbo, ESM — low-token entry |
+| **Agent golden rules** | [development/agent-golden-rules.md](development/agent-golden-rules.md) | Do / don’t, plugins, common failures |
 | **Design** | [architecture/](architecture/) | System view, layering, [ADR](architecture/adr/) |
 | **Jira (manual E2E)** | [e2e/](e2e/) | Tunnel, webhooks, pr-pipeline walkthroughs |
 | **Reference (generated + changelog)** | [reference/](reference/) | Zod-generated option schemas, [CHANGELOG](reference/CHANGELOG.md) |

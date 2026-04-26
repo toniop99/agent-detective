@@ -1,6 +1,5 @@
-import type { Plugin, PluginContext } from '@agent-detective/types';
+import type { Plugin, PluginContext, LocalReposService } from '@agent-detective/types';
 import { PR_WORKFLOW_SERVICE, type PrWorkflowService } from '@agent-detective/types';
-import type { LocalReposService } from '@agent-detective/local-repos-plugin';
 import * as z from 'zod';
 import { zodToPluginSchema } from '@agent-detective/core';
 import { prPipelineOptionsSchema } from './application/options-schema.js';

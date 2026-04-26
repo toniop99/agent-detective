@@ -46,4 +46,4 @@ Plugin option objects for bundled plugins are now validated with **`.strict()`**
 
 ---
 
-See also [migration.md](migration.md) and [configuration.md](configuration.md).
+See also [migration.md](../development/migration.md) and [configuration.md](../config/configuration.md).

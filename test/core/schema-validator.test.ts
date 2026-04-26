@@ -77,7 +77,7 @@ describe('Schema Validator', () => {
 
   describe('validatePluginConfig', () => {
     it('returns empty config if no schema defined', () => {
-      const plugin = { name: 'test', version: '1.0.0', register: () => {} } as Plugin;
+      const plugin = { name: 'test', version: '1.0.0', schemaVersion: '1.0' as const, register: () => {} } as Plugin;
       const result = validatePluginConfig(plugin, undefined);
       assert.deepEqual(result, {});
     });
@@ -86,6 +86,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test',
         version: '1.0.0',
+        schemaVersion: '1.0' as const,
         register: () => {},
         schema: {
           type: 'object',
@@ -106,6 +107,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test',
         version: '1.0.0',
+        schemaVersion: '1.0' as const,
         register: () => {},
         schema: {
           type: 'object',
@@ -124,6 +126,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test',
         version: '1.0.0',
+        schemaVersion: '1.0' as const,
         register: () => {},
         schema: {
           type: 'object',
@@ -141,6 +144,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test',
         version: '1.0.0',
+        schemaVersion: '1.0' as const,
         register: () => {},
         schema: {
           type: 'object',
@@ -158,6 +162,7 @@ describe('Schema Validator', () => {
       const plugin = {
         name: 'test',
         version: '1.0.0',
+        schemaVersion: '1.0' as const,
         register: () => {},
         schema: {
           type: 'object',
