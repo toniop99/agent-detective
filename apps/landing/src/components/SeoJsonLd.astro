@@ -1,0 +1,44 @@
+---
+/**
+ * JSON-LD for Organization + SoftwareApplication (marketing home).
+ * Descriptions are plain text from i18n meta only.
+ */
+interface Props {
+  canonical: string;
+  description: string;
+}
+
+const { canonical, description } = Astro.props;
+const siteOrigin = new URL(canonical).origin;
+const github = 'https://github.com/toniop99/agent-detective';
+const orgId = `${siteOrigin}/#organization`;
+
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': orgId,
+      name: 'Agent Detective',
+      url: siteOrigin,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteOrigin}/og-image.png`,
+      },
+      sameAs: [github],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'Agent Detective',
+      description,
+      url: canonical,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Cross-platform',
+      license: 'https://opensource.org/licenses/MIT',
+      isPartOf: { '@id': orgId },
+    },
+  ],
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(graph)} />

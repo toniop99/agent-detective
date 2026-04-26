@@ -1,32 +1,57 @@
 ---
 import '../styles/global.css';
 import LandingInteractivity from '../components/LandingInteractivity.astro';
+import SeoJsonLd from '../components/SeoJsonLd.astro';
+import type { LandingStrings, Lang } from '../i18n/strings';
+import { landingPath } from '../i18n/strings';
 
 interface Props {
-  title: string;
-  description: string;
+  lang: Lang;
+  copy: LandingStrings;
   ogImagePath?: string;
 }
 
-const { title, description, ogImagePath = 'og-image.png' } = Astro.props;
+const { lang, copy, ogImagePath = 'og-image.png' } = Astro.props;
+const { layout, meta } = copy;
+const title = meta.pageTitle;
+const description = meta.description;
 const canonical = new URL(Astro.url.pathname, Astro.site!);
 const ogUrl = new URL(ogImagePath, Astro.site!);
 const githubUrl = 'https://github.com/toniop99/agent-detective';
+const homeHref = landingPath(lang);
+const siteBase = Astro.site!;
+const hrefEn = new URL('/en/', siteBase).href;
+const hrefEs = new URL('/es/', siteBase).href;
+const canonicalHref = canonical.href;
+const ogLocale = lang === 'es' ? 'es_ES' : 'en_US';
+const ogLocaleAlternate = lang === 'es' ? 'en_US' : 'es_ES';
+/** Default OG share image (same asset as CTA band). */
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
 ---
 
 <!doctype html>
-<html lang="en" data-theme="ink" class="min-h-svh">
+<html lang={lang} data-theme="ink" class="min-h-svh">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="canonical" href={canonical} />
+    <link rel="canonical" href={canonicalHref} />
+    <link rel="alternate" hreflang="en" href={hrefEn} />
+    <link rel="alternate" hreflang="es" href={hrefEs} />
+    <link rel="alternate" hreflang="x-default" href={hrefEn} />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonical} />
+    <SeoJsonLd canonical={canonicalHref} description={description} />
+    <meta property="og:url" content={canonicalHref} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogUrl.href} />
+    <meta property="og:image:width" content={String(OG_IMAGE_WIDTH)} />
+    <meta property="og:image:height" content={String(OG_IMAGE_HEIGHT)} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:locale" content={ogLocale} />
+    <meta property="og:locale:alternate" content={ogLocaleAlternate} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
@@ -45,7 +70,7 @@ const githubUrl = 'https://github.com/toniop99/agent-detective';
       href="#main"
       class="bg-evidence-400 text-ink-1000 focus:ring-ink-1000 focus:ring-offset-paper-50 sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:px-3 focus:py-2 focus:ring-2 focus:ring-offset-2"
     >
-      Skip to content
+      {layout.skipToContent}
     </a>
     <div
       class="ad-grain pointer-events-none fixed inset-0 z-0 mix-blend-overlay opacity-[0.06]"
@@ -65,38 +90,60 @@ const githubUrl = 'https://github.com/toniop99/agent-detective';
         >
           <a
             class="text-paper-200 group font-display text-xl font-semibold tracking-tight sm:text-2xl"
-            href="/"
-            aria-label="Agent Detective home"
+            href={homeHref}
+            aria-label={layout.homeAria}
           >
             Agent <span class="text-evidence-300/95">Detective</span>
           </a>
-          <div
-            class="flex flex-wrap items-center gap-2 sm:gap-4"
-          >
+          <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+            <nav
+              class="text-paper-200/80 flex flex-wrap items-center gap-1.5 font-mono text-[0.65rem] sm:text-xs"
+              aria-label={layout.languageNav}
+            >
+              <a
+                class="rounded-sm border border-transparent px-1.5 py-0.5 transition hover:text-paper-50 aria-[current=page]:border-paper-200/25 aria-[current=page]:text-paper-50"
+                href="/en/"
+                hreflang="en"
+                lang="en"
+                aria-current={lang === 'en' ? 'page' : undefined}
+                onclick="try{localStorage.setItem('ad-landing-lang','en')}catch(e){}"
+                >{layout.langEnglish}</a
+              >
+              <span class="text-paper-200/35" aria-hidden="true">/</span>
+              <a
+                class="rounded-sm border border-transparent px-1.5 py-0.5 transition hover:text-paper-50 aria-[current=page]:border-paper-200/25 aria-[current=page]:text-paper-50"
+                href="/es/"
+                hreflang="es"
+                lang="es"
+                aria-current={lang === 'es' ? 'page' : undefined}
+                onclick="try{localStorage.setItem('ad-landing-lang','es')}catch(e){}"
+                >{layout.langSpanish}</a
+              >
+            </nav>
             <button
               type="button"
               id="ad-theme-btn"
               class="text-paper-200/80 hover:text-paper-50 focus:ring-evidence-400/70 border-paper-200/20 rounded-sm border px-2 py-1 font-mono text-[0.7rem] font-medium focus:ring-2 focus:ring-offset-2 focus:ring-offset-ink-1000/0 sm:text-xs"
               aria-pressed="false"
-              aria-label="Use warm case file colors"
+              aria-label={layout.themeInkAria}
             >
-              <span class="ad-theme-label"
-              >Case file</span
-              >
+              <span class="ad-theme-label">{layout.themeLabelInk}</span>
             </button>
             <nav
-            class="flex flex-wrap items-center gap-3 font-mono text-sm sm:gap-5"
-            aria-label="Main"
-          >
-            <a
-              class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
-              href="/docs/"
-            >Docs</a>
-            <a
-              class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
-              href={githubUrl}
-            >GitHub</a>
-          </nav>
+              class="flex flex-wrap items-center gap-3 font-mono text-sm sm:gap-5"
+              aria-label={layout.navMain}
+            >
+              <a
+                class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
+                href="/docs/"
+                >{layout.docs}</a
+              >
+              <a
+                class="text-paper-200/85 hover:text-paper-50 focus:outline-none focus:ring-2 focus:ring-evidence-400/80 focus:ring-offset-2 focus:ring-offset-ink-1000"
+                href={githubUrl}
+                >{layout.github}</a
+              >
+            </nav>
           </div>
         </div>
       </header>
@@ -109,18 +156,18 @@ const githubUrl = 'https://github.com/toniop99/agent-detective';
           class="mx-auto max-w-6xl px-4 py-10 sm:px-6"
         >
           <p class="text-paper-200/60 font-mono text-sm">
-            MIT License ·
+            {layout.footerLicense} ·
             <a class="text-evidence-300/90 underline-offset-2 hover:underline" href={githubUrl}
-              >Source on GitHub</a
+              >{layout.footerSource}</a
             >
             ·
             <a class="text-evidence-300/90 underline-offset-2 hover:underline" href="/docs/"
-              >Documentation</a
+              >{layout.footerDocs}</a
             >
           </p>
         </div>
       </footer>
     </div>
-    <LandingInteractivity />
+    <LandingInteractivity client={copy.client} />
   </body>
 </html>

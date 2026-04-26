@@ -1,9 +1,12 @@
 ---
-const steps = [
-  { step: 1, text: 'Event arrives: Jira, Slack, or your adapter—normalized into a single task model.' },
-  { step: 2, text: 'The core agent uses local repo context and your matching rules to analyze and reason.' },
-  { step: 3, text: 'Output where you need it: issue comments, optional PR flow, and full observability trail.' },
-] as const;
+import type { LandingStrings } from '../i18n/strings';
+
+interface Props {
+  flow: LandingStrings['flow'];
+}
+
+const { flow } = Astro.props;
+const steps = flow.steps.map((text, idx) => ({ step: idx + 1, text }));
 ---
 
 <section
@@ -21,21 +24,17 @@ const steps = [
       <h2
         id="flow-heading"
         class="ad-section-label"
-      >Docket</h2
+      >{flow.sectionLabel}</h2
       >
       <p
         class="text-paper-50 font-display mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
       >
-        From webhook to well-grounded write-up
+        {flow.title}
       </p>
       <p
         class="text-paper-200/80 mt-4 text-base leading-relaxed"
-      >
-        The same path every time: <strong class="text-paper-50">normalize</strong>,
-        <strong class="text-paper-50">analyze</strong>,
-        <strong class="text-paper-50">answer</strong>. You keep control of config, secrets, and
-        where the model runs. Embed AI into your engineering workflow as a governed, extensible automation service.
-      </p>
+        set:html={flow.introHtml}
+      />
     </div>
     <div
       class="mt-8 lg:col-span-7 lg:mt-0"

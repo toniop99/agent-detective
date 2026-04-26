@@ -1,5 +1,12 @@
 ---
+import type { LandingStrings } from '../i18n/strings';
+
+interface Props {
+  cta: LandingStrings['cta'];
+}
+
 const github = 'https://github.com/toniop99/agent-detective';
+const { cta } = Astro.props;
 ---
 
 <section
@@ -25,16 +32,12 @@ const github = 'https://github.com/toniop99/agent-detective';
           id="cta-heading"
           class="text-paper-50 font-display text-3xl font-semibold text-balance sm:text-4xl"
         >
-          Ready to wire your first incident?
+          {cta.title}
         </h2>
         <p
           class="text-paper-200/85 text-base leading-relaxed sm:text-lg"
-        >
-          The docs walk through plugins, <span
-            class="text-paper-200/90 font-mono text-sm"
-          >config/default.json</span
-          >, Docker, and production checks—no guesswork.
-        </p>
+          set:html={cta.bodyHtml}
+        />
         <div
           class="flex flex-wrap items-center gap-3 pt-1"
         >
@@ -48,13 +51,13 @@ const github = 'https://github.com/toniop99/agent-detective';
             />
             <span
               class="relative"
-            >Get started</span
+            >{cta.getStarted}</span
             >
           </a>
           <a
             class="text-paper-50 focus:ring-evidence-400/80 min-h-12 inline-flex items-center border border-paper-200/15 bg-ink-900/30 px-5 font-mono text-sm font-medium backdrop-blur-sm transition hover:border-paper-200/25 focus:outline-none focus:ring-2"
             href={github}
-          >Open GitHub</a
+          >{cta.openGithub}</a
           >
         </div>
       </div>

@@ -1,28 +1,37 @@
 ---
-import CtaSection from '../components/CtaSection.astro';
-import FeatureGrid from '../components/FeatureGrid.astro';
-import FlowSection from '../components/FlowSection.astro';
-import HeroSection from '../components/HeroSection.astro';
-import PipelineBand from '../components/PipelineBand.astro';
-import Layout from '../layouts/Layout.astro';
-
-const pageTitle = 'Agent Detective';
-const description =
-  'Event-driven AI code analysis. Plugins normalize Jira, Telegram, Slack and more; repo-grounded insight, optional PR automation, self-hosted observability.';
+// Root: redirect to /en/ or /es/ using saved preference or navigator language.
 ---
 
-<Layout
-  title={pageTitle}
-  description={description}
->
-  <main
-    id="main"
-    class="mx-auto max-w-6xl px-4 pb-24 sm:px-6"
-  >
-    <HeroSection />
-    <PipelineBand />
-    <FeatureGrid />
-    <FlowSection />
-    <CtaSection />
-  </main>
-</Layout>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Detective</title>
+    <meta name="robots" content="noindex" />
+    <script is:inline>
+      (function () {
+        var k = 'ad-landing-lang';
+        var path;
+        try {
+          path = localStorage.getItem(k);
+        } catch (e) {
+          path = null;
+        }
+        if (path !== 'en' && path !== 'es') {
+          var nav = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+          path = /^es/i.test(String(nav)) ? 'es' : 'en';
+        }
+        var tail = (location.search || '') + (location.hash || '');
+        location.replace('/' + path + '/' + tail);
+      })();
+    </script>
+  </head>
+  <body style="background:#050506;color:#e8e4dc;font-family:system-ui,sans-serif;padding:2rem">
+    <p>
+      <a style="color:#9ae" href="/en/">Continue in English</a>
+      ·
+      <a style="color:#9ae" href="/es/">Continuar en español</a>
+    </p>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+---
+import CtaSection from '../../components/CtaSection.astro';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import FlowSection from '../../components/FlowSection.astro';
+import HeroSection from '../../components/HeroSection.astro';
+import PipelineBand from '../../components/PipelineBand.astro';
+import Layout from '../../layouts/Layout.astro';
+import { strings, type Lang } from '../../i18n/strings';
+
+export function getStaticPaths() {
+  return (['en', 'es'] as const).map((lang) => ({ params: { lang } }));
+}
+
+const lang = Astro.params.lang as Lang;
+const copy = strings[lang];
+---
+
+<Layout
+  lang={lang}
+  copy={copy}
+>
+  <main
+    id="main"
+    class="mx-auto max-w-6xl px-4 pb-24 sm:px-6"
+  >
+    <HeroSection hero={copy.hero} />
+    <PipelineBand pipeline={copy.pipeline} />
+    <FeatureGrid features={copy.features} />
+    <FlowSection flow={copy.flow} />
+    <CtaSection cta={copy.cta} />
+  </main>
+</Layout>
