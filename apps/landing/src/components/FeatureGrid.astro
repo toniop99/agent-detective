@@ -1,24 +1,12 @@
 ---
-const features = [
-  {
-    n: '01',
-    title: 'Source-agnostic events',
-    body:
-      'Webhooks and adapters become one task model—Jira, chat, or your own plugin. The agent runner does not care who knocked.',
-  },
-  {
-    n: '02',
-    title: 'Repo-grounded analysis',
-    body:
-      'Local repositories and matching connect incidents to the right tree. Output stays honest to the code you run.',
-  },
-  {
-    n: '03',
-    title: 'Operator-ready',
-    body:
-      'Express, health, metrics, structured logs, JSON and env. Ship with Docker from GHCR when you are done iterating locally.',
-  },
-] as const;
+import type { LandingStrings } from '../i18n/strings';
+
+interface Props {
+  features: LandingStrings['features'];
+}
+
+const { features } = Astro.props;
+const list = features.items.map((f, i) => ({ ...f, n: String(i + 1).padStart(2, '0'), i }));
 ---
 
 <section
@@ -33,17 +21,17 @@ const features = [
     <h2
       id="features-heading"
       class="ad-section-label"
-    >Case notes</h2
+    >{features.sectionLabel}</h2
     >
     <p
       class="text-paper-50 font-display mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
     >
-      Built for real incidents, not slide decks
+      {features.title}
     </p>
     <p
       class="text-paper-200/80 mx-auto mt-3 max-w-2xl text-lg italic sm:text-xl lg:mx-0"
     >
-      “One process from signal to story—tickets in, diffs and comments out.”
+      {features.quote}
     </p>
   </div>
 
@@ -55,16 +43,16 @@ const features = [
       role="list"
     >
       {
-        features.map((f, i) => (
+        list.map((f) => (
           <li
             class:list={[
               'ad-card-raise group relative overflow-hidden p-5 pl-5 transition-transform duration-300 hover:-translate-y-0.5 sm:pl-6',
-              i === 0
+              f.i === 0
                 ? 'border-paper-200/8 border-l-4 border-t border-r border-b border-l-evidence-400/70'
                 : 'border-paper-200/8 border',
             ]}
           >
-            {i === 0 && (
+            {f.i === 0 && (
               <div
                 class="to-transparent pointer-events-none absolute inset-0 bg-linear-to-r from-evidence-400/5 opacity-0 transition-opacity group-hover:opacity-100"
                 aria-hidden="true"
@@ -85,7 +73,7 @@ const features = [
                 >{f.body}
                 </p>
               </div>
-              {i === 0 && (
+              {f.i === 0 && (
                 <div
                   class="text-evidence-400/35 hidden shrink-0 sm:block"
                   aria-hidden="true"
@@ -105,7 +93,7 @@ const features = [
                   </svg>
                 </div>
               )}
-              {i === 1 && (
+              {f.i === 1 && (
                 <div
                   class="text-amber-400/30 hidden shrink-0 sm:block"
                   aria-hidden="true"
@@ -122,7 +110,7 @@ const features = [
                   </svg>
                 </div>
               )}
-              {i === 2 && (
+              {f.i === 2 && (
                 <div
                   class="text-paper-200/20 hidden shrink-0 sm:block"
                   aria-hidden="true"
@@ -156,13 +144,13 @@ const features = [
           width={900}
           height={675}
           class="h-full w-full object-cover"
-          alt="Risograph-style three-step flow: alert, lens, branch—outcome, not a generic diagram"
+          alt=""
           loading="lazy"
         />
         <figcaption
           class="text-paper-200/50 ad-section-label border-paper-200/8 absolute right-0 bottom-0 left-0 border-t bg-ink-950/70 px-3 py-2 text-left text-[0.65rem] backdrop-blur-sm"
         >
-          Fig. 1 — risograph-style path: signal to write-up
+          {features.figCaption}
         </figcaption>
       </figure>
     </div>

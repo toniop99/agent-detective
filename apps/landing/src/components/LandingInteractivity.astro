@@ -1,19 +1,27 @@
 ---
+import type { LandingStrings } from '../i18n/strings';
+
+interface Props {
+  client: LandingStrings['client'];
+}
+
+const { client } = Astro.props;
+const scrollLinks = [
+  { href: '#top', label: client.scrollStart },
+  { href: '#pipeline', label: client.scrollPipeline },
+  { href: '#evidence', label: client.scrollEvidence },
+  { href: '#docket', label: client.scrollDocket },
+  { href: '#next-step', label: client.scrollCta },
+] as const;
 ---
 
 <nav
   class="ad-scroll-rail text-paper-200/50 pointer-events-none fixed right-2 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-2.5 py-2 lg:flex"
   role="navigation"
-  aria-label="On this page"
+  aria-label={client.scrollNav}
 >
   {
-    [
-      { href: '#top', label: 'Start' },
-      { href: '#pipeline', label: 'Pipeline' },
-      { href: '#evidence', label: 'Case notes' },
-      { href: '#docket', label: 'Docket' },
-      { href: '#next-step', label: 'Get started' },
-    ].map((x) => (
+    scrollLinks.map((x) => (
       <a
         class="pointer-events-auto"
         href={x.href}
@@ -33,14 +41,30 @@
   aria-hidden="true"
   aria-live="polite"
 >
-  Copied to clipboard
+  {client.toastCopied}
 </div>
+
+<script type="application/json" id="ad-i18n-client" set:html={JSON.stringify(client)}></script>
 
 <script is:inline>
   (function () {
     var THEME_KEY = 'ad-landing-theme';
     var sectionIds = ['top', 'pipeline', 'evidence', 'docket', 'next-step'];
     var root = document.documentElement;
+
+    var clientEl = document.getElementById('ad-i18n-client');
+    var client = {
+      themeAriaInk: 'Use warm case file colors',
+      themeAriaCasefile: 'Use default night ink colors',
+      themeLabelInk: 'Case file',
+      themeLabelCasefile: 'Night',
+      toastCopied: 'Copied to clipboard',
+    };
+    if (clientEl && clientEl.textContent) {
+      try {
+        client = JSON.parse(clientEl.textContent);
+      } catch (e) {}
+    }
 
     function applyTheme(t) {
       if (t !== 'ink' && t !== 'casefile') t = 'ink';
@@ -51,9 +75,9 @@
       var btn = document.getElementById('ad-theme-btn');
       if (btn) {
         btn.setAttribute('aria-pressed', t === 'casefile' ? 'true' : 'false');
-        btn.setAttribute('aria-label', t === 'ink' ? 'Use warm case file colors' : 'Use default night ink colors');
+        btn.setAttribute('aria-label', t === 'ink' ? client.themeAriaInk : client.themeAriaCasefile);
         var span = btn.querySelector('.ad-theme-label');
-        if (span) span.textContent = t === 'ink' ? 'Case file' : 'Night';
+        if (span) span.textContent = t === 'ink' ? client.themeLabelInk : client.themeLabelCasefile;
       }
     }
 
@@ -152,6 +176,7 @@
 
     function showToast() {
       if (!toast) return;
+      toast.textContent = client.toastCopied;
       toast.setAttribute('aria-hidden', 'false');
       clearTimeout(toastT);
       toastT = setTimeout(function () {

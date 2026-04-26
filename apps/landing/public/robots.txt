@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Marketing locales (root sitemap from apps/landing)
+Sitemap: https://agent-detective.chapascript.dev/sitemap-index.xml
+# Starlight docs under /docs/
+Sitemap: https://agent-detective.chapascript.dev/docs/sitemap-index.xml

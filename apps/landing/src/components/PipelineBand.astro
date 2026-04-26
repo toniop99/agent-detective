@@ -1,5 +1,11 @@
 ---
-// Full-bleed visual band: plugin graph imagery.
+import type { LandingStrings } from '../i18n/strings';
+
+interface Props {
+  pipeline: LandingStrings['pipeline'];
+}
+
+const { pipeline } = Astro.props;
 ---
 
 <section
@@ -28,15 +34,14 @@
         id="pipeline-heading"
         class="text-paper-50 font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl md:text-4xl"
       >
-        One core.<span
+        {pipeline.headingCore}<span
           class="text-evidence-300/95"
-        > Many sources.</span>
+        >{pipeline.headingSources}</span>
       </h2>
       <p
         class="text-paper-200/80 mt-3 max-w-xl text-pretty text-sm sm:text-base"
       >
-        Adapters and plugins turn webhooks and APIs into a single task shape—so the agent always runs
-        the same way, no matter which tool rang the bell.
+        {pipeline.body}
       </p>
     </div>
   </div>

@@ -120,6 +120,9 @@ importers:
 
   apps/landing:
     dependencies:
+      '@astrojs/sitemap':
+        specifier: ^3.7.2
+        version: 3.7.2
       '@tailwindcss/vite':
         specifier: ^4.1.11
         version: 4.2.4(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))

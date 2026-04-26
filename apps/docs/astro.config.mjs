@@ -15,6 +15,11 @@ export default defineConfig({
       description: 'AI-powered code analysis; plugins for Jira and more.',
       social: [
         {
+          icon: 'external',
+          label: 'Product site',
+          href: 'https://agent-detective.chapascript.dev/en/',
+        },
+        {
           icon: 'github',
           label: 'GitHub',
           href: 'https://github.com/toniop99/agent-detective',
