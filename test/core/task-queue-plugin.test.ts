@@ -1,5 +1,6 @@
-import { describe, it, beforeEach, mock } from 'node:test';
+import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { createPluginSystem } from '../../src/core/plugin-system.js';
 import type { AgentRunner, Plugin, TaskQueue } from '../../src/core/types.js';
 import type { EventBus } from '@agent-detective/types';
@@ -25,9 +26,15 @@ function createMockAgentRunner(): AgentRunner {
 
 describe('TaskQueue / registerTaskQueue', () => {
   let eventBus: EventBus;
+  let app: FastifyInstance;
 
   beforeEach(() => {
     eventBus = createNoopEventBus();
+    app = Fastify({ logger: false });
+  });
+
+  afterEach(async () => {
+    await app.close();
   });
 
   it('routes enqueue through a plugin-registered TaskQueue', async () => {
@@ -55,7 +62,7 @@ describe('TaskQueue / registerTaskQueue', () => {
       logger: console,
     });
 
-    await pluginSystem.loadPlugin(queuePlugin, {} as never, {});
+    await pluginSystem.loadPlugin(queuePlugin, app, {});
 
     await pluginSystem.enqueue('task-a', async () => {
       seen.push('work');
@@ -94,7 +101,7 @@ describe('TaskQueue / registerTaskQueue', () => {
       },
     };
 
-    await pluginSystem.loadPlugin(p, {} as never, {});
+    await pluginSystem.loadPlugin(p, app, {});
     assert.equal(shutdown.mock.calls.length, 1);
   });
 });

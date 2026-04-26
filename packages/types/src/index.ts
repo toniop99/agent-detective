@@ -42,7 +42,20 @@ export interface Plugin {
   schema?: PluginSchema;
   dependsOn?: string[];
   requiresCapabilities?: string[];
-  register(app: import('express').Application, context: PluginContext): Promise<object[] | void> | object[] | void;
+  /**
+   * Called once per plugin during boot. Receives an encapsulated Fastify
+   * scope (already prefixed under `/plugins/{sanitized-name}`) and the
+   * shared {@link PluginContext}. Register routes via
+   * `registerRoutes(scope, [...])` from `@agent-detective/core`, or call
+   * `scope.route(...)` / `scope.get(...)` directly. Plugins may register
+   * Fastify hooks (`onRequest`, `preHandler`, `setErrorHandler`) on this
+   * scope; encapsulation keeps them isolated from other plugins.
+   *
+   * Breaking change vs the pre-2026-04 API: previously took
+   * `(app: Express.Application, ctx)` and could return controller
+   * instances; now Fastify-native, returns `void`.
+   */
+  register(scope: import('fastify').FastifyInstance, context: PluginContext): Promise<void> | void;
 }
 
 export interface PathOperation {
@@ -170,7 +183,6 @@ export interface PluginContext {
   enqueue: EnqueueFn;
   config: Record<string, unknown>;
   logger: Logger;
-  controllers: object[];
   /**
    * Event bus for inter-plugin communication and task lifecycle.
    */

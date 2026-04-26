@@ -46,8 +46,8 @@ const myPlugin: Plugin = {
     required: []
   },
 
-  register(app, context: PluginContext) {
-    // app: Express app instance
+  register(scope, context: PluginContext) {
+    // scope: encapsulated Fastify instance mounted at /plugins/{sanitized-name}
     // context: core dependencies (see Section 2)
   }
 };
@@ -61,7 +61,7 @@ export default myPlugin;
 |-------|------|-------------|
 | `name` | `string` | Unique plugin identifier (e.g., `@agent-detective/jira-adapter`) |
 | `version` | `string` | Semver version (e.g., `1.0.0`) |
-| `register` | `function` | Called on load with `(app, context)` |
+| `register` | `function` | Called on load with `(scope, context)`, where `scope` is a Fastify instance encapsulated under `/plugins/{sanitized-name}` |
 | `schemaVersion` | `string` | Must be `'1.0'` |
 
 ### Optional Fields
@@ -77,7 +77,7 @@ export default myPlugin;
 The `register` function receives a `context` object with all core services:
 
 ```typescript
-register(app, context: PluginContext) {
+register(scope, context: PluginContext) {
   const {
     agentRunner,              // run AI agents
     config,                   // validated plugin config with defaults applied
@@ -344,7 +344,7 @@ packages/my-jira/
 
 ### Webhook + services pattern (sketch)
 
-Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are normally registered via `@Controller` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
+Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are registered via `defineRoute()` + `registerRoutes(scope, ...)` from `@agent-detective/core` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
 
 The official **jira-adapter** implements the full Jira + fan-out flow — treat it as the reference, not the stale snippet below. This sketch shows the *correct* `PluginContext` surface:
 

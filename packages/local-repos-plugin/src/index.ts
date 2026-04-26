@@ -23,8 +23,7 @@ import { detectTechStack } from './infrastructure/tech-stack-detector.js';
 import { generateSummary } from './infrastructure/summary-generator.js';
 import { gitLog } from './infrastructure/repo-context/git-log.js';
 import { buildRepoContext, formatRepoContextForPrompt } from './infrastructure/repo-context/index.js';
-import { registerController } from '@agent-detective/core';
-import { ReposController } from './presentation/repos-controller.js';
+import { registerReposRoutes } from './presentation/repos-controller.js';
 import { createRepoAnalyzer } from './application/analyzer.js';
 import * as z from 'zod';
 import { localReposPluginOptionsSchema } from './application/options-schema.js';
@@ -94,7 +93,7 @@ const localReposPlugin: Plugin = {
   schema: localReposPluginSchema,
   dependsOn: [],
 
-  async register(app, context) {
+  async register(scope, context) {
     const extContext = context as LocalReposPluginContext;
 
     const parsed = localReposPluginOptionsSchema.safeParse(context.config ?? {});
@@ -181,10 +180,7 @@ const localReposPlugin: Plugin = {
 
     extContext.logger?.info('local-repos-plugin: Registering HTTP endpoints');
 
-    const reposController = new ReposController(localRepos);
-    registerController(app, reposController);
-
-    return [reposController];
+    registerReposRoutes(scope, localRepos);
   },
 };
 

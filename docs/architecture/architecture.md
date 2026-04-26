@@ -54,8 +54,8 @@ const plugin: Plugin = {
     required: []
   },
   
-  register(app, context: PluginContext) {
-    // app: Express app instance
+  register(scope, context: PluginContext) {
+    // scope: encapsulated Fastify instance under /plugins/{sanitized-name}
     // context: {
     //   agentRunner: AgentRunner,
     //   config: Record<string, unknown>,
@@ -79,9 +79,9 @@ export default plugin;
    b. Validate plugin schema (name, version, register)
    c. Validate plugin config against schema
    d. Merge defaults from schema
-   e. Call register(app, context)
+   e. Call register(scope, context) under the plugin's Fastify scope
    f. If error: log warning, continue with next
-3. Start Express server
+3. Start Fastify server
 ```
 
 ## Error Handling
@@ -94,7 +94,7 @@ export default plugin;
 
 ```
                               ┌──────────────────┐
-                              │   Express Server  │
+                              │   Fastify Server  │
                                │ /plugins/agent-detective-:source │
                               └────────┬─────────┘
                                        │

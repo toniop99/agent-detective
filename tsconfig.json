@@ -19,8 +19,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "paths": {
       "@/*": ["./src/*"],
       "@agent-detective/types": ["./packages/types/src/index.ts"],

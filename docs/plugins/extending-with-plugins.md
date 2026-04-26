@@ -70,7 +70,7 @@ If you add a new workspace package under `packages/*`, add it to the root `confi
 
 ## See also
 
-- [plugin-development.md](plugin-development.md) — build, `package.json`, decorators, long examples  
+- [plugin-development.md](plugin-development.md) — build, `package.json`, `defineRoute` examples  
 - [plugins.md](plugins.md#9-publishing-a-plugin-as-an-npm-package) — publishing a plugin as an npm package (in-guide)  
 - [configuration.md](../config/configuration.md) — env merging into `plugins`  
 - [installation.md](../operator/installation.md) — Docker mounts and deploy paths

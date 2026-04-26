@@ -1,13 +1,10 @@
-import type { Request, Response } from 'express';
+import { z } from 'zod';
 import {
-  Controller,
-  Post,
-  Summary,
-  Description,
-  Tags,
-  Response as OpenApiResponse,
-  RequestBody,
+  defineRoute,
+  registerRoutes,
+  type RouteDefinition,
 } from '@agent-detective/core';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { JiraWebhookResponse } from '../domain/webhook-types.js';
 import type { Logger } from '@agent-detective/types';
 import { JiraWebhookPayloadError } from '../application/webhook-handler.js';
@@ -16,185 +13,100 @@ type JiraWebhookHandler = ReturnType<typeof import('../application/webhook-handl
 
 const PLUGIN_TAG = '@agent-detective/jira-adapter';
 
-@Controller('/webhook/jira', { tags: [PLUGIN_TAG], description: 'Jira webhook endpoints' })
-export class JiraWebhookController {
-  private webhookHandler?: JiraWebhookHandler;
-  private logger?: Logger;
+/**
+ * Schema is intentionally permissive: Jira sends multiple shapes (native
+ * webhooks, Automation "Jira format", Automation "Automation format"),
+ * `resolveWebhookEvent` below disambiguates them and the handler treats
+ * unknown payloads as 400. Validating only the loose envelope here keeps
+ * the adapter compatible with future Jira shape changes.
+ */
+const JiraWebhookBody = z
+  .object({
+    webhookEvent: z.string().optional(),
+    issue_event_type_name: z.string().optional(),
+    eventTypeName: z.string().optional(),
+    timestamp: z.number().optional(),
+    issue: z.record(z.string(), z.unknown()).optional(),
+    comment: z.record(z.string(), z.unknown()).optional(),
+    user: z.record(z.string(), z.unknown()).optional(),
+    changelog: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
 
-  setWebhookHandler(handler: JiraWebhookHandler): void {
-    this.webhookHandler = handler;
-  }
+const JiraWebhookQuery = z
+  .object({ webhookEvent: z.string().optional() })
+  .passthrough();
 
-  setLogger(logger: Logger): void {
-    this.logger = logger;
-  }
+const JiraWebhookOk = z
+  .object({
+    status: z.enum(['success', 'ignored', 'error']),
+    taskId: z.string().optional(),
+    message: z.string().optional(),
+  })
+  .passthrough();
 
-  @Post('/')
-  @Summary('Handle Jira webhook')
-  @Description('Receives and processes Jira webhook events for issue created, updated, or deleted')
-  @Tags(PLUGIN_TAG)
-  @RequestBody({
-    description: 'Jira webhook payload containing event information',
-    required: true,
-    example: {
-      webhookEvent: 'jira:issue_created',
-      timestamp: 1713222000000,
-      issue: {
-        id: '12345',
-        key: 'PROJ-123',
-        fields: {
-          summary: 'Bug in user login',
-          description: 'Users are unable to login with SSO',
-          issuetype: {
-            id: '1',
-            name: 'Bug',
-            subtask: false,
-          },
-          priority: {
-            id: '3',
-            name: 'High',
-          },
-          status: {
-            id: '1',
-            name: 'Open',
-            statusCategory: {
-              id: '2',
-              key: 'new',
-              name: 'To Do',
-            },
-          },
-          project: {
-            id: '10000',
-            key: 'PROJ',
-            name: 'My Project',
-          },
-          assignee: {
-            accountId: 'user123',
-            displayName: 'John Developer',
-            emailAddress: 'john@example.com',
-            active: true,
-          },
-          reporter: {
-            accountId: 'user456',
-            displayName: 'Jane Reporter',
-            emailAddress: 'jane@example.com',
-            active: true,
-          },
-          labels: ['bug', 'login', 'sso'],
-          created: '2026-04-01T10:00:00.000Z',
-          updated: '2026-04-15T14:30:00.000Z',
-        },
-      },
-      user: {
-        accountId: 'user456',
-        displayName: 'Jane Reporter',
-        emailAddress: 'jane@example.com',
-        active: true,
-      },
-    },
+const JiraWebhookError = z.object({
+  status: z.literal('error'),
+  message: z.string(),
+});
+
+export interface JiraWebhookRouteDeps {
+  webhookHandler: JiraWebhookHandler;
+  logger?: Logger;
+}
+
+export function buildJiraWebhookRoutes(deps: JiraWebhookRouteDeps): RouteDefinition[] {
+  const { webhookHandler, logger } = deps;
+
+  const handle = defineRoute({
+    method: 'POST',
+    url: '/webhook/jira',
     schema: {
-      type: 'object',
-      properties: {
-        webhookEvent: { type: 'string', description: 'The type of Jira event' },
-        timestamp: { type: 'number', description: 'Event timestamp in milliseconds' },
-        issue: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            key: { type: 'string' },
-            fields: {
-              type: 'object',
-              properties: {
-                summary: { type: 'string' },
-                description: { type: 'string', nullable: true },
-                issuetype: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    name: { type: 'string' },
-                    subtask: { type: 'boolean' },
-                  },
-                },
-                priority: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    name: { type: 'string' },
-                  },
-                },
-                status: { type: 'object' },
-                project: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    key: { type: 'string' },
-                    name: { type: 'string' },
-                  },
-                },
-                assignee: { type: 'object', nullable: true },
-                reporter: { type: 'object', nullable: true },
-                labels: { type: 'array', items: { type: 'string' } },
-                created: { type: 'string' },
-                updated: { type: 'string' },
-              },
-            },
-          },
-        },
-        user: { type: 'object' },
-      },
+      tags: [PLUGIN_TAG],
+      summary: 'Handle Jira webhook',
+      description:
+        'Receives and processes Jira webhook events for issue created, updated, or deleted',
+      body: JiraWebhookBody,
+      querystring: JiraWebhookQuery,
+      response: { 200: JiraWebhookOk, 400: JiraWebhookError, 500: JiraWebhookError },
     },
-  })
-  @OpenApiResponse(200, 'Success', {
-    example: {
-      status: 'success',
-      taskId: '550e8400-e29b-41d4-a716-446655440000',
-      message: 'Issue PROJ-123 queued for analysis',
+    async handler(req: FastifyRequest, reply): Promise<JiraWebhookResponse> {
+      try {
+        const resolved = resolveWebhookEvent(req);
+        if (resolved.source !== 'body.webhookEvent' || resolved.event !== resolved.rawEvent) {
+          const rawSuffix =
+            resolved.rawEvent && resolved.rawEvent !== resolved.event
+              ? ` (raw="${resolved.rawEvent}")`
+              : '';
+          const reasonSuffix = resolved.reason ? ` — ${resolved.reason}` : '';
+          logger?.info(
+            `Resolved webhook event from ${resolved.source}: ${resolved.event}${rawSuffix}${reasonSuffix}`,
+          );
+        }
+        const result = await webhookHandler.handleWebhook(req.body as Record<string, unknown>, resolved.event);
+        return result as JiraWebhookResponse;
+      } catch (err) {
+        if (err instanceof JiraWebhookPayloadError) {
+          logger?.warn(
+            `Jira webhook rejected (malformed payload): ${err.message} summary=${JSON.stringify(err.summary)}`,
+          );
+          return reply
+            .code(400)
+            .send({ status: 'error', message: err.message } as JiraWebhookResponse);
+        }
+        logger?.error(`Jira webhook error: ${(err as Error).message}`);
+        return reply
+          .code(500)
+          .send({ status: 'error', message: (err as Error).message } as JiraWebhookResponse);
+      }
     },
-  })
-  @OpenApiResponse(200, 'Ignored', {
-    example: {
-      status: 'ignored',
-      message: 'Event jira:issue_deleted not configured for processing',
-    },
-  })
-  @OpenApiResponse(500, 'Error processing webhook', {
-    example: {
-      status: 'error',
-      message: 'Failed to process webhook: Invalid payload',
-    },
-  })
-  async handleWebhook(req: Request, res: Response): Promise<void> {
-    if (!this.webhookHandler) {
-      res.status(503).json({ status: 'error', message: 'Webhook handler not available' } as JiraWebhookResponse);
-      return;
-    }
+  });
 
-    try {
-      const resolved = resolveWebhookEvent(req);
-      if (resolved.source !== 'body.webhookEvent' || resolved.event !== resolved.rawEvent) {
-        const rawSuffix =
-          resolved.rawEvent && resolved.rawEvent !== resolved.event
-            ? ` (raw="${resolved.rawEvent}")`
-            : '';
-        const reasonSuffix = resolved.reason ? ` — ${resolved.reason}` : '';
-        this.logger?.info(
-          `Resolved webhook event from ${resolved.source}: ${resolved.event}${rawSuffix}${reasonSuffix}`
-        );
-      }
-      const result = await this.webhookHandler.handleWebhook(req.body, resolved.event);
-      res.json(result);
-    } catch (err) {
-      if (err instanceof JiraWebhookPayloadError) {
-        this.logger?.warn(
-          `Jira webhook rejected (malformed payload): ${err.message} summary=${JSON.stringify(err.summary)}`
-        );
-        res.status(400).json({ status: 'error', message: err.message } as JiraWebhookResponse);
-        return;
-      }
-      this.logger?.error(`Jira webhook error: ${(err as Error).message}`);
-      res.status(500).json({ status: 'error', message: (err as Error).message } as JiraWebhookResponse);
-    }
-  }
+  return [handle];
+}
+
+export function registerJiraWebhookRoutes(app: FastifyInstance, deps: JiraWebhookRouteDeps): void {
+  registerRoutes(app, buildJiraWebhookRoutes(deps));
 }
 
 export type WebhookEventSource =
@@ -355,7 +267,7 @@ function hasNonEmptyIssueFieldsComments(body: Record<string, unknown>): boolean 
  * why it chose what it chose.
  */
 function inferEventFromPayloadShape(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
 ): { event: string; reason: string } | null {
   const hasComment = !!body.comment && typeof body.comment === 'object';
   const changelogActivity = detectChangelogActivity(body.changelog);
@@ -402,7 +314,7 @@ function inferEventFromPayloadShape(
  * Whatever value wins is then passed through `normalizeWebhookEventName` so
  * downstream routing always sees a canonical `jira:*` name.
  */
-export function resolveWebhookEvent(req: Request): ResolvedWebhookEvent {
+export function resolveWebhookEvent(req: FastifyRequest): ResolvedWebhookEvent {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const query = (req.query ?? {}) as Record<string, unknown>;
 

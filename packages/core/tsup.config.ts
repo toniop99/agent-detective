@@ -6,5 +6,12 @@ export default defineConfig({
   dts: { compilerOptions: { ignoreDeprecations: '6.0' } },
   splitting: false,
   clean: true,
-  external: ['@agent-detective/types', 'reflect-metadata'],
+  external: [
+    '@agent-detective/types',
+    'fastify',
+    'fastify-type-provider-zod',
+    '@fastify/swagger',
+    'openapi-types',
+    'zod',
+  ],
 });

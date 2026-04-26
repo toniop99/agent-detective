@@ -19,9 +19,9 @@ These rules keep the monorepo buildable, type-safe, and easy for agents to navig
 
 ## Plugin HTTP and loading
 
-- Routes are auto-prefixed with **`/plugins/{sanitized-name}`**; register plugins with **relative** paths on the Express app passed to **`register`**.
+- Routes are auto-prefixed with **`/plugins/{sanitized-name}`**; register plugins with **relative** paths via `defineRoute()` + `registerRoutes(scope, ...)` on the Fastify scope passed to **`register`**.
 - Use **`dependsOn`** so services load before dependents.
-- **`Plugin`** uses **`schemaVersion: '1.0'`** and **`register(app: express.Application, context: PluginContext)`** — see [Plugins guide](../plugins/plugins.md) and [ADR 0001: layering and plugin boundaries](../architecture/adr/0001-layering-and-plugin-boundaries.md).
+- **`Plugin`** uses **`schemaVersion: '1.0'`** and **`register(scope: FastifyInstance, context: PluginContext)`** — see [Plugins guide](../plugins/plugins.md), [ADR 0001: layering and plugin boundaries](../architecture/adr/0001-layering-and-plugin-boundaries.md), and [ADR 0002: HTTP framework](../architecture/adr/0002-http-framework.md).
 
 | Plugin name | HTTP prefix |
 |-------------|----------------|

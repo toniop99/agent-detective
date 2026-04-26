@@ -3,8 +3,7 @@ import { createMockJiraClient } from './infrastructure/mock-jira-client.js';
 import { createRealJiraClient } from './infrastructure/real-jira-client.js';
 import { StandardEvents, type Plugin, type TaskEvent } from '@agent-detective/types';
 import type { JiraAdapterConfig } from './domain/types.js';
-import { registerController } from '@agent-detective/core';
-import { JiraWebhookController } from './presentation/jira-webhook-controller.js';
+import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/core';
@@ -26,7 +25,7 @@ const jiraAdapterPlugin: Plugin = {
   dependsOn: ['@agent-detective/local-repos-plugin'],
   requiresCapabilities: ['code-analysis'],
 
-  register(app, context) {
+  async register(scope, context) {
     const extContext = context;
 
     const parsed = jiraAdapterOptionsSchema.safeParse(context.config ?? {});
@@ -95,17 +94,10 @@ const jiraAdapterPlugin: Plugin = {
       }
     });
 
-    const webhookController = new JiraWebhookController();
-    webhookController.setWebhookHandler(webhookHandler);
-    if (extContext.logger) {
-      webhookController.setLogger(extContext.logger);
-    }
-    registerController(app, webhookController);
+    registerJiraWebhookRoutes(scope, { webhookHandler, logger: extContext.logger });
 
     const webhookUrlPath = `/plugins/${PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-')}/webhook/jira`;
     extContext.logger?.info(`Jira adapter registered at POST ${webhookUrlPath} (mockMode: ${mockMode})`);
-
-    return [webhookController];
   },
 };
 
