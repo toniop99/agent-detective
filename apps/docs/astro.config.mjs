@@ -45,6 +45,14 @@ export default defineConfig({
           autogenerate: { directory: 'development' },
         },
         {
+          label: 'Execution plans',
+          autogenerate: { directory: 'exec-plans' },
+        },
+        {
+          label: 'Tool references',
+          autogenerate: { directory: 'references' },
+        },
+        {
           label: 'Architecture',
           autogenerate: { directory: 'architecture' },
         },
