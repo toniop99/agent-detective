@@ -8,7 +8,7 @@ export default defineConfig({
   clean: true,
   external: [
     '@agent-detective/types',
-    '@agent-detective/core',
+    '@agent-detective/sdk',
     '@agent-detective/process-utils',
     'zod',
   ],

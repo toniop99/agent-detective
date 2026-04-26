@@ -1,7 +1,7 @@
 {
-  "name": "@agent-detective/core",
+  "name": "@agent-detective/sdk",
   "version": "0.1.0",
-  "description": "Core HTTP / route definition utilities for agent-detective (Fastify + Zod)",
+  "description": "Runtime SDK for agent-detective plugin authors (defineRoute, registerRoutes, zodToPluginSchema)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,14 +18,12 @@
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "core", "fastify", "zod"],
+  "keywords": ["agent-detective", "sdk", "plugin", "fastify", "zod"],
   "license": "MIT",
   "dependencies": {
     "@agent-detective/types": "workspace:*",
-    "@fastify/swagger": "catalog:",
     "fastify": "catalog:",
     "fastify-type-provider-zod": "catalog:",
-    "openapi-types": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

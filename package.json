@@ -37,9 +37,10 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@agent-detective/core": "workspace:*",
     "@agent-detective/observability": "workspace:*",
     "@agent-detective/process-utils": "workspace:*",
+    "@agent-detective/sdk": "workspace:*",
+    "@agent-detective/types": "workspace:*",
     "@fastify/swagger": "catalog:",
     "@scalar/fastify-api-reference": "catalog:",
     "fastify": "catalog:",

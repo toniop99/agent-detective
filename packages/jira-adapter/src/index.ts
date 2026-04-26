@@ -6,7 +6,7 @@ import type { JiraAdapterConfig } from './domain/types.js';
 import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
-import { zodToPluginSchema } from '@agent-detective/core';
+import { zodToPluginSchema } from '@agent-detective/sdk';
 import { stampComment } from './domain/comment-trigger.js';
 
 export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './application/options-schema.js';

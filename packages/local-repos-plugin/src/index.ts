@@ -27,7 +27,7 @@ import { registerReposRoutes } from './presentation/repos-controller.js';
 import { createRepoAnalyzer } from './application/analyzer.js';
 import * as z from 'zod';
 import { localReposPluginOptionsSchema } from './application/options-schema.js';
-import { zodToPluginSchema } from '@agent-detective/core';
+import { zodToPluginSchema } from '@agent-detective/sdk';
 
 export { localReposPluginOptionsSchema } from './application/options-schema.js';
 

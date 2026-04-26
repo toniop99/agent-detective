@@ -3,7 +3,7 @@ import {
   defineRoute,
   registerRoutes,
   type RouteDefinition,
-} from '@agent-detective/core';
+} from '@agent-detective/sdk';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { JiraWebhookResponse } from '../domain/webhook-types.js';
 import type { Logger } from '@agent-detective/types';

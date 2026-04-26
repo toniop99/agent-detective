@@ -9,7 +9,7 @@ The **root** `agent-detective` app is **`"private": true`** and is **not** publi
 | Package | Description |
 |---------|-------------|
 | `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/core` | OpenAPI / HTTP controller helpers |
+| `@agent-detective/sdk` | Plugin SDK runtime helpers (`defineRoute`, `registerRoutes`, `zodToPluginSchema`) |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repo + matcher plugin |

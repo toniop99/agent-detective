@@ -21,7 +21,7 @@ Anchored to real files so future agents can verify:
 
 - **No runtime validation.** Handlers manually check `if (!agentId || !prompt)` ([`src/core/core-api-controller.ts`](https://github.com/toniop99/agent-detective/blob/main/src/core/core-api-controller.ts)). `@RequestBody({ schema })` is documentation-only.
 - **Hand-written JSON Schema.** ~100 lines of literal JSON Schema in [`packages/jira-adapter/src/presentation/jira-webhook-controller.ts`](https://github.com/toniop99/agent-detective/blob/main/packages/jira-adapter/src/presentation/jira-webhook-controller.ts) drifts from runtime.
-- **Two schema worlds.** Plugin **config** uses Zod 4 via [`zodToPluginSchema`](https://github.com/toniop99/agent-detective/blob/main/packages/core/src/zod-to-plugin-schema.ts); HTTP **requests/responses** use hand-written JSON. Zod 4 is already in the catalog.
+- **Two schema worlds.** Plugin **config** uses Zod 4 via [`zodToPluginSchema`](https://github.com/toniop99/agent-detective/blob/main/packages/sdk/src/zod-to-plugin-schema.ts); HTTP **requests/responses** use hand-written JSON. Zod 4 is already in the catalog.
 - **In-house framework surface.** `packages/core/src/decorators.ts`, `controller.ts`, `spec-generator.ts`, `metadata.ts` reinvented controller scanning + OpenAPI generation. *(All deleted in this migration.)*
 - **Plugin scoping is a Proxy hack.** [`createPrefixedApp`](https://github.com/toniop99/agent-detective/blob/main/src/core/plugin-system.ts) wraps the Express app in a `Proxy` to rewrite paths — fragile around middleware ordering and error boundaries.
 - **Late spec assembly.** [`src/index.ts`](https://github.com/toniop99/agent-detective/blob/main/src/index.ts) builds the OpenAPI spec **after `app.listen`** by reading reflect-metadata back out — works, but couples startup ordering to the docs pipeline.
@@ -49,7 +49,7 @@ Single PR, framework-agnostic shape. The Fastify variant is detailed below since
 
 ### 2.1 New HTTP package surface
 
-Rewrite [`packages/core/src/index.ts`](https://github.com/toniop99/agent-detective/blob/main/packages/core/src/index.ts) to expose a Zod-first route definition API. Delete `decorators.ts`, `controller.ts`, `metadata.ts`, `spec-generator.ts`, the decorator constants in `constants.ts`, and the `reflect-metadata` dependency from the root [`package.json`](https://github.com/toniop99/agent-detective/blob/main/package.json). *(All deleted as part of this migration.)* Sketch:
+Rewrite the HTTP package surface (`packages/core/src/index.ts`, since renamed to [`packages/sdk/src/index.ts`](https://github.com/toniop99/agent-detective/blob/main/packages/sdk/src/index.ts)) to expose a Zod-first route definition API. Delete `decorators.ts`, `controller.ts`, `metadata.ts`, `spec-generator.ts`, the decorator constants in `constants.ts`, and the `reflect-metadata` dependency from the root [`package.json`](https://github.com/toniop99/agent-detective/blob/main/package.json). *(All deleted as part of this migration.)* Sketch:
 
 ```typescript
 // packages/core/src/route.ts
@@ -142,7 +142,7 @@ flowchart LR
 ## Acceptance criteria
 
 - [ ] ADR [`0002-http-framework.md`](/docs/architecture/adr/0002-http-framework/) is merged with Status `Accepted`, references the chosen option, and is linked from [`AGENTS.md`](https://github.com/toniop99/agent-detective/blob/main/AGENTS.md) and [`docs/README.md`](/docs/overview/).
-- [ ] `reflect-metadata`, the custom decorators package surface, and `spec-generator.ts` are deleted from [`packages/core/src`](https://github.com/toniop99/agent-detective/blob/main/packages/core/src).
+- [ ] `reflect-metadata`, the custom decorators package surface, and `spec-generator.ts` are deleted from `packages/core/src` (since renamed to [`packages/sdk/src`](https://github.com/toniop99/agent-detective/blob/main/packages/sdk/src)).
 - [ ] Every endpoint that exists today still responds with the same status / body shape; `pnpm test` (root + Turbo) passes.
 - [ ] `/docs` renders the Scalar UI with the `Core` and `Plugins` tag groups preserved.
 - [ ] At least one route-validation test asserts a `400` for an invalid request body.

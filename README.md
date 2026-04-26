@@ -33,7 +33,7 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 |---------|-------------|
 | Root app | Fastify server (`src/`, not under `packages/`) |
 | `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/core` | Fastify route helpers (`defineRoute`) and OpenAPI utilities |
+| `@agent-detective/sdk` | Plugin-author SDK: `defineRoute`, `registerRoutes`, `zodToPluginSchema` (HTTP types live in `@agent-detective/types`) |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |

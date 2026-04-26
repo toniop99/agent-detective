@@ -1,6 +1,15 @@
 import type { ChildProcess } from 'node:child_process';
 export type { ChildProcess } from 'node:child_process';
 
+export type {
+  HttpMethod,
+  RouteSchema,
+  RouteDefinition,
+  FastifyScope,
+  TagGroup,
+  ApplyTagGroupsOptions,
+} from './http.js';
+
 export interface TaskEvent {
   id: string;
   type: 'incident' | 'question' | 'command';
@@ -46,7 +55,7 @@ export interface Plugin {
    * Called once per plugin during boot. Receives an encapsulated Fastify
    * scope (already prefixed under `/plugins/{sanitized-name}`) and the
    * shared {@link PluginContext}. Register routes via
-   * `registerRoutes(scope, [...])` from `@agent-detective/core`, or call
+   * `registerRoutes(scope, [...])` from `@agent-detective/sdk`, or call
    * `scope.route(...)` / `scope.get(...)` directly. Plugins may register
    * Fastify hooks (`onRequest`, `preHandler`, `setErrorHandler`) on this
    * scope; encapsulation keeps them isolated from other plugins.

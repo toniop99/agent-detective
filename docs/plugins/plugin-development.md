@@ -57,12 +57,12 @@ my-plugin/
   "keywords": ["agent-detective", "plugin"],
   "peerDependencies": {
     "@agent-detective/types": "^1.0.0",
-    "@agent-detective/core": "^1.0.0",
+    "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@agent-detective/types": "^1.0.0",
-    "@agent-detective/core": "^1.0.0",
+    "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0",
     "typescript": "^5.7.0"
   }
@@ -111,7 +111,7 @@ Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins 
 ```typescript
 // src/index.ts
 import type { Plugin, PluginContext } from '@agent-detective/types';
-import { defineRoute, registerRoutes } from '@agent-detective/core';
+import { defineRoute, registerRoutes } from '@agent-detective/sdk';
 import { z } from 'zod';
 
 const WebhookBody = z.object({ event: z.string() });
@@ -188,7 +188,7 @@ pnpm init
 ### 2. Install dependencies
 
 ```bash
-pnpm add @agent-detective/types @agent-detective/core zod
+pnpm add @agent-detective/types @agent-detective/sdk zod
 pnpm add -D typescript tsx
 ```
 
@@ -297,7 +297,7 @@ my-jira-plugin/
   },
   "peerDependencies": {
     "@agent-detective/types": "^1.0.0",
-    "@agent-detective/core": "^1.0.0",
+    "@agent-detective/sdk": "^1.0.0",
     "zod": "^4.0.0"
   }
 }
@@ -307,7 +307,7 @@ my-jira-plugin/
 
 ```typescript
 import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
-import { defineRoute, registerRoutes } from '@agent-detective/core';
+import { defineRoute, registerRoutes } from '@agent-detective/sdk';
 import { z } from 'zod';
 
 const PLUGIN_TAG = '@myorg/agent-detective-jira-plus';
@@ -397,12 +397,12 @@ Plugins expose HTTP endpoints by defining **Zod-typed routes** with `defineRoute
 
 ### Adding routes with `defineRoute`
 
-First, add `@agent-detective/core` as a dependency:
+First, add `@agent-detective/sdk` as a dependency:
 
 ```json
 {
   "dependencies": {
-    "@agent-detective/core": "workspace:*"
+    "@agent-detective/sdk": "workspace:*"
   }
 }
 ```
@@ -411,7 +411,7 @@ Then declare your routes with Zod schemas:
 
 ```typescript
 // src/my-routes.ts
-import { defineRoute, registerRoutes, type FastifyScope } from '@agent-detective/core';
+import { defineRoute, registerRoutes, type FastifyScope } from '@agent-detective/sdk';
 import { z } from 'zod';
 import type { MyService } from './my-service.js';
 

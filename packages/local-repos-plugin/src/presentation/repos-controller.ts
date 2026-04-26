@@ -3,7 +3,7 @@ import {
   defineRoute,
   registerRoutes,
   type RouteDefinition,
-} from '@agent-detective/core';
+} from '@agent-detective/sdk';
 import type { FastifyInstance } from 'fastify';
 import type { LocalReposContext } from '../domain/types.js';
 

@@ -160,7 +160,7 @@ agent-detective/
 │   └── index.ts                      # Bootstrap
 ├── packages/                         # Workspace packages
 │   ├── types/                        # @agent-detective/types
-│   ├── core/                         # @agent-detective/core (OpenAPI helpers, shared utilities)
+│   ├── sdk/                          # @agent-detective/sdk (defineRoute, registerRoutes, zodToPluginSchema)
 │   ├── observability/                # @agent-detective/observability
 │   ├── process-utils/                # @agent-detective/process-utils
 │   ├── local-repos-plugin/          # @agent-detective/local-repos-plugin

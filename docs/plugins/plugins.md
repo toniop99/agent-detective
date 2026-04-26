@@ -344,7 +344,7 @@ packages/my-jira/
 
 ### Webhook + services pattern (sketch)
 
-Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are registered via `defineRoute()` + `registerRoutes(scope, ...)` from `@agent-detective/core` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
+Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are registered via `defineRoute()` + `registerRoutes(scope, ...)` from `@agent-detective/sdk` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
 
 The official **jira-adapter** implements the full Jira + fan-out flow — treat it as the reference, not the stale snippet below. This sketch shows the *correct* `PluginContext` surface:
 

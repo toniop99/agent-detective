@@ -7,6 +7,7 @@ title: "Technical debt (rolling notes)"
 Short, **repo-local** reminders for patterns to fix or revisit. Prefer [ADR](https://github.com/toniop99/agent-detective/blob/main/docs/architecture/adr) for decisions; use this for “known rough edges” agents should not amplify.
 
 - *(Add items as one line each; remove when resolved.)*
-- *(no open items)*
 
 ## Resolved (recent)
+
+- **Plugin SDK package split** — `@agent-detective/core` renamed to `@agent-detective/sdk`; HTTP type declarations moved into `@agent-detective/types`; host-only `applyTagGroups` and tag constants moved into `src/core/openapi/`. Plan: [`completed/2026-04-plugin-sdk-package.md`](/docs/exec-plans/completed/2026-04-plugin-sdk-package/).

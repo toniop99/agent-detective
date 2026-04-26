@@ -28,7 +28,7 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 | Package | Role |
 |---------|------|
 | `@agent-detective/types` | Shared types |
-| `@agent-detective/core` | OpenAPI / HTTP helpers |
+| `@agent-detective/sdk` | Plugin SDK runtime helpers (`defineRoute`, `registerRoutes`, `zodToPluginSchema`) |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process helpers |
 | `@agent-detective/local-repos-plugin` | Repos + `RepoMatcher` |

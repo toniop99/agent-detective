@@ -275,7 +275,7 @@ packages/
 │   ├── tsconfig.build.json
 │   └── dist/                    # Built output for npm
 │
-├── core/                         # @agent-detective/core (OpenAPI / controller utilities)
+├── sdk/                          # @agent-detective/sdk (defineRoute, registerRoutes, zodToPluginSchema)
 │   ├── src/
 │   └── package.json
 │
