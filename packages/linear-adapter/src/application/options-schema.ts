@@ -30,7 +30,11 @@ export const linearAdapterOptionsSchema = z
   .object({
     enabled: z.boolean().default(false),
     mockMode: z.boolean().default(true),
-    /** Linear API key (or OAuth access token) for GraphQL. Required when the plugin is enabled. */
+    /**
+     * Linear **personal API key** (PAT), or the current **OAuth access token** when using
+     * {@link oauthRefreshToken} + client credentials (often `LINEAR_API_KEY` after install).
+     * If OAuth refresh is configured and this is empty, the adapter obtains an access token once at startup.
+     */
     apiKey: z.string().optional(),
     /**
      * Webhook signing secret from Linear. When set (and
@@ -49,6 +53,11 @@ export const linearAdapterOptionsSchema = z
     oauthRedirectBaseUrl: z.string().optional(),
     /** OAuth scopes for `/oauth/start` (Linear space-separated). Default: `read,write`. */
     oauthScopes: z.string().optional(),
+    /**
+     * OAuth **refresh token** (prefer env `LINEAR_OAUTH_REFRESH_TOKEN`). With
+     * {@link oauthClientId} and {@link oauthClientSecret}, enables refresh on expiry / auth errors.
+     */
+    oauthRefreshToken: z.string().optional(),
     /**
      * When true, accepts webhooks without a valid signature (local dev only).
      */

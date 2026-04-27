@@ -27,4 +27,14 @@ describe('linearAdapterOptionsSchema', () => {
     });
     assert.ok(!bad.success);
   });
+
+  test('parses oauthRefreshToken with client credentials', () => {
+    const r = linearAdapterOptionsSchema.parse({
+      enabled: false,
+      oauthClientId: 'id',
+      oauthClientSecret: 'sec',
+      oauthRefreshToken: 'rt',
+    });
+    assert.equal(r.oauthRefreshToken, 'rt');
+  });
 });

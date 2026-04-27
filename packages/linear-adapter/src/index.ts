@@ -3,6 +3,7 @@ import * as z from 'zod';
 import { linearAdapterOptionsSchema } from './application/options-schema.js';
 import type { LinearAdapterConfig } from './application/options-schema.js';
 import { createLinearGraph } from './infrastructure/linear-graph.js';
+import { resolveLinearStartupAuth } from './infrastructure/resolve-linear-startup-auth.js';
 import { createLinearWebhookHandler } from './application/webhook-handler.js';
 import { stampComment } from './domain/comment-mark.js';
 import {
@@ -42,17 +43,17 @@ const linearAdapterPlugin = definePlugin({
       return;
     }
 
-    const apiKey = cfg.apiKey?.trim() ?? '';
-    if (!apiKey) {
+    const auth = await resolveLinearStartupAuth(cfg, extContext.logger);
+    if (!auth) {
       extContext.logger?.error(
-        'linear-adapter: enabled but apiKey is missing — set apiKey (or LINEAR_API_KEY) so issues and labels can be loaded'
+        'linear-adapter: enabled but missing credentials — set apiKey (LINEAR_API_KEY) for a personal API token, or configure oauthClientId + oauthClientSecret + oauthRefreshToken (with apiKey as the OAuth access token, or leave apiKey empty to bootstrap from refresh_token at startup)'
       );
       return;
     }
 
     const mockMode = cfg.mockMode ?? true;
     const linearGraph = createLinearGraph({
-      apiKey,
+      auth,
       mockComments: mockMode,
       logger: extContext.logger,
     });

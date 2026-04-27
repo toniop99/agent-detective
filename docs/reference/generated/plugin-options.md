@@ -219,6 +219,9 @@ Anchor: `linear-adapter`
     "oauthScopes": {
       "type": "string"
     },
+    "oauthRefreshToken": {
+      "type": "string"
+    },
     "skipWebhookSignatureVerification": {
       "default": false,
       "type": "boolean"

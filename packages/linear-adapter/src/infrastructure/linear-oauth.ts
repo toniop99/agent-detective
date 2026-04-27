@@ -120,3 +120,43 @@ export async function exchangeLinearAuthorizationCode(params: {
     expires_in: typeof json.expires_in === 'number' ? json.expires_in : undefined,
   };
 }
+
+/**
+ * Rotate access token using a refresh token (application/x-www-form-urlencoded).
+ * Linear may return a new `refresh_token`; callers should persist it when present.
+ */
+export async function exchangeLinearRefreshToken(params: {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}): Promise<LinearTokenResponse> {
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: params.clientId,
+    client_secret: params.clientSecret,
+    refresh_token: params.refreshToken,
+  });
+  const res = await fetch(LINEAR_TOKEN, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body: body.toString(),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`linear-oauth: token refresh failed (${res.status}): ${text.slice(0, 500)}`);
+  }
+  const json = JSON.parse(text) as Record<string, unknown>;
+  const access_token = typeof json.access_token === 'string' ? json.access_token : '';
+  if (!access_token) {
+    throw new Error('linear-oauth: refresh response missing access_token');
+  }
+  return {
+    access_token,
+    refresh_token: typeof json.refresh_token === 'string' ? json.refresh_token : undefined,
+    token_type: typeof json.token_type === 'string' ? json.token_type : 'Bearer',
+    expires_in: typeof json.expires_in === 'number' ? json.expires_in : undefined,
+  };
+}

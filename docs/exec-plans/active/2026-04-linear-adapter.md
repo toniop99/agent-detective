@@ -30,7 +30,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 ### 2) Token storage and refresh
 
 - **Secrets:** Refresh (and optionally access) tokens via **env** / secret store—align with existing plugin env patterns (see `src/config/env-whitelist.ts` in the repo root); avoid committed `local.json` for secrets.
-- **Refresh:** On 401 or before mutations; persist rotated refresh token per Linear docs.
+- **Refresh:** Implemented in-process: `oauthRefreshToken` + client id/secret → startup bootstrap if `apiKey` empty; proactive refresh when `expires_in` is known; reactive refresh on Linear `AuthenticationError` / auth GraphQL failures. **Persist** rotated refresh tokens when Linear returns a new `refresh_token` (env or secret store)—the adapter logs a warning but does not write config files.
 
 ### 3) Webhooks + signing
 
@@ -63,8 +63,8 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 
 ## Acceptance criteria
 
-- [x] Spike (partial): webhook **signature verification** + timestamp window; OAuth **callback stub** (`501`); full token exchange / refresh **deferred**.
-- [x] Package `packages/linear-adapter`: plugin, Zod options, `GET /oauth/callback` stub, signed `POST /webhook/linear`, **`routeLinearWebhook`** (`linear:Issue:create` / `linear:Comment:create` → RepoMatcher → `TASK_CREATED` / `PR_WORKFLOW_SERVICE`), **`TASK_COMPLETED`** → `createComment`, `createLinearGraph` (mock vs real comments + issue fetch).
+- [x] Spike (partial): webhook **signature verification** + timestamp window; OAuth **authorize + callback** (code exchange); **refresh_token** grant at startup and on auth errors (in-memory rotation; operator persists new refresh when Linear rotates it).
+- [x] Package `packages/linear-adapter`: plugin, Zod options, OAuth routes + signed `POST /webhook/linear`, **`routeLinearWebhook`** (`linear:Issue:create` / `linear:Comment:create` → RepoMatcher → `TASK_CREATED` / `PR_WORKFLOW_SERVICE`), **`TASK_COMPLETED`** → `createComment`, `createLinearGraph` (mock vs real comments + issue fetch).
 - [x] `pr-pipeline` uses **`issueTracker`** / **`PrIssueTrackerClient`**; Jira adapter passes the port; `PrJiraClient` kept as deprecated alias.
 - [x] Config: `pnpm-workspace.yaml` catalog `@linear/sdk`, `config/default.json` disabled plugin entry, `AGENTS.md` / `README.md`, `env-whitelist` for `LINEAR_*`, `docs:plugins` regenerated.
 - [x] Tests: unit tests for signing + options schema; routing/OAuth exchange E2E **not** added yet; manual smoke **not** run.
@@ -77,6 +77,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 |------|------|
 | 2026-04-27 | Branch `feat/linear-adapter-phase-b`: tracker port in types + `pr-pipeline`; new `@agent-detective/linear-adapter` (webhook verify, stub handler, env + docs artifacts); `pr-pipeline` `dependsOn` trimmed to `local-repos-plugin` only. |
 | 2026-04-27 | Linear adapter: webhook routing + analyze/PR fan-out + `TASK_COMPLETED` post-back; `webhookBehavior` + triggers aligned with Jira; `apiKey` required when plugin enabled. |
+| 2026-04-27 | OAuth routes + PR fan-out parity (comments/attachments); **`oauthRefreshToken`** + refresh grant (`exchangeLinearRefreshToken`), PAT vs OAuth `LinearClient` (`apiKey` vs `accessToken`), proactive/reactive refresh in `createLinearGraph`; env `LINEAR_OAUTH_REFRESH_TOKEN`. |
 
 ## Out of scope (v1)
 
