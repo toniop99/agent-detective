@@ -13,6 +13,13 @@ export interface TracingContext {
   getContext(): CorrelationContext | undefined;
   withCorrelationId<T>(id: string, fn: () => T): T;
   withContext(ctx: CorrelationContext, fn: () => void): void;
+  /**
+   * Sets the correlation context for the rest of the current async chain.
+   * Use from Fastify `onRequest` hooks (which can't wrap downstream code in
+   * a callback) so subsequent hooks and the route handler see the id via
+   * {@link TracingContext.getCorrelationId}.
+   */
+  enterCorrelationContext(id: string): void;
   shouldSample(path?: string): boolean;
   generateCorrelationId(): string;
 }
@@ -57,11 +64,17 @@ export function createTracing(config: ObservabilityTracingConfig): TracingContex
     storage.run(ctx, fn);
   }
 
+  function enterCorrelationContext(id: string): void {
+    const ctx: CorrelationContext = { correlationId: id, sampled: true };
+    storage.enterWith(ctx);
+  }
+
   return {
     getCorrelationId,
     getContext,
     withCorrelationId,
     withContext,
+    enterCorrelationContext,
     shouldSample,
     generateCorrelationId,
   };

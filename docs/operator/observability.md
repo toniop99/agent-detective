@@ -2,7 +2,7 @@
 
 The `@agent-detective/observability` package provides structured logging, metrics, tracing, and health checks for the agent-detective application.
 
-**Main app (Express):** routes are under **`/api`**, e.g. **`GET /api/metrics`**, **`GET /api/health`**. The JSON `status` field is **`ok`**, **`degraded`**, or **`unhealthy`** (not a generic `"healthy"` string).
+**Main app (Fastify):** routes are under **`/api`**, e.g. **`GET /api/metrics`**, **`GET /api/health`**. The JSON `status` field is **`ok`**, **`degraded`**, or **`unhealthy`** (not a generic `"healthy"` string).
 
 ## Overview
 
@@ -242,56 +242,56 @@ const span = tracing.startSpan('operation-name', ctx);
 
 ## Middleware
 
-### Request Logging Middleware
+### Request Logging Plugin (Fastify)
 
 ```typescript
 import { createRequestLogger } from '@agent-detective/observability';
 
-const requestLogger = createRequestLogger({
+await app.register(createRequestLogger({
   logger,
+  tracing,
   metrics,
   excludePaths: ['/api/health', '/api/metrics'],
-});
-
-// Use with Express
-app.use(requestLogger);
+}));
 ```
+
+`createRequestLogger` is a Fastify plugin that registers `onRequest` and `onResponse` hooks for structured request logging, correlation-id propagation (via `AsyncLocalStorage`), and HTTP metrics.
 
 ### Correlation Middleware
 
 ```typescript
 import { createCorrelationMiddleware } from '@agent-detective/observability';
 
-app.use(createCorrelationMiddleware());
+await app.register(createCorrelationMiddleware());
 ```
 
-This middleware:
+The plugin:
 1. Extracts `X-Correlation-ID` from request headers
 2. Generates a new ID if not present
-3. Sets the ID in response headers
-4. Makes correlation ID available to loggers
+3. Sets the ID on the outbound response headers
+4. Makes the correlation ID available to loggers via the active tracing context
 
 ## Integration
 
-### With Express Server
+### With the Fastify server
 
 ```typescript
-import express from 'express';
-import { createObservability } from '@agent-detective/observability';
+import Fastify from 'fastify';
+import { createObservability, createRequestLogger } from '@agent-detective/observability';
 
 const obs = createObservability();
-const app = express();
+const app = Fastify({ logger: false });
 
-// Apply middleware
-app.use(obs.middleware?.correlation ?? createCorrelationMiddleware());
-app.use(obs.middleware?.requestLogger ?? createRequestLogger({ logger: obs.logger, metrics: obs.metrics }));
+await app.register(createRequestLogger({
+  logger: obs.logger,
+  tracing: obs.tracing,
+  metrics: obs.metrics,
+}));
 
-app.get('/api/health', (req, res) => {
-  res.json(obs.health.check());
-});
-
-app.get('/api/metrics', (req, res) => {
-  res.send(obs.metrics.getPrometheusOutput());
+app.get('/api/health', async () => obs.health.check());
+app.get('/api/metrics', async (_req, reply) => {
+  reply.type('text/plain');
+  return obs.metrics.getPrometheusOutput();
 });
 ```
 
@@ -301,11 +301,11 @@ The observability package integrates with the plugin system:
 
 ```typescript
 // In your plugin
-register(app, context) {
+register(scope, context) {
   const { logger } = context;
-  
+
   logger.info('Plugin loaded', { pluginName: 'my-plugin' });
-  
+
   // Use child logger with plugin context
   const pluginLogger = logger.child({ plugin: 'my-plugin' });
   pluginLogger.info('Webhook handler registered');

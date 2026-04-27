@@ -56,10 +56,14 @@ my-plugin/
   },
   "keywords": ["agent-detective", "plugin"],
   "peerDependencies": {
-    "@agent-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0",
+    "@agent-detective/core": "^1.0.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@agent-detective/types": "^1.0.0",
+    "@agent-detective/core": "^1.0.0",
+    "zod": "^4.0.0",
     "typescript": "^5.7.0"
   }
 }
@@ -88,15 +92,13 @@ my-plugin/
     "moduleResolution": "bundler",
     "strict": true,
     "declaration": true,
-    "outDir": "./dist",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "outDir": "./dist"
   },
   "include": ["src/**/*"]
 }
 ```
 
-> **Note:** `experimentalDecorators` and `emitDecoratorMetadata` are required for OpenAPI decorators to work properly.
+> **Note:** No decorator flags are required. Routes are described with Zod schemas via `defineRoute()` (see [API Documentation (OpenAPI)](#api-documentation-openapi) below); the same schemas drive runtime validation and the OpenAPI spec at `/docs`.
 
 Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins should use a **semver** range and depend on the npm release of `@agent-detective/types`.
 
@@ -109,6 +111,11 @@ Monorepo-only: use `"@agent-detective/types": "workspace:*"`; published plugins 
 ```typescript
 // src/index.ts
 import type { Plugin, PluginContext } from '@agent-detective/types';
+import { defineRoute, registerRoutes } from '@agent-detective/core';
+import { z } from 'zod';
+
+const WebhookBody = z.object({ event: z.string() });
+const WebhookResponse = z.object({ status: z.literal('received') });
 
 const myPlugin: Plugin = {
   name: '@myorg/agent-detective-my-plugin',
@@ -119,25 +126,31 @@ const myPlugin: Plugin = {
     type: 'object',
     properties: {
       enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/agent-detective-my-plugin/webhook' },
       someOption: { type: 'string', default: 'default' },
     },
     required: []
   },
 
-  register(app, context: PluginContext) {
-    const { config, agentRunner, logger } = context;
+  register(scope, context: PluginContext) {
+    const { config, logger } = context;
 
     if (!config.enabled) {
       logger.info('Plugin is disabled');
       return;
     }
 
-    const webhookPath = config.webhookPath as string;
-
-    app.post(webhookPath, async (req, res) => {
-      // Handle webhook...
-    });
+    registerRoutes(scope, [
+      defineRoute({
+        method: 'POST',
+        url: '/webhook',
+        schema: {
+          tags: ['@myorg/agent-detective-my-plugin'],
+          body: WebhookBody,
+          response: { 200: WebhookResponse },
+        },
+        handler: async () => ({ status: 'received' as const }),
+      }),
+    ]);
 
     logger.info('My plugin registered successfully');
   }
@@ -145,6 +158,8 @@ const myPlugin: Plugin = {
 
 export default myPlugin;
 ```
+
+> `scope` is a Fastify instance already encapsulated under `/plugins/agent-detective-my-plugin`. The route above mounts at `POST /plugins/agent-detective-my-plugin/webhook` automatically — do not hard-code the prefix.
 
 ### PluginContext Members Available
 
@@ -173,7 +188,7 @@ pnpm init
 ### 2. Install dependencies
 
 ```bash
-pnpm add @agent-detective/types
+pnpm add @agent-detective/types @agent-detective/core zod
 pnpm add -D typescript tsx
 ```
 
@@ -281,7 +296,9 @@ my-jira-plugin/
     "build": "tsc -p tsconfig.build.json"
   },
   "peerDependencies": {
-    "@agent-detective/types": "^1.0.0"
+    "@agent-detective/types": "^1.0.0",
+    "@agent-detective/core": "^1.0.0",
+    "zod": "^4.0.0"
   }
 }
 ```
@@ -290,9 +307,23 @@ my-jira-plugin/
 
 ```typescript
 import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
+import { defineRoute, registerRoutes } from '@agent-detective/core';
+import { z } from 'zod';
+
+const PLUGIN_TAG = '@myorg/agent-detective-jira-plus';
+
+const WebhookBody = z.object({
+  webhookEvent: z.string(),
+  issue: z.object({ key: z.string() }).passthrough(),
+}).passthrough();
+
+const WebhookResponse = z.object({
+  status: z.literal('queued'),
+  taskId: z.string(),
+});
 
 const jiraPlusPlugin: Plugin = {
-  name: '@myorg/agent-detective-jira-plus',
+  name: PLUGIN_TAG,
   version: '1.0.0',
   schemaVersion: '1.0',
 
@@ -300,7 +331,6 @@ const jiraPlusPlugin: Plugin = {
     type: 'object',
     properties: {
       enabled: { type: 'boolean', default: true },
-      webhookPath: { type: 'string', default: '/plugins/agent-detective-my-plugin/webhook' },
       baseUrl: { type: 'string', default: '' },
       email: { type: 'string', default: '' },
       apiToken: { type: 'string', default: '' },
@@ -313,31 +343,44 @@ const jiraPlusPlugin: Plugin = {
         }
       }
     },
-    required: ['webhookPath']
+    required: []
   },
 
-  register(app, context: PluginContext) {
-    const { config, agentRunner, logger } = context;
+  register(scope, context: PluginContext) {
+    const { config, agentRunner, logger, getService } = context;
 
     if (!config.enabled) {
       logger.info('Jira Plus plugin is disabled');
       return;
     }
 
-    app.post(config.webhookPath as string, async (req, res) => {
-      const taskEvent = normalizePayload(req.body);
-      
-      // Discovery logic...
-      const repo = localRepos?.getRepo(taskEvent.metadata.repoName as string);
-      if (repo) {
-        taskEvent.context.repoPath = repo.path;
-      }
+    const localRepos = getService<{ getRepo(name: string): { path: string } | undefined }>('localRepos');
 
-      logger.info(`Processing: ${taskEvent.id}`);
-      
-      // Process with agent...
-      res.json({ status: 'queued', taskId: taskEvent.id });
-    });
+    registerRoutes(scope, [
+      defineRoute({
+        method: 'POST',
+        url: '/webhook',
+        schema: {
+          tags: [PLUGIN_TAG],
+          summary: 'Receive a Jira webhook',
+          body: WebhookBody,
+          response: { 200: WebhookResponse },
+        },
+        handler: async (req) => {
+          const taskEvent = normalizePayload(req.body);
+
+          const repo = localRepos?.getRepo(taskEvent.metadata.repoName as string);
+          if (repo) {
+            taskEvent.context.repoPath = repo.path;
+          }
+
+          logger.info(`Processing: ${taskEvent.id}`);
+
+          // Process with agentRunner / enqueue...
+          return { status: 'queued' as const, taskId: taskEvent.id };
+        },
+      }),
+    ]);
 
     logger.info('Jira Plus plugin registered');
   }
@@ -350,9 +393,9 @@ export default jiraPlusPlugin;
 
 ## API Documentation (OpenAPI)
 
-Plugins can provide OpenAPI metadata for auto-generated API documentation at `/docs` using decorator-based approach.
+Plugins expose HTTP endpoints by defining **Zod-typed routes** with `defineRoute()` and mounting them on the Fastify scope passed into `register()`. The same Zod schemas drive runtime validation **and** the OpenAPI spec rendered at `/docs`, so there is no separate "documentation step".
 
-### Adding OpenAPI Metadata with Decorators
+### Adding routes with `defineRoute`
 
 First, add `@agent-detective/core` as a dependency:
 
@@ -364,83 +407,74 @@ First, add `@agent-detective/core` as a dependency:
 }
 ```
 
-Then create a controller class with decorators:
+Then declare your routes with Zod schemas:
 
 ```typescript
-// src/my-controller.ts
-import type { Request, Response } from 'express';
-import {
-  Controller,
-  Get,
-  Post,
-  Summary,
-  Description,
-  Tags,
-  Response as OpenApiResponse,
-  RequestBody,
-} from '@agent-detective/core';
+// src/my-routes.ts
+import { defineRoute, registerRoutes, type FastifyScope } from '@agent-detective/core';
+import { z } from 'zod';
+import type { MyService } from './my-service.js';
 
 const PLUGIN_TAG = '@myorg/my-plugin';
 
-@Controller('/api', { tags: [PLUGIN_TAG], description: 'My plugin endpoints' })
-export class MyController {
-  private myService?: MyService;
+const StatusResponse = z.object({
+  status: z.literal('ok'),
+  plugin: z.literal('my-plugin'),
+});
 
-  constructor(myService?: MyService) {
-    this.myService = myService;
-  }
+const WebhookBody = z.object({
+  event: z.string(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
 
-  setMyService(service: MyService): void {
-    this.myService = service;
-  }
+const WebhookResponse = z.object({
+  status: z.literal('received'),
+  taskId: z.string().optional(),
+});
 
-  @Get('/status')
-  @Summary('Get status')
-  @Description('Returns current plugin status')
-  @Tags(PLUGIN_TAG)
-  @OpenApiResponse(200, 'Success', {
-    example: { status: 'ok', plugin: 'my-plugin' }
-  })
-  getStatus(_req: Request, res: Response) {
-    res.json({ status: 'ok', plugin: 'my-plugin' });
-  }
+const ErrorResponse = z.object({ error: z.string() });
 
-  @Post('/webhook')
-  @Summary('Handle webhook')
-  @Description('Receives events from external systems')
-  @Tags(PLUGIN_TAG)
-  @RequestBody({
-    description: 'Webhook payload',
-    required: true,
-    example: { event: 'issue_created', data: { id: '123' } },
+export function buildMyRoutes(_service: MyService) {
+  const getStatus = defineRoute({
+    method: 'GET',
+    url: '/status',
     schema: {
-      type: 'object',
-      properties: {
-        event: { type: 'string' },
-        data: { type: 'object' }
-      },
-      required: ['event']
-    }
-  })
-  @OpenApiResponse(200, 'Success', {
-    example: { status: 'received', taskId: 'abc123' }
-  })
-  @OpenApiResponse(400, 'Bad Request')
-  handleWebhook(req: Request, res: Response) {
-    // Handle webhook
-    res.json({ status: 'received' });
-  }
+      tags: [PLUGIN_TAG],
+      summary: 'Get status',
+      description: 'Returns current plugin status',
+      response: { 200: StatusResponse },
+    },
+    handler: () => ({ status: 'ok' as const, plugin: 'my-plugin' as const }),
+  });
+
+  const handleWebhook = defineRoute({
+    method: 'POST',
+    url: '/webhook',
+    schema: {
+      tags: [PLUGIN_TAG],
+      summary: 'Handle webhook',
+      description: 'Receives events from external systems',
+      body: WebhookBody,
+      response: { 200: WebhookResponse, 400: ErrorResponse },
+    },
+    handler: () => ({ status: 'received' as const }),
+  });
+
+  return [getStatus, handleWebhook];
+}
+
+export function registerMyRoutes(scope: FastifyScope, service: MyService) {
+  registerRoutes(scope, buildMyRoutes(service));
 }
 ```
 
-### Registering the Controller
+### Registering routes from the plugin
 
-In your plugin's register function:
+`scope` is a Fastify instance encapsulated under `/plugins/{sanitized-name}`; routes mount at that prefix automatically.
 
 ```typescript
-import type { Plugin, PluginContext } from '@agent-detective/types';
-import { registerController } from '@agent-detective/core';
-import { MyController } from './my-controller.js';
+import type { Plugin } from '@agent-detective/types';
+import { registerMyRoutes } from './my-routes.js';
 
 const myPlugin: Plugin = {
   name: '@myorg/my-plugin',
@@ -450,78 +484,55 @@ const myPlugin: Plugin = {
   schema: {
     type: 'object',
     properties: {
-      enabled: { type: 'boolean', default: true }
-    }
+      enabled: { type: 'boolean', default: true },
+    },
   },
 
-  register(app, context) {
+  register(scope, context) {
     const { logger } = context;
-
     const myService = new MyService();
-    const controller = new MyController(myService);
-    controller.setMyService(myService);
-
-    registerController(app, controller);
-
+    registerMyRoutes(scope, myService);
     logger.info('My plugin registered');
-  }
+  },
 };
 
 export default myPlugin;
 ```
 
-### Available Decorators
+### `RouteSchema` reference
 
-| Decorator | Type | Description |
-|-----------|------|-------------|
-| `@Controller(prefix, options?)` | Class | Marks a class as a controller with base path |
-| `@Get(path)` | Method | Marks a method as GET endpoint |
-| `@Post(path)` | Method | Marks a method as POST endpoint |
-| `@Put(path)` | Method | Marks a method as PUT endpoint |
-| `@Delete(path)` | Method | Marks a method as DELETE endpoint |
-| `@Patch(path)` | Method | Marks a method as PATCH endpoint |
-| `@Summary(text)` | Method | Adds summary to OpenAPI spec |
-| `@Description(text)` | Method | Adds description to OpenAPI spec |
-| `@Tags(...tags)` | Method | Adds tags for grouping in docs |
-| `@RequestBody(options?)` | Method | Documents request body |
-| `@Response(status, desc, options?)` | Method | Documents response |
-| `@OperationId(id)` | Method | Sets operation ID |
-| `@Deprecated()` | Method | Marks endpoint as deprecated |
-| `@Security(scheme)` | Method | Adds security scheme |
+| Field | Type | Description |
+|-------|------|-------------|
+| `body` | `z.ZodType` | Validates `request.body`; rejects with `400` when invalid |
+| `querystring` | `z.ZodType` | Validates `request.query` |
+| `params` | `z.ZodType` | Validates URL params |
+| `headers` | `z.ZodType` | Validates request headers |
+| `response` | `Record<number, z.ZodType>` | Per-status response schemas; used for **serialization** (drops unknown fields) and OpenAPI |
+| `tags` | `string[]` | Groups the route under tags in `/docs` |
+| `summary` / `description` | `string` | Surfaced in OpenAPI |
+| `operationId` | `string` | Stable id for the operation |
+| `deprecated` | `boolean` | Marks the operation deprecated |
+| `security` | `Record<string, string[]>[]` | Security requirements |
 
-### Response Decorator Options
+### Server-Sent Events
+
+For SSE handlers, call `reply.hijack()` then write to `reply.raw`:
 
 ```typescript
-@OpenApiResponse(200, 'Success', {
-  contentType: 'application/json',
-  example: { id: 1, name: 'Example' },
-  schema: {
-    type: 'object',
-    properties: {
-      id: { type: 'number' },
-      name: { type: 'string' }
-    }
-  }
-})
-```
-
-### RequestBody Decorator Options
-
-```typescript
-@RequestBody({
-  description: 'User data',
-  required: true,
-  contentType: 'application/json',
-  example: { name: 'John', email: 'john@example.com' },
-  schema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-      email: { type: 'string', format: 'email' }
-    },
-    required: ['name', 'email']
-  }
-})
+defineRoute({
+  method: 'GET',
+  url: '/events',
+  schema: { tags: [PLUGIN_TAG], summary: 'Stream events' },
+  handler(_req, reply) {
+    reply.hijack();
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    reply.raw.write(`data: ${JSON.stringify({ hello: 'world' })}\n\n`);
+  },
+});
 ```
 
 ### Accessing API Documentation

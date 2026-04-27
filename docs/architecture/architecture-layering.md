@@ -7,7 +7,7 @@ This repository uses a **pragmatic hexagonal (ports & adapters) + layered** layo
 - **Ports** — Interfaces and DTOs in [`@agent-detective/types`](../../packages/types/src/index.ts) (`TaskEvent`, `AgentRunner`, `RepoMatcher`, `PrWorkflowService`, `LocalReposService`, etc.).
 - **Driving adapters** — HTTP entry points (e.g. Jira webhook controller).
 - **Application** — Use cases: webhook dispatch, handler routing, config schemas for a plugin.
-- **Domain** — Pure logic without Express or network I/O (normalization, trigger rules, plugin-local types).
+- **Domain** — Pure logic without Fastify or network I/O (normalization, trigger rules, plugin-local types).
 - **Infrastructure** — Outbound adapters: Jira REST clients, GitHub/Bitbucket APIs, ADF conversion, mocks.
 
 ## Package layouts
@@ -45,7 +45,7 @@ Entry point remains [`src/index.ts`](../../packages/local-repos-plugin/src/index
 
 ## Root app (`src/`)
 
-The host process is the **composition root**: Express server (presentation), plugin system and orchestrator (application / glue), agent CLI adapters (infrastructure). See [ADR 0001](adr/0001-layering-and-plugin-boundaries.md).
+The host process is the **composition root**: Fastify server (presentation), plugin system and orchestrator (application / glue), agent CLI adapters (infrastructure). See [ADR 0001](adr/0001-layering-and-plugin-boundaries.md) and [ADR 0002](adr/0002-http-framework.md).
 
 ## What we avoid
 

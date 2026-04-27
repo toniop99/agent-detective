@@ -13,3 +13,8 @@ catalog:
   tsup: ^8.5.1
   jira.js: ^5.3.1
   marked: ^18.0.2
+  fastify: ^5.8.5
+  fastify-type-provider-zod: ^6.1.0
+  '@fastify/swagger': ^9.7.0
+  '@scalar/fastify-api-reference': ^1.52.6
+  openapi-types: ^12.1.3

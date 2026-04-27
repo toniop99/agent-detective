@@ -16,7 +16,7 @@ const prPipelinePlugin: Plugin = {
   schema,
   dependsOn: ['@agent-detective/local-repos-plugin', '@agent-detective/jira-adapter'],
 
-  register(_app, context) {
+  register(_scope, context) {
     const ctx = context as PluginContext;
     const log = ctx.logger;
     const parsed = prPipelineOptionsSchema.safeParse(ctx.config ?? {});
@@ -48,7 +48,6 @@ const prPipelinePlugin: Plugin = {
     ctx.registerService(PR_WORKFLOW_SERVICE, service);
     ctx.onShutdown(() => cleanupWorktrees(log ?? console));
     log?.info('pr-pipeline: registered; Jira #agent-detective pr comments can use this service');
-    return [];
   },
 };
 

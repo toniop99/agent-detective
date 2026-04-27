@@ -40,17 +40,17 @@
     "@agent-detective/core": "workspace:*",
     "@agent-detective/observability": "workspace:*",
     "@agent-detective/process-utils": "workspace:*",
-    "zod": "catalog:",
-    "@scalar/express-api-reference": "^0.9.9",
-    "@scalar/openapi-types": "^0.7.0",
-    "express": "^5.0.1",
-    "reflect-metadata": "^0.2.2"
+    "@fastify/swagger": "catalog:",
+    "@scalar/fastify-api-reference": "catalog:",
+    "fastify": "catalog:",
+    "fastify-type-provider-zod": "catalog:",
+    "openapi-types": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@changesets/changelog-git": "^0.2.1",
     "@changesets/cli": "^2.31.0",
     "@eslint/js": "^10.0.1",
-    "@types/express": "^5.0.0",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tmp": "^0.2.5",

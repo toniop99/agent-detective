@@ -19,7 +19,7 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 | **Doc map (operator, config, plugins, ADR)** | [`docs/README.md`](docs/README.md) |
 | **Runtime config** | [`docs/config/configuration.md`](docs/config/configuration.md) · Zod: `src/config/schema.ts` |
 | **Plugin guide** | [`docs/plugins/plugins.md`](docs/plugins/plugins.md) |
-| **HTTP (Express) / OpenAPI** | [`src/server.ts`](src/server.ts) · [Plugins](docs/plugins/plugins.md) · [ADR 0001 — layering](docs/architecture/adr/0001-layering-and-plugin-boundaries.md) |
+| **HTTP (Fastify) / OpenAPI** | [`src/server.ts`](src/server.ts) · [Plugins](docs/plugins/plugins.md) · [ADR 0001 — layering](docs/architecture/adr/0001-layering-and-plugin-boundaries.md) · [ADR 0002 — HTTP framework](docs/architecture/adr/0002-http-framework.md) |
 
 **Starlight:** source prose is **`docs/**/*.md`**; sync → `apps/docs/src/content/docs/` via `pnpm run docs:site:sync`. Published: **https://agent-detective.chapascript.dev/docs/**. **`apps/docs/src/content/docs/index.mdx`** is hand-edited (not synced). **Pages:** `pnpm run docs:site:landing` merges landing into the same artifact — see [`apps/docs/README.md`](apps/docs/README.md).
 
@@ -45,15 +45,16 @@ Full list: [`docs/development/agent-golden-rules.md`](docs/development/agent-gol
 
 ## Architecture (sketch)
 
-Core: **agent runner**, **queue**, **HTTP server** (**Express** + OpenAPI / Scalar docs), **plugin system** (schema validation + `/plugins/{name}` route prefix). Plugins use **`TaskEvent`** and **`PluginContext`**. Shared types: **`packages/types/src/index.ts`**.
+Core: **agent runner**, **queue**, **HTTP server** (**Fastify** + Zod-typed routes via `defineRoute()` + `@fastify/swagger` → Scalar `/docs`), **plugin system** (schema validation + native Fastify `register({ prefix: '/plugins/{name}' })`). Plugins use **`TaskEvent`** and **`PluginContext`**. Shared types: **`packages/types/src/index.ts`**.
 
 ## Key files
 
 | Path | Role |
 |------|------|
-| `src/core/plugin-system.ts` | Plugin load, `/plugins/{name}` prefix, `createPluginSystem` → `.enqueue` |
+| `src/core/plugin-system.ts` | Plugin load, `/plugins/{name}` prefix via `fastify.register`, `createPluginSystem` → `.enqueue` |
 | `src/core/agent-runner.ts` | Agent execution |
-| `src/server.ts` | Express app, Core API, docs route, OpenAPI |
+| `src/server.ts` | Fastify app, Core API, docs route, OpenAPI (via `@fastify/swagger`) |
+| `packages/core/src/route.ts` | `defineRoute` / `registerRoutes` (Zod-typed routes) |
 | `packages/types/src/index.ts` | All shared interfaces |
 | `docs/README.md` | Documentation map |
 

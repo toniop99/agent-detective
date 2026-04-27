@@ -169,7 +169,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Operator-ready',
-          body: 'Express, health, metrics, structured logs, JSON and env. Ship with Docker from GHCR when you are done iterating locally.',
+          body: 'Fastify, health, metrics, structured logs, JSON and env. Ship with Docker from GHCR when you are done iterating locally.',
         },
       ],
     },
@@ -273,7 +273,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Listo para operaciones',
-          body: 'Express, salud, métricas, logs estructurados, JSON y entorno. Despliega con Docker desde GHCR cuando termines de iterar en local.',
+          body: 'Fastify, salud, métricas, logs estructurados, JSON y entorno. Despliega con Docker desde GHCR cuando termines de iterar en local.',
         },
       ],
     },

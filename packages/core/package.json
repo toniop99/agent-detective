@@ -1,7 +1,7 @@
 {
   "name": "@agent-detective/core",
   "version": "0.1.0",
-  "description": "Core utilities and decorators for agent-detective",
+  "description": "Core HTTP / route definition utilities for agent-detective (Fastify + Zod)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,11 +18,14 @@
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "core", "decorators"],
+  "keywords": ["agent-detective", "core", "fastify", "zod"],
   "license": "MIT",
   "dependencies": {
     "@agent-detective/types": "workspace:*",
-    "reflect-metadata": "^0.2.2",
+    "@fastify/swagger": "catalog:",
+    "fastify": "catalog:",
+    "fastify-type-provider-zod": "catalog:",
+    "openapi-types": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

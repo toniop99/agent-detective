@@ -1,10 +1,17 @@
-import { validatePluginSchema, validatePluginConfig } from './schema-validator.js';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Agent, Plugin, PluginContext, LoadedPlugin, TaskQueue, EnqueueFn } from './types.js';
-import type { RequestHandler } from 'express';
+import type { FastifyInstance } from 'fastify';
+import type {
+  Agent,
+  EnqueueFn,
+  LoadedPlugin,
+  Plugin,
+  PluginContext,
+  TaskQueue,
+} from './types.js';
 import { createMemoryTaskQueue } from './queue.js';
+import { validatePluginConfig, validatePluginSchema } from './schema-validator.js';
 
 /** Repository root for resolving local plugin paths (packages/...). Uses process.cwd() so bundled dist/index.js matches Docker WORKDIR and local pnpm dev. */
 const ROOT_DIR = process.cwd();
@@ -26,46 +33,14 @@ async function importPluginModuleFromSpecifier(spec: string): Promise<{ default?
   }
 }
 
+/**
+ * Sanitizes a plugin's npm-style name into a URL-safe segment used for the
+ * Fastify register prefix. Stable across the repo (`@scope/name` → `scope-name`).
+ */
 export function sanitizePluginName(name: string): string {
   return name
     .replace(/^@/, '')
     .replace(/\//g, '-');
-}
-
-function createPrefixedApp(
-  app: import('express').Application,
-  pluginName: string,
-  log: PluginContext['logger'],
-): import('express').Application {
-  const prefix = `/plugins/${sanitizePluginName(pluginName)}`;
-
-  return new Proxy(app, {
-    get(target, prop) {
-      if (['get', 'post', 'put', 'delete', 'patch', 'all', 'head', 'options'].includes(prop as string)) {
-        return (path: string, ...handlers: unknown[]) => {
-          const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (target as any)[prop](prefixedPath, ...handlers);
-        };
-      }
-      if (prop === 'use') {
-        return (path: string | RequestHandler, ...handlers: unknown[]) => {
-          if (typeof path === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return (target as any).use(path, ...handlers);
-          }
-          if (path.startsWith('/plugins/')) {
-            log.warn(`Plugin ${pluginName} registered path '${path}' which appears to already be prefixed. Path will be used as-is.`);
-          }
-          const prefixedPath = path === '/' ? prefix : `${prefix}${path}`;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (target as any).use(prefixedPath, ...handlers);
-        };
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (target as any)[prop];
-    }
-  });
 }
 
 export interface CreatePluginSystemOptions {
@@ -108,9 +83,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
   }
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
-  const pluginControllers: object[] = [];
-  /** Maps plugin-registered OpenAPI controller instances to their owning plugin `name`. */
-  const pluginNameByController = new WeakMap<object, string>();
   const servicesRegistry = new Map<string, unknown>();
   const capabilitiesRegistry = new Set<string>();
   const shutdownHooks: Array<() => void | Promise<void>> = [];
@@ -138,109 +110,127 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return service as T;
   }
 
-  async function loadPlugin(
-    packageNameOrPlugin: string | Plugin,
-    app: import('express').Application,
-    pluginConfig: Record<string, unknown> = {},
-    sharedContext?: PluginContext
-  ): Promise<LoadedPlugin | null> {
-    let plugin: Plugin;
+  function buildPluginContext(plugin: Plugin, mergedConfig: Record<string, unknown>): PluginContext {
+    return {
+      agentRunner,
+      enqueue: enqueueDelegate,
+      config: mergedConfig,
+      logger:
+        'child' in logger && typeof logger.child === 'function'
+          ? logger.child({ plugin: plugin.name })
+          : logger,
+      events,
+      registerService,
+      getService,
+      registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
+      registerCapability,
+      hasCapability,
+      registerTaskQueue,
+      onShutdown: (fn) => shutdownHooks.push(fn),
+    };
+  }
 
-    if (typeof packageNameOrPlugin === 'object' && packageNameOrPlugin !== null) {
-      plugin = packageNameOrPlugin as Plugin;
-    } else {
-      const packageName = packageNameOrPlugin;
-      try {
-        const pluginModule = await importPluginModuleFromSpecifier(packageName);
-        plugin = ((pluginModule as { default?: Plugin }).default ?? pluginModule) as unknown as Plugin;
-      } catch (err) {
-        logger.warn(`Failed to load plugin ${packageName}: ${(err as Error).message}. Continuing...`);
-        return null;
+  /**
+   * Registers a single plugin on the Fastify app under
+   * `/plugins/{sanitizePluginName(plugin.name)}` using native
+   * `fastify.register` encapsulation. Each plugin gets its own scope: any
+   * hooks (`onRequest`, `preHandler`, `setErrorHandler`) it adds to `scope`
+   * stay local to that plugin's routes.
+   */
+  /**
+   * Resolves a plugin's merged config (defaults + overrides). Throws on
+   * invalid schema or invalid config so callers can convert to a soft warn.
+   */
+  function preparePlugin(
+    plugin: Plugin,
+    pluginConfig: Record<string, unknown>,
+  ): { mergedConfig: Record<string, unknown>; ctx: PluginContext } {
+    validatePluginSchema(plugin);
+
+    const mergedConfig: Record<string, unknown> = { ...pluginConfig };
+    if (plugin.schema?.properties) {
+      for (const [key, prop] of Object.entries(plugin.schema.properties)) {
+        if (mergedConfig[key] === undefined && prop.default !== undefined) {
+          mergedConfig[key] = prop.default;
+        }
       }
     }
 
+    validatePluginConfig(plugin, mergedConfig);
+
+    return { mergedConfig, ctx: buildPluginContext(plugin, mergedConfig) };
+  }
+
+  /**
+   * Loads a single plugin eagerly: runs its `register` synchronously against
+   * the supplied Fastify instance (no scope encapsulation) so service /
+   * capability side-effects are immediately visible. This is the path used
+   * by tests and ad-hoc loads. Production boot uses `loadAll`, which mounts
+   * each plugin under an encapsulated `/plugins/{name}` scope.
+   */
+  async function loadPlugin(
+    plugin: Plugin,
+    app: FastifyInstance,
+    pluginConfig: Record<string, unknown>,
+  ): Promise<LoadedPlugin | null> {
     if (loadedPlugins.has(plugin.name)) {
       logger.warn(`Plugin ${plugin.name} already loaded, skipping`);
       return loadedPlugins.get(plugin.name) ?? null;
     }
 
+    let prepared: ReturnType<typeof preparePlugin>;
     try {
-      validatePluginSchema(plugin);
-
-      const mergedConfig: Record<string, unknown> = { ...pluginConfig };
-      if (plugin.schema?.properties) {
-        for (const [key, prop] of Object.entries(plugin.schema.properties)) {
-          if (mergedConfig[key] === undefined && prop.default !== undefined) {
-            mergedConfig[key] = prop.default;
-          }
-        }
-      }
-
-      validatePluginConfig(plugin, mergedConfig);
-
-      const pluginContext: PluginContext = {
-        agentRunner,
-        enqueue: enqueueDelegate,
-        config: mergedConfig,
-        logger: 'child' in logger && typeof logger.child === 'function'
-          ? logger.child({ plugin: plugin.name })
-          : logger,
-        controllers: pluginControllers,
-        events,
-        registerService: sharedContext?.registerService || registerService,
-        getService: sharedContext?.getService || getService,
-        registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
-        registerCapability: sharedContext?.registerCapability || registerCapability,
-        hasCapability: sharedContext?.hasCapability || hasCapability,
-        registerTaskQueue: sharedContext?.registerTaskQueue || registerTaskQueue,
-        onShutdown: (fn) => shutdownHooks.push(fn),
-      };
-
-      const prefixedApp = createPrefixedApp(app, plugin.name, logger);
-      const result = await plugin.register(prefixedApp, pluginContext);
-
-      if (result) {
-        const ctrls = Array.isArray(result) ? result : [result];
-        for (const ctrl of ctrls) {
-          if (typeof ctrl === 'object' && ctrl !== null) {
-            pluginNameByController.set(ctrl, plugin.name);
-          }
-        }
-        pluginControllers.push(...ctrls);
-      }
-
-      const loaded: LoadedPlugin = {
-        name: plugin.name,
-        version: plugin.version,
-        config: mergedConfig,
-        dependsOn: plugin.dependsOn || [],
-      };
-      loadedPlugins.set(plugin.name, loaded);
-
-      logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
-
-      if (!sharedContext && plugin.requiresCapabilities) {
-        for (const req of plugin.requiresCapabilities) {
-          if (!capabilitiesRegistry.has(req)) {
-            logger.error(`Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin.`);
-          }
-        }
-      }
-
-      return loaded;
+      prepared = preparePlugin(plugin, pluginConfig);
     } catch (err) {
       logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
       return null;
     }
+
+    try {
+      await plugin.register(app, prepared.ctx);
+    } catch (err) {
+      logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
+      return null;
+    }
+
+    const loaded: LoadedPlugin = {
+      name: plugin.name,
+      version: plugin.version,
+      config: prepared.mergedConfig,
+      dependsOn: plugin.dependsOn || [],
+    };
+    loadedPlugins.set(plugin.name, loaded);
+
+    if (plugin.requiresCapabilities) {
+      for (const req of plugin.requiresCapabilities) {
+        if (!capabilitiesRegistry.has(req)) {
+          logger.error(
+            `Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin.`,
+          );
+        }
+      }
+    }
+
+    logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
+
+    return loaded;
   }
 
+  /**
+   * Loads every plugin listed in `config.plugins` onto the given Fastify
+   * instance. Resolution order is topological over `dependsOn`; missing
+   * dependencies and circular cycles are logged but do not abort boot.
+   */
   async function loadAll(
-    app: import('express').Application,
-    config: PluginConfig
+    app: FastifyInstance,
+    config: PluginConfig,
   ): Promise<void> {
     const plugins = config.plugins || [];
 
-    const pluginData = new Map<string, { plugin: Plugin; packageName: string; options: Record<string, unknown> }>();
+    const pluginData = new Map<
+      string,
+      { plugin: Plugin; packageName: string; options: Record<string, unknown> }
+    >();
     const loadOrder: string[] = [];
     const errors: string[] = [];
 
@@ -262,7 +252,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       pluginData.set(plugin.name, {
         plugin,
         packageName,
-        options: typeof p === 'object' ? (p.options || {}) : {},
+        options: typeof p === 'object' ? p.options || {} : {},
       });
     }
 
@@ -278,7 +268,6 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       const data = pluginData.get(name);
       if (!data) {
-        // If it's already loaded, it's fine
         if (loadedPlugins.has(name)) {
           visited.add(name);
           return true;
@@ -313,34 +302,64 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
     logger.info(`Plugin load order: ${loadOrder.join(' -> ')}`);
 
-    const sharedContext: PluginContext = {
-      agentRunner,
-      enqueue: enqueueDelegate,
-      config: {},
-      logger,
-      controllers: pluginControllers,
-      events,
-      registerService,
-      getService,
-      registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
-      registerCapability,
-      hasCapability,
-      registerTaskQueue,
-      onShutdown: (fn) => shutdownHooks.push(fn),
-    };
-
+    // Queue every plugin on the app in topo order before driving `ready()`
+    // (Fastify forbids registering more plugins after the first `ready()`
+    // resolves). Avvio processes the queue serially, so each plugin's
+    // side-effects (registerService, registerCapability, registerAgent) are
+    // visible to the next plugin's `register()` callback.
     for (const name of loadOrder) {
       const data = pluginData.get(name)!;
-      await loadPlugin(data.plugin, app, data.options, sharedContext);
+      const { plugin, options } = data;
+
+      if (loadedPlugins.has(plugin.name)) {
+        logger.warn(`Plugin ${plugin.name} already loaded, skipping`);
+        continue;
+      }
+
+      let prepared: ReturnType<typeof preparePlugin>;
+      try {
+        prepared = preparePlugin(plugin, options);
+      } catch (err) {
+        logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
+        continue;
+      }
+
+      const prefix = `/plugins/${sanitizePluginName(plugin.name)}`;
+
+      app.register(
+        async (childScope) => {
+          try {
+            await plugin.register(childScope, prepared.ctx);
+            const loaded: LoadedPlugin = {
+              name: plugin.name,
+              version: plugin.version,
+              config: prepared.mergedConfig,
+              dependsOn: plugin.dependsOn || [],
+            };
+            loadedPlugins.set(plugin.name, loaded);
+            logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
+          } catch (err) {
+            // Swallow per-plugin failures so the rest of the boot continues
+            // (mirrors the Express-era plugin system contract).
+            logger.warn(
+              `Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`,
+            );
+          }
+        },
+        { prefix },
+      );
     }
 
-    // Post-load capabilities check
+    await app.ready();
+
     for (const loaded of loadedPlugins.values()) {
-      const plugin = Array.from(pluginData.values()).find(d => d.plugin.name === loaded.name)?.plugin;
+      const plugin = Array.from(pluginData.values()).find((d) => d.plugin.name === loaded.name)?.plugin;
       if (plugin && plugin.requiresCapabilities) {
         for (const req of plugin.requiresCapabilities) {
           if (!capabilitiesRegistry.has(req)) {
-            logger.error(`Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin.`);
+            logger.error(
+              `Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin.`,
+            );
           }
         }
       }
@@ -351,12 +370,9 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return Array.from(loadedPlugins.values());
   }
 
-  function getControllers(): object[] {
-    return [...pluginControllers];
-  }
-
-  function getPluginNameForController(controller: object): string | undefined {
-    return pluginNameByController.get(controller);
+  /** Tag names to surface under the Scalar "Plugins" group on `/docs`. */
+  function getPluginTags(): string[] {
+    return Array.from(loadedPlugins.keys());
   }
 
   async function shutdown(): Promise<void> {
@@ -373,8 +389,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     loadPlugin,
     loadAll,
     getLoadedPlugins,
-    getControllers,
-    getPluginNameForController,
+    getPluginTags,
     enqueue: enqueueDelegate,
     shutdown,
   };

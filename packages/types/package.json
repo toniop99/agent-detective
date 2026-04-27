@@ -18,6 +18,9 @@
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
+  "dependencies": {
+    "fastify": "catalog:"
+  },
   "devDependencies": {
     "typescript": "catalog:"
   },

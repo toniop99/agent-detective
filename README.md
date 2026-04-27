@@ -31,9 +31,9 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 
 | Package | Description |
 |---------|-------------|
-| Root app | Express server (`src/`, not under `packages/`) |
+| Root app | Fastify server (`src/`, not under `packages/`) |
 | `@agent-detective/types` | Shared TypeScript types |
-| `@agent-detective/core` | OpenAPI / controller utilities |
+| `@agent-detective/core` | Fastify route helpers (`defineRoute`) and OpenAPI utilities |
 | `@agent-detective/observability` | Logging, metrics, health |
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |
