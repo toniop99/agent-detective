@@ -2,6 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import { localReposPluginOptionsSchema } from '@agent-detective/local-repos-plugin';
 import { jiraAdapterOptionsSchema } from '@agent-detective/jira-adapter';
+import { linearAdapterOptionsSchema } from '@agent-detective/linear-adapter';
 import { prPipelineOptionsSchema } from '@agent-detective/pr-pipeline';
 
 describe('plugin Zod schemas (.strict)', () => {
@@ -9,6 +10,15 @@ describe('plugin Zod schemas (.strict)', () => {
     const bad = localReposPluginOptionsSchema.safeParse({
       repos: [],
       discovery: { enabled: true },
+    });
+    assert.ok(!bad.success);
+  });
+
+  test('linear rejects unknown option keys', () => {
+    const bad = linearAdapterOptionsSchema.safeParse({
+      enabled: true,
+      mockMode: true,
+      extraKey: 1,
     });
     assert.ok(!bad.success);
   });

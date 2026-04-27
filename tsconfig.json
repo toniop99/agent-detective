@@ -25,6 +25,7 @@
       "@agent-detective/observability": ["./packages/observability/src/index.ts"],
       "@agent-detective/local-repos-plugin": ["./packages/local-repos-plugin/src/index.ts"],
       "@agent-detective/jira-adapter": ["./packages/jira-adapter/src/index.ts"],
+      "@agent-detective/linear-adapter": ["./packages/linear-adapter/src/index.ts"],
       "@agent-detective/process-utils": ["./packages/process-utils/src/index.ts"],
       "@agent-detective/sdk": ["./packages/sdk/src/index.ts"],
       "@agent-detective/pr-pipeline": ["./packages/pr-pipeline/src/index.ts"]

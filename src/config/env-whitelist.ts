@@ -1,6 +1,7 @@
 import type { AppConfig } from './schema.js';
 
 const JIRA_PACKAGE = '@agent-detective/jira-adapter';
+const LINEAR_PACKAGE = '@agent-detective/linear-adapter';
 const LOCAL_REPOS_PACKAGE = '@agent-detective/local-repos-plugin';
 const PR_PIPELINE_PACKAGE = '@agent-detective/pr-pipeline';
 
@@ -145,6 +146,20 @@ export function applyPluginEnvWhitelist(config: AppConfig): void {
       if (jiraToken) opts.apiToken = jiraToken;
       if (jiraEmail) opts.email = jiraEmail;
       if (jiraBase) opts.baseUrl = jiraBase;
+    }
+  }
+
+  const linearApiKey = process.env.LINEAR_API_KEY;
+  const linearWebhookSecret = process.env.LINEAR_WEBHOOK_SIGNING_SECRET;
+  const linearOAuthClientId = process.env.LINEAR_OAUTH_CLIENT_ID;
+  const linearOAuthClientSecret = process.env.LINEAR_OAUTH_CLIENT_SECRET;
+  if (linearApiKey || linearWebhookSecret || linearOAuthClientId || linearOAuthClientSecret) {
+    const opts = getExistingPluginOptions(config, LINEAR_PACKAGE);
+    if (opts) {
+      if (linearApiKey) opts.apiKey = linearApiKey;
+      if (linearWebhookSecret) opts.webhookSigningSecret = linearWebhookSecret;
+      if (linearOAuthClientId) opts.oauthClientId = linearOAuthClientId;
+      if (linearOAuthClientSecret) opts.oauthClientSecret = linearOAuthClientSecret;
     }
   }
 

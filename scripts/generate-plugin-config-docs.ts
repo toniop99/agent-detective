@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from '../packages/jira-adapter/src/application/options-schema.js';
+import { linearAdapterOptionsSchema } from '../packages/linear-adapter/src/application/options-schema.js';
 import { localReposPluginOptionsSchema } from '../packages/local-repos-plugin/src/application/options-schema.js';
 import { prPipelineOptionsSchema } from '../packages/pr-pipeline/src/application/options-schema.js';
 
@@ -18,6 +19,7 @@ function block(title: string, id: string, schema: Record<string, unknown>): stri
 }
 
 const jira = z.toJSONSchema(jiraAdapterOptionsSchema, { target: 'draft-7' }) as Record<string, unknown>;
+const linear = z.toJSONSchema(linearAdapterOptionsSchema, { target: 'draft-7' }) as Record<string, unknown>;
 const localRepos = z.toJSONSchema(localReposPluginOptionsSchema, {
   target: 'draft-7',
 }) as Record<string, unknown>;
@@ -30,14 +32,19 @@ Do not edit by hand. Regenerate with \`pnpm docs:plugins\`.
 Source files:
 
 - \`packages/jira-adapter/src/application/options-schema.ts\`
+- \`packages/linear-adapter/src/application/options-schema.ts\`
 - \`packages/local-repos-plugin/src/application/options-schema.ts\`
 - \`packages/pr-pipeline/src/application/options-schema.ts\`
 
 ${block('@agent-detective/jira-adapter', 'jira-adapter', jira)}${block(
-  '@agent-detective/local-repos-plugin',
-  'local-repos-plugin',
-  localRepos
-)}${block('@agent-detective/pr-pipeline', 'pr-pipeline', prPipeline)}
+  '@agent-detective/linear-adapter',
+  'linear-adapter',
+  linear
+)}${block('@agent-detective/local-repos-plugin', 'local-repos-plugin', localRepos)}${block(
+  '@agent-detective/pr-pipeline',
+  'pr-pipeline',
+  prPipeline
+)}
 `;
 
 mkdirSync(dirname(outPath), { recursive: true });

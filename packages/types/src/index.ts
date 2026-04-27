@@ -446,15 +446,22 @@ export interface EventBus {
   invokeAsync<T>(event: string, ...args: unknown[]): Promise<T[]>;
 }
 
-/** Minimal Jira client surface for posting follow-up comments from the PR module. */
-export interface PrJiraClient {
+/**
+ * Minimal issue-tracker client surface for posting follow-up comments and
+ * downloading attachments from the PR module. Implemented by Jira and Linear
+ * adapters (and mocks in tests).
+ */
+export interface PrIssueTrackerClient {
   addComment(issueIdOrKey: string, body: string, options?: { parentId?: string }): Promise<void>;
   downloadAttachment(attachmentId: string): Promise<Buffer>;
 }
 
+/** @deprecated Use {@link PrIssueTrackerClient} — alias kept for existing imports. */
+export type PrJiraClient = PrIssueTrackerClient;
+
 /**
- * What the Jira handler passes to {@link PrWorkflowService.startPrWorkflow}. The
- * service should enqueue and run git + agent + host API asynchronously.
+ * What a tracker adapter (Jira, Linear, …) passes to {@link PrWorkflowService.startPrWorkflow}.
+ * The service should enqueue and run git + agent + host API asynchronously.
  */
 export interface PrWorkflowInput {
   issueKey: string;
@@ -463,7 +470,8 @@ export interface PrWorkflowInput {
   projectKey: string;
   labels: string[];
   match: { name: string; path: string };
-  jira: PrJiraClient;
+  /** Jira, Linear, or any adapter implementing the same comment/attachment contract. */
+  issueTracker: PrIssueTrackerClient;
   /** Merged with PR-specific instructions for the write-capable agent. */
   analysisPrompt?: string;
   /**

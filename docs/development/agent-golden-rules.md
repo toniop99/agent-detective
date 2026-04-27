@@ -26,6 +26,7 @@ These rules keep the monorepo buildable, type-safe, and easy for agents to navig
 | Plugin name | HTTP prefix |
 |-------------|----------------|
 | `@agent-detective/jira-adapter` | `/plugins/agent-detective-jira-adapter` |
+| `@agent-detective/linear-adapter` | `/plugins/agent-detective-linear-adapter` |
 | `my-plugin` | `/plugins/my-plugin` |
 
 ### Example: `dependsOn`

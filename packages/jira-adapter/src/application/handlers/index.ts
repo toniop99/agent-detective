@@ -611,7 +611,7 @@ async function fanOutPr(
       projectKey: taskInfo.projectKey,
       labels: taskInfo.labels,
       match: { name: match.name, path: match.path },
-      jira: {
+      issueTracker: {
         addComment: async (k, t, opts) => {
           await jiraClient.addComment(k, t, opts);
         },

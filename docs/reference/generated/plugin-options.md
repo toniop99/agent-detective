@@ -5,6 +5,7 @@ Do not edit by hand. Regenerate with `pnpm docs:plugins`.
 Source files:
 
 - `packages/jira-adapter/src/application/options-schema.ts`
+- `packages/linear-adapter/src/application/options-schema.ts`
 - `packages/local-repos-plugin/src/application/options-schema.ts`
 - `packages/pr-pipeline/src/application/options-schema.ts`
 
@@ -178,6 +179,49 @@ Anchor: `jira-adapter`
     "autoAnalysisCooldownMs",
     "missingLabelsReminderCooldownMs",
     "fetchIssueComments"
+  ],
+  "additionalProperties": false
+}
+```
+
+### @agent-detective/linear-adapter
+
+Anchor: `linear-adapter`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "mockMode": {
+      "default": true,
+      "type": "boolean"
+    },
+    "apiKey": {
+      "type": "string"
+    },
+    "webhookSigningSecret": {
+      "type": "string"
+    },
+    "oauthClientId": {
+      "type": "string"
+    },
+    "oauthClientSecret": {
+      "type": "string"
+    },
+    "skipWebhookSignatureVerification": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "enabled",
+    "mockMode",
+    "skipWebhookSignatureVerification"
   ],
   "additionalProperties": false
 }

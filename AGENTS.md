@@ -33,7 +33,8 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 | `@agent-detective/process-utils` | Process helpers |
 | `@agent-detective/local-repos-plugin` | Repos + `RepoMatcher` |
 | `@agent-detective/jira-adapter` | Jira integration |
-| `@agent-detective/pr-pipeline` | PR workflow from Jira |
+| `@agent-detective/linear-adapter` | Linear webhooks + GraphQL (Phase B scaffold) |
+| `@agent-detective/pr-pipeline` | PR workflow (issue tracker port) |
 
 ## Golden rules (summary)
 
