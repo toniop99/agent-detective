@@ -2,8 +2,9 @@ import { StandardEvents, definePlugin, zodToPluginSchema, type TaskEvent } from 
 import * as z from 'zod';
 import { linearAdapterOptionsSchema } from './application/options-schema.js';
 import type { LinearAdapterConfig } from './application/options-schema.js';
+import { createLinearGraph } from './infrastructure/linear-graph.js';
 import { createLinearWebhookHandler } from './application/webhook-handler.js';
-import { createRealLinearClient } from './infrastructure/real-linear-client.js';
+import { stampComment } from './domain/comment-mark.js';
 import {
   registerLinearJsonWithRawBody,
   registerLinearWebhookRoutes,
@@ -40,22 +41,38 @@ const linearAdapterPlugin = definePlugin({
       return;
     }
 
-    const mockMode = cfg.mockMode ?? true;
-    if (!mockMode && cfg.apiKey) {
-      try {
-        createRealLinearClient(cfg.apiKey, extContext.logger);
-      } catch (err) {
-        extContext.logger?.error(`linear-adapter: ${(err as Error).message}`);
-        return;
-      }
-    } else if (!mockMode) {
-      extContext.logger?.error('linear-adapter: mockMode is false but apiKey is missing');
+    const apiKey = cfg.apiKey?.trim() ?? '';
+    if (!apiKey) {
+      extContext.logger?.error(
+        'linear-adapter: enabled but apiKey is missing — set apiKey (or LINEAR_API_KEY) so issues and labels can be loaded'
+      );
       return;
     }
 
+    const mockMode = cfg.mockMode ?? true;
+    const linearGraph = createLinearGraph({
+      apiKey,
+      mockComments: mockMode,
+      logger: extContext.logger,
+    });
+
     registerLinearJsonWithRawBody(scope);
 
-    const webhookHandler = createLinearWebhookHandler({ logger: extContext.logger });
+    const getService = <T>(name: string): T | null => {
+      try {
+        return context.getService<T>(name);
+      } catch {
+        return null;
+      }
+    };
+
+    const webhookHandler = createLinearWebhookHandler({
+      linearGraph,
+      config: cfg,
+      events: context.events,
+      logger: extContext.logger,
+      getService,
+    });
 
     context.events.on(StandardEvents.TASK_COMPLETED, async (payload: { event: TaskEvent; result: string }) => {
       const { event, result } = payload;
@@ -63,9 +80,32 @@ const linearAdapterPlugin = definePlugin({
         return;
       }
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
-        extContext.logger?.info(
-          `linear-adapter: TASK_COMPLETED for ${event.replyTo.id} — post-back to Linear not implemented (length=${String(result).length})`
+        const matchedRepo =
+          typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0
+            ? event.metadata.matchedRepo
+            : null;
+        const body = stampComment(
+          matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result
         );
+        const meta = event.metadata as { linearReplyParentId?: string };
+        const linearReplyParentId =
+          typeof meta.linearReplyParentId === 'string' && meta.linearReplyParentId.trim().length > 0
+            ? meta.linearReplyParentId.trim()
+            : undefined;
+        extContext.logger?.info(
+          `Posting analysis back to Linear issue ${event.replyTo.id}${matchedRepo ? ` (repo=${matchedRepo})` : ''}${
+            linearReplyParentId ? ` (thread=${linearReplyParentId})` : ''
+          }`
+        );
+        try {
+          await linearGraph.addIssueComment(
+            event.replyTo.id,
+            body,
+            linearReplyParentId ? { parentId: linearReplyParentId } : undefined
+          );
+        } catch (err) {
+          extContext.logger?.error(`Failed to post comment to Linear: ${(err as Error).message}`);
+        }
       }
     });
 

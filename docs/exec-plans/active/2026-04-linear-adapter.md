@@ -63,8 +63,8 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 
 ## Acceptance criteria
 
-- [x] Spike (partial): webhook **signature verification** + timestamp window implemented; `@linear/sdk` **LinearClient** construction when `mockMode: false`; OAuth **callback route stub** (`501`); full token exchange / refresh + comment mutations + type→handler map **deferred**.
-- [x] Package `packages/linear-adapter`: plugin, Zod options, `GET /oauth/callback` stub, signed `POST /webhook/linear`, stub webhook handler (no `TASK_CREATED` / PR yet), real client helper.
+- [x] Spike (partial): webhook **signature verification** + timestamp window; OAuth **callback stub** (`501`); full token exchange / refresh **deferred**.
+- [x] Package `packages/linear-adapter`: plugin, Zod options, `GET /oauth/callback` stub, signed `POST /webhook/linear`, **`routeLinearWebhook`** (`linear:Issue:create` / `linear:Comment:create` → RepoMatcher → `TASK_CREATED` / `PR_WORKFLOW_SERVICE`), **`TASK_COMPLETED`** → `createComment`, `createLinearGraph` (mock vs real comments + issue fetch).
 - [x] `pr-pipeline` uses **`issueTracker`** / **`PrIssueTrackerClient`**; Jira adapter passes the port; `PrJiraClient` kept as deprecated alias.
 - [x] Config: `pnpm-workspace.yaml` catalog `@linear/sdk`, `config/default.json` disabled plugin entry, `AGENTS.md` / `README.md`, `env-whitelist` for `LINEAR_*`, `docs:plugins` regenerated.
 - [x] Tests: unit tests for signing + options schema; routing/OAuth exchange E2E **not** added yet; manual smoke **not** run.
@@ -76,6 +76,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 | Date | Note |
 |------|------|
 | 2026-04-27 | Branch `feat/linear-adapter-phase-b`: tracker port in types + `pr-pipeline`; new `@agent-detective/linear-adapter` (webhook verify, stub handler, env + docs artifacts); `pr-pipeline` `dependsOn` trimmed to `local-repos-plugin` only. |
+| 2026-04-27 | Linear adapter: webhook routing + analyze/PR fan-out + `TASK_COMPLETED` post-back; `webhookBehavior` + triggers aligned with Jira; `apiKey` required when plugin enabled. |
 
 ## Out of scope (v1)
 

@@ -1,23 +1,26 @@
-import type { Logger } from '@agent-detective/sdk';
+import { routeLinearWebhook, type LinearHandlerContext } from './linear-handlers.js';
 
 export type LinearWebhookHandleResult = {
   status: 'success' | 'ignored' | 'error';
   message?: string;
 };
 
-export function createLinearWebhookHandler(deps: { logger?: Logger }) {
-  const { logger } = deps;
+export function createLinearWebhookHandler(ctx: LinearHandlerContext) {
+  const { logger } = ctx;
   return {
     async handleWebhook(body: Record<string, unknown>): Promise<LinearWebhookHandleResult> {
-      const action = typeof body.action === 'string' ? body.action : 'unknown';
       const type = typeof body.type === 'string' ? body.type : 'unknown';
-      logger?.info(
-        `linear-adapter: webhook accepted type=${type} action=${action} (task enqueue not yet implemented)`
-      );
-      return {
-        status: 'ignored',
-        message: 'Linear adapter received webhook; issue/comment → task routing is not implemented yet',
-      };
+      const action = typeof body.action === 'string' ? body.action : 'unknown';
+      logger?.info(`linear-adapter: webhook type=${type} action=${action}`);
+      try {
+        await routeLinearWebhook(body, ctx);
+        return { status: 'success', message: 'processed' };
+      } catch (err) {
+        logger?.error(`linear-adapter: webhook handler error: ${(err as Error).message}`);
+        return { status: 'error', message: (err as Error).message };
+      }
     },
   };
 }
+
+export type { LinearHandlerContext };

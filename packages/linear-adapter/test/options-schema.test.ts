@@ -10,8 +10,21 @@ describe('linearAdapterOptionsSchema', () => {
     assert.equal(r.skipWebhookSignatureVerification, false);
   });
 
-  test('parses minimal enabled config', () => {
-    const r = linearAdapterOptionsSchema.parse({ enabled: true, mockMode: true });
+  test('parses minimal enabled config with apiKey', () => {
+    const r = linearAdapterOptionsSchema.parse({
+      enabled: true,
+      mockMode: true,
+      apiKey: 'lin_test',
+    });
     assert.equal(r.enabled, true);
+    assert.equal(r.webhookBehavior.events?.['linear:Issue:create']?.action, 'analyze');
+  });
+
+  test('rejects unknown option keys', () => {
+    const bad = linearAdapterOptionsSchema.safeParse({
+      enabled: false,
+      unknownField: 1,
+    });
+    assert.ok(!bad.success);
   });
 });
