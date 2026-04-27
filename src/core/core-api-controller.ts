@@ -32,7 +32,7 @@ const ServerInfoResponse = z.object({
 
 const HealthCheckResponse = z
   .object({ status: z.enum(['ok', 'degraded', 'error']) })
-  .passthrough();
+  .loose();
 
 const AgentInfoResponse = z.array(
   z
@@ -44,7 +44,7 @@ const AgentInfoResponse = z.array(
       needsPty: z.boolean().optional(),
       mergeStderr: z.boolean().optional(),
     })
-    .passthrough(),
+    .loose(),
 );
 
 const QueueStatusResponse = z.object({

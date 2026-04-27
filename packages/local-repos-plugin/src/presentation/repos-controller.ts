@@ -20,7 +20,7 @@ const ValidatedRepoSchema = z
     commits: z.array(z.unknown()).optional(),
     lastChecked: z.union([z.string(), z.date()]).optional(),
   })
-  .passthrough();
+  .loose();
 
 const ReposListResponse = z.array(ValidatedRepoSchema);
 
