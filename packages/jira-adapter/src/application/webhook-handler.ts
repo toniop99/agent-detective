@@ -185,7 +185,7 @@ export function createJiraWebhookHandler(options: HandlerContext) {
   async function handleWebhook(
     payload: unknown,
     webhookEvent: string
-  ): Promise<{ status: string; taskId: string }> {
+  ): Promise<{ status: 'queued'; taskId: string }> {
     // Jira Automation's "Automation format" sends a bare issue at the top
     // level instead of `{ issue: {...} }`. Normalize both shapes into the
     // canonical envelope before schema validation so the Zod schema,
