@@ -249,6 +249,9 @@ async function handleAnalyze(
   const normalizedEvent = webhookEvent.toLowerCase();
   const isCreate = normalizedEvent === 'jira:issue_created';
   const isCommentCreated = normalizedEvent === 'jira:comment_created';
+  /** Jira REST comment id of the user comment (for threaded bot replies on comment-triggered analyze). */
+  const jiraAnalyzeParentCommentId =
+    isCommentCreated ? extractCommentInfo(rawPayload)?.id : undefined;
 
   if (isCommentCreated) {
     const mode = getCommentMode(rawPayload, config, logger, taskInfo.key);
@@ -295,7 +298,9 @@ async function handleAnalyze(
     // under a custom `analyze` mapping stay silent (we've got no
     // user-initiated signal to justify a comment).
     if (isCreate || isCommentCreated) {
-      await postMissingLabelsReminder(taskInfo, matcher, context);
+      await postMissingLabelsReminder(taskInfo, matcher, context, {
+        replyParentCommentId: jiraAnalyzeParentCommentId,
+      });
     } else {
       logger?.debug?.(
         `jira-adapter: ${taskInfo.key} (${webhookEvent}) has no matching label — staying silent.`
@@ -309,6 +314,7 @@ async function handleAnalyze(
     // path (issue_created, custom issue_updated→analyze mapping) has to
     // wait out the window for the same (issue, repo) pair.
     bypassCooldown: isCommentCreated,
+    jiraReplyParentId: jiraAnalyzeParentCommentId,
   });
 }
 
@@ -366,7 +372,8 @@ function getCommentMode(
 async function postMissingLabelsReminder(
   taskInfo: JiraTaskInfo,
   matcher: RepoMatcher,
-  context: HandlerContext
+  context: HandlerContext,
+  options?: { replyParentCommentId?: string }
 ): Promise<void> {
   const { config, jiraClient, logger } = context;
   const now = Date.now();
@@ -390,6 +397,7 @@ async function postMissingLabelsReminder(
     messageTemplate: config.missingLabelsMessage,
     triggerPhrase,
     logger,
+    replyParentCommentId: options?.replyParentCommentId,
   });
   recordReminderPosted(taskInfo.key, now, config);
 }
@@ -405,7 +413,7 @@ async function fanOutAnalysis(
   taskInfo: JiraTaskInfo,
   context: HandlerContext,
   eventConfig: JiraEventConfig,
-  options: { bypassCooldown?: boolean } = {}
+  options: { bypassCooldown?: boolean; jiraReplyParentId?: string } = {}
 ): Promise<void> {
   const { config, jiraClient, events, logger } = context;
 
@@ -464,7 +472,8 @@ async function fanOutAnalysis(
     try {
       await jiraClient.addComment(
         taskInfo.key,
-        stampComment(buildFanOutAckMessage(reposToAnalyze, skippedByCap))
+        stampComment(buildFanOutAckMessage(reposToAnalyze, skippedByCap)),
+        options.jiraReplyParentId ? { parentId: options.jiraReplyParentId } : undefined
       );
     } catch (err) {
       logger?.warn(
@@ -501,6 +510,9 @@ async function fanOutAnalysis(
         analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
         readOnly,
         matchedRepo: match.name,
+        ...(options.jiraReplyParentId
+          ? { jiraReplyParentId: options.jiraReplyParentId }
+          : {}),
       },
     });
   }

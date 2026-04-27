@@ -81,13 +81,24 @@ const jiraAdapterPlugin = definePlugin({
         );
         const resultLength = typeof result === 'string' ? result.length : 0;
         const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
+        const jiraReplyParentId =
+          typeof event.metadata?.jiraReplyParentId === 'string' &&
+          event.metadata.jiraReplyParentId.trim().length > 0
+            ? event.metadata.jiraReplyParentId.trim()
+            : undefined;
         extContext.logger?.info(
           `Posting result back to Jira issue ${event.replyTo.id}${
             matchedRepo ? ` (repo=${matchedRepo})` : ''
-          } (length=${resultLength}) preview="${resultPreview}${resultLength > 120 ? '…' : ''}"`
+          }${jiraReplyParentId ? ` (thread=${jiraReplyParentId})` : ''} (length=${resultLength}) preview="${resultPreview}${
+            resultLength > 120 ? '…' : ''
+          }"`
         );
         try {
-          await jiraClient.addComment(event.replyTo.id, body);
+          await jiraClient.addComment(
+            event.replyTo.id,
+            body,
+            jiraReplyParentId ? { parentId: jiraReplyParentId } : undefined
+          );
         } catch (err) {
           extContext.logger?.error(`Failed to post comment to Jira: ${(err as Error).message}`);
         }

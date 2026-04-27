@@ -7,6 +7,8 @@
 export interface JiraCommentRecord {
   text: string;
   createdAt: string;
+  /** Present when the comment was posted as a reply in a Jira thread. */
+  parentId?: string;
   author?: { accountId?: string; emailAddress?: string; displayName?: string };
 }
 

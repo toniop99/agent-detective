@@ -1,5 +1,11 @@
 import type { Logger } from '@agent-detective/sdk';
-import type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+import type {
+  AddCommentOptions,
+  JiraAttachmentRecord,
+  JiraClient,
+  JiraCommentRecord,
+  JiraIssueRecord,
+} from './jira-client.js';
 
 export type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 
@@ -28,13 +34,18 @@ export function createMockJiraClient(options?: { logger?: Pick<Logger, 'warn' | 
     comments,
     issues,
 
-    async addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }> {
+    async addComment(
+      issueKey: string,
+      commentText: string,
+      options?: AddCommentOptions
+    ): Promise<{ success: boolean; issueKey: string }> {
       if (!comments.has(issueKey)) {
         comments.set(issueKey, []);
       }
       comments.get(issueKey)!.push({
         text: commentText,
         createdAt: new Date().toISOString(),
+        ...(options?.parentId ? { parentId: options.parentId } : {}),
       });
       const banner = '─'.repeat(60);
       log(
