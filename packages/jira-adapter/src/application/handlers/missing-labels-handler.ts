@@ -10,6 +10,8 @@ export interface MissingLabelsHandlerDeps {
   /** Phrase the reminder should tell the user to post to retry analysis. */
   triggerPhrase: string;
   logger?: Logger;
+  /** When set (e.g. comment-triggered analyze), post under this Jira comment as a thread. */
+  replyParentCommentId?: string;
 }
 
 /**
@@ -66,5 +68,9 @@ export async function handleMissingLabels(
   deps.logger?.warn(
     `Jira webhook: ${taskInfo.key} has no label matching a configured repo — asking reporter to add one of [${availableLabels.join(', ')}] and comment "${deps.triggerPhrase}"`,
   );
-  await deps.jiraClient.addComment(taskInfo.key, stampComment(body));
+  await deps.jiraClient.addComment(
+    taskInfo.key,
+    stampComment(body),
+    deps.replyParentCommentId ? { parentId: deps.replyParentCommentId } : undefined
+  );
 }

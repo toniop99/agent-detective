@@ -22,12 +22,17 @@ interface MockComment {
   issueKey: string;
   text: string;
   createdAt: string;
+  parentId?: string;
 }
 
 interface MockJiraClientForTest {
   comments: MockComment[];
   issueComments: JiraCommentRecord[];
-  addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
+  addComment(
+    issueKey: string,
+    commentText: string,
+    options?: { parentId?: string }
+  ): Promise<{ success: boolean; issueKey: string }>;
   getComments(issueKey: string): Promise<JiraCommentRecord[]>;
   getAttachments(issueKey: string): Promise<JiraAttachmentRecord[]>;
   downloadAttachment(attachmentId: string): Promise<Buffer>;
@@ -63,11 +68,12 @@ describe('Handler Registry', () => {
     mockJiraClient = {
       comments: mockComments,
       issueComments: mockIssueComments,
-      async addComment(issueKey, commentText) {
+      async addComment(issueKey, commentText, options) {
         mockComments.push({
           issueKey,
           text: commentText,
           createdAt: new Date().toISOString(),
+          ...(options?.parentId ? { parentId: options.parentId } : {}),
         });
         return { success: true, issueKey };
       },
@@ -230,6 +236,7 @@ describe('Handler Registry', () => {
       assert.equal(emittedEvents[0].payload.context.cwd, '/repos/web-app');
       assert.equal(emittedEvents[0].payload.metadata.matchedRepo, 'web-app');
       assert.equal(emittedEvents[0].payload.metadata.readOnly, true);
+      assert.ok(!('jiraReplyParentId' in emittedEvents[0].payload.metadata));
       assert.equal(mockComments.length, 0);
     });
 
@@ -448,10 +455,13 @@ describe('Handler Registry', () => {
       body: string;
       authorAccountId?: string;
       authorEmail?: string;
+      /** Jira REST comment id — drives threaded replies for analyze / missing-labels. */
+      id?: string | number;
     }) {
       return {
         comment: {
           body: overrides.body,
+          ...(overrides.id !== undefined ? { id: overrides.id } : {}),
           author: {
             accountId: overrides.authorAccountId ?? 'user-reporter',
             emailAddress: overrides.authorEmail ?? 'reporter@example.com',
@@ -465,7 +475,7 @@ describe('Handler Registry', () => {
       const context = createMockContext(analyzeConfig);
 
       await routeToHandler(
-        makeCommentPayload({ body: '#agent-detective analyze please' }),
+        makeCommentPayload({ body: '#agent-detective analyze please', id: 'jira-comment-9001' }),
         makeTaskInfo({ key: 'RETRY-1', labels: ['web-app'] }),
         'jira:comment_created',
         context
@@ -474,7 +484,23 @@ describe('Handler Registry', () => {
       assert.equal(emittedEvents.length, 1);
       assert.equal(emittedEvents[0].payload.id, 'RETRY-1:web-app');
       assert.equal(emittedEvents[0].payload.context.repoPath, '/repos/web-app');
+      assert.equal(emittedEvents[0].payload.metadata.jiraReplyParentId, 'jira-comment-9001');
       assert.equal(mockComments.length, 0);
+    });
+
+    it('comment retry without Jira comment id → task metadata has no jiraReplyParentId', async () => {
+      registerMatcher([{ name: 'web-app', path: '/repos/web-app' }]);
+      const context = createMockContext(analyzeConfig);
+
+      await routeToHandler(
+        makeCommentPayload({ body: '#agent-detective analyze please' }),
+        makeTaskInfo({ key: 'RETRY-1b', labels: ['web-app'] }),
+        'jira:comment_created',
+        context
+      );
+
+      assert.equal(emittedEvents.length, 1);
+      assert.ok(!('jiraReplyParentId' in emittedEvents[0].payload.metadata));
     });
 
     it('trigger phrase matching is case-insensitive and substring-based', async () => {
@@ -492,6 +518,7 @@ describe('Handler Registry', () => {
 
       assert.equal(emittedEvents.length, 1);
       assert.equal(emittedEvents[0].payload.metadata.matchedRepo, 'api');
+      assert.ok(!('jiraReplyParentId' in emittedEvents[0].payload.metadata));
     });
 
     it('trigger phrase + still no matching label → posts reminder again', async () => {
@@ -499,7 +526,7 @@ describe('Handler Registry', () => {
       const context = createMockContext(analyzeConfig);
 
       await routeToHandler(
-        makeCommentPayload({ body: '#agent-detective analyze' }),
+        makeCommentPayload({ body: '#agent-detective analyze', id: 'jira-comment-rem-1' }),
         makeTaskInfo({ key: 'RETRY-3', labels: ['bug'] }),
         'jira:comment_created',
         context
@@ -507,6 +534,7 @@ describe('Handler Registry', () => {
 
       assert.equal(emittedEvents.length, 0);
       assert.equal(mockComments.length, 1);
+      assert.equal(mockComments[0].parentId, 'jira-comment-rem-1');
       assert.match(mockComments[0].text, /web-app/);
       assert.ok(mockComments[0].text.includes(AGENT_DETECTIVE_MARKER));
     });
@@ -804,6 +832,7 @@ describe('Handler Registry', () => {
       await routeToHandler(
         {
           comment: {
+            id: 'thread-root-42',
             body: '#agent-detective analyze',
             author: { accountId: 'reporter', emailAddress: 'r@ex.com' },
           },
@@ -818,7 +847,11 @@ describe('Handler Registry', () => {
         emittedEvents.map((e) => e.payload.id),
         ['MULTI-2:api', 'MULTI-2:web-app']
       );
+      for (const ev of emittedEvents) {
+        assert.equal(ev.payload.metadata.jiraReplyParentId, 'thread-root-42');
+      }
       assert.equal(mockComments.length, 1);
+      assert.equal(mockComments[0].parentId, 'thread-root-42');
       assert.match(mockComments[0].text, /Analyzing this issue across 2 repositories/);
     });
 
