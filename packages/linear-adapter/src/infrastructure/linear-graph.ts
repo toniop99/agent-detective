@@ -54,6 +54,11 @@ export function createLinearGraph(deps: {
   auth: LinearGraphAuth;
   mockComments: boolean;
   logger?: Logger;
+  /**
+   * Only for OAuth `actor=app` tokens: optional `createAsUser` / `displayIconUrl` on `commentCreate`
+   * (@see https://linear.app/developers/oauth-actor-authorization). Ignored for PAT auth.
+   */
+  oauthAppCommentBranding?: { createAsUser: string; displayIconUrl?: string };
 }): LinearGraph {
   let auth: LinearGraphAuth = deps.auth;
   let client: LinearClient = makeClient(auth);
@@ -132,6 +137,14 @@ export function createLinearGraph(deps: {
           issueId,
           body: stamped,
           ...(opts?.parentId ? { parentId: opts.parentId } : {}),
+          ...(auth.mode === 'oauth' && deps.oauthAppCommentBranding
+            ? {
+                createAsUser: deps.oauthAppCommentBranding.createAsUser,
+                ...(deps.oauthAppCommentBranding.displayIconUrl
+                  ? { displayIconUrl: deps.oauthAppCommentBranding.displayIconUrl }
+                  : {}),
+              }
+            : {}),
         })
       );
     },

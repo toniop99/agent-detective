@@ -63,6 +63,8 @@ export function buildLinearAuthorizeUrl(params: {
   redirectUri: string;
   scope: string;
   state: string;
+  /** When `app`, Linear issues tokens where mutations are attributed to the OAuth app (see Linear “OAuth actor authorization”). */
+  actor?: 'user' | 'app';
 }): string {
   const u = new URL(LINEAR_AUTHORIZE);
   u.searchParams.set('client_id', params.clientId);
@@ -70,6 +72,9 @@ export function buildLinearAuthorizeUrl(params: {
   u.searchParams.set('response_type', 'code');
   u.searchParams.set('scope', params.scope);
   u.searchParams.set('state', params.state);
+  if (params.actor === 'app') {
+    u.searchParams.set('actor', 'app');
+  }
   return u.toString();
 }
 

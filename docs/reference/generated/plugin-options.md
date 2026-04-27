@@ -219,6 +219,20 @@ Anchor: `linear-adapter`
     "oauthScopes": {
       "type": "string"
     },
+    "oauthActor": {
+      "default": "user",
+      "type": "string",
+      "enum": [
+        "user",
+        "app"
+      ]
+    },
+    "oauthAppCommentDisplayName": {
+      "type": "string"
+    },
+    "oauthAppCommentDisplayIconUrl": {
+      "type": "string"
+    },
     "oauthRefreshToken": {
       "type": "string"
     },
@@ -356,6 +370,7 @@ Anchor: `linear-adapter`
   "required": [
     "enabled",
     "mockMode",
+    "oauthActor",
     "skipWebhookSignatureVerification",
     "webhookDeliveryDedupWindowMs",
     "webhookBehavior",

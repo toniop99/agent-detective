@@ -1,6 +1,30 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { exchangeLinearRefreshToken } from '../src/infrastructure/linear-oauth.js';
+import { buildLinearAuthorizeUrl, exchangeLinearRefreshToken } from '../src/infrastructure/linear-oauth.js';
+
+describe('buildLinearAuthorizeUrl', () => {
+  test('adds actor=app when requested', () => {
+    const url = buildLinearAuthorizeUrl({
+      clientId: 'cid',
+      redirectUri: 'https://example.com/cb',
+      scope: 'read,write',
+      state: 'st',
+      actor: 'app',
+    });
+    const u = new URL(url);
+    assert.equal(u.searchParams.get('actor'), 'app');
+  });
+
+  test('omits actor for default user authorization', () => {
+    const url = buildLinearAuthorizeUrl({
+      clientId: 'cid',
+      redirectUri: 'https://example.com/cb',
+      scope: 'read',
+      state: 'st',
+    });
+    assert.equal(new URL(url).searchParams.get('actor'), null);
+  });
+});
 
 describe('exchangeLinearRefreshToken', () => {
   test('POSTs refresh_token grant and parses response', async () => {

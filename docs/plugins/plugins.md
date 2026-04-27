@@ -1167,9 +1167,11 @@ refresh token grant), and a **personal API key** for local testing.
 
 **Can disable:** Yes (`"enabled": false`).
 
-**Operator guide:** [linear-adapter.md](linear-adapter.md) — webhook URL,
-`LINEAR_*` env vars, OAuth vs PAT, dedup header, and pointers to the generated
-options reference and [manual E2E](../e2e/linear-manual-e2e.md).
+**Operator guide:** [linear-adapter.md](linear-adapter.md) — webhooks vs OAuth vs
+trigger phrases, **OAuth install** (Linear app form, callback URLs, manual token
+copy, `apiKey` vs refresh-only), **comment attribution** (`actor=user` vs
+`actor=app`), FAQ (404, `@mentions`), dedup header, env tables, and links to the
+generated options reference and [manual E2E](../e2e/linear-manual-e2e.md).
 
 **Webhook URL (fixed):** `POST …/plugins/agent-detective-linear-adapter/webhook/linear`.
 

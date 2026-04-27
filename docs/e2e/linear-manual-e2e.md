@@ -1,6 +1,6 @@
 # Manual E2E: Linear webhook → local server
 
-Short checklist to verify **`@agent-detective/linear-adapter`** end-to-end. For full plugin behavior and env tables, see [linear-adapter.md](../plugins/linear-adapter.md).
+Short checklist to verify **`@agent-detective/linear-adapter`** end-to-end. For **webhooks vs OAuth**, **manual token copy**, **404 / attribution FAQ**, and the **Linear “Create application”** form, see [linear-adapter.md](../plugins/linear-adapter.md) (read that page first if anything in this checklist is unclear).
 
 ## Prerequisites
 
@@ -35,6 +35,8 @@ Use **`config/local.json`** (gitignored) for secrets. Enable the plugin, set **`
 
 ## OAuth smoke
 
-1. Set `oauthClientId`, `oauthClientSecret`, `oauthRedirectBaseUrl` on the host; register the same redirect URL in the Linear OAuth app.
-2. Open **`GET …/oauth/start`** in a browser; complete Linear consent.
-3. Copy **`access_token`** → `LINEAR_API_KEY` / `apiKey`, **`refresh_token`** → `LINEAR_OAUTH_REFRESH_TOKEN`, restart the app, and confirm issue fetch + comment post work without storing the PAT.
+1. In the Linear developer app, set **Callback URL** to `{oauthRedirectBaseUrl}/plugins/agent-detective-linear-adapter/oauth/callback` (same origin as `oauthRedirectBaseUrl` in config—e.g. ngrok).
+2. Set `oauthClientId`, `oauthClientSecret`, `oauthRedirectBaseUrl` on the host (refresh/access not required yet for `/oauth/start` to exist).
+3. Open **`GET …/oauth/start`** in a browser; complete Linear consent.
+4. **Manually** copy JSON from `/oauth/callback`: **`access_token`** → `LINEAR_API_KEY` / `apiKey`, **`refresh_token`** → `LINEAR_OAUTH_REFRESH_TOKEN`; restart.
+5. (Optional) Set **`oauthActor`** / `LINEAR_OAUTH_ACTOR` to **`app`**, run **`/oauth/start` again**, replace tokens, restart—comments should attribute to the app (see [Comment attribution (app vs user)](../plugins/linear-adapter.md#comment-attribution-app-vs-user) in the main doc).

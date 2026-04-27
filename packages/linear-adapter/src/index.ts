@@ -43,19 +43,45 @@ const linearAdapterPlugin = definePlugin({
       return;
     }
 
+    // OAuth routes must register **before** resolveLinearStartupAuth: first-time install
+    // has no apiKey/refresh_token yet, but the browser still needs /oauth/start and /oauth/callback.
+    if (cfg.oauthClientId?.trim() && cfg.oauthClientSecret?.trim() && cfg.oauthRedirectBaseUrl?.trim()) {
+      registerLinearOAuthRoutes(scope, { config: cfg, logger: extContext.logger });
+    }
+
     const auth = await resolveLinearStartupAuth(cfg, extContext.logger);
     if (!auth) {
       extContext.logger?.error(
-        'linear-adapter: enabled but missing credentials — set apiKey (LINEAR_API_KEY) for a personal API token, or configure oauthClientId + oauthClientSecret + oauthRefreshToken (with apiKey as the OAuth access token, or leave apiKey empty to bootstrap from refresh_token at startup)'
+        'linear-adapter: enabled but missing API credentials — set apiKey (LINEAR_API_KEY) for a PAT, or oauthClientId + oauthClientSecret + oauthRefreshToken (optionally omit apiKey to bootstrap access from refresh at startup). OAuth install URLs are still available above if client id, secret, and redirect base are set.'
       );
       return;
     }
 
+    if (cfg.oauthActor === 'app' && auth.mode === 'pat') {
+      extContext.logger?.warn(
+        'linear-adapter: oauthActor is "app" but credentials resolve as a personal API key — comments stay tied to your user until you install OAuth with /oauth/start (actor=app) and use that access + refresh token, not a PAT.'
+      );
+    }
+
     const mockMode = cfg.mockMode ?? true;
+
+    let oauthAppCommentBranding: { createAsUser: string; displayIconUrl?: string } | undefined;
+    if (cfg.oauthActor === 'app' && auth.mode === 'oauth') {
+      const name = cfg.oauthAppCommentDisplayName?.trim();
+      const icon = cfg.oauthAppCommentDisplayIconUrl?.trim();
+      if (name || icon) {
+        oauthAppCommentBranding = {
+          createAsUser: name || 'Agent Detective',
+          ...(icon ? { displayIconUrl: icon } : {}),
+        };
+      }
+    }
+
     const linearGraph = createLinearGraph({
       auth,
       mockComments: mockMode,
       logger: extContext.logger,
+      ...(oauthAppCommentBranding ? { oauthAppCommentBranding } : {}),
     });
 
     registerLinearJsonWithRawBody(scope);
@@ -112,7 +138,6 @@ const linearAdapterPlugin = definePlugin({
     });
 
     registerLinearWebhookRoutes(scope, { webhookHandler, config: cfg, logger: extContext.logger });
-    registerLinearOAuthRoutes(scope, { config: cfg, logger: extContext.logger });
 
     const pluginPathSeg = PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-');
     const webhookUrlPath = `/plugins/${pluginPathSeg}/webhook/linear`;

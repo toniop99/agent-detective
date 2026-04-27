@@ -54,6 +54,23 @@ export const linearAdapterOptionsSchema = z
     /** OAuth scopes for `/oauth/start` (Linear space-separated). Default: `read,write`. */
     oauthScopes: z.string().optional(),
     /**
+     * OAuth authorize `actor` parameter. Default `user` (comments appear as the authorizing user).
+     * Use `app` so API mutations are attributed to the **application** (name/icon from the Linear OAuth app).
+     * Requires **re-authorization** via `/oauth/start` after changing from `user` to `app` (new tokens).
+     * @see https://linear.app/developers/oauth-actor-authorization
+     */
+    oauthActor: z.enum(['user', 'app']).default('user'),
+    /**
+     * With {@link oauthActor} `app`, optional display name on comments (“User (via Application)” in Linear).
+     * If unset, Linear still shows the app identity without a custom label.
+     */
+    oauthAppCommentDisplayName: z.string().optional(),
+    /**
+     * With {@link oauthActor} `app`, optional avatar URL for posted comments (must be used with a display name;
+     * if only an icon is configured, the adapter uses {@link oauthAppCommentDisplayName} or `"Agent Detective"`).
+     */
+    oauthAppCommentDisplayIconUrl: z.string().optional(),
+    /**
      * OAuth **refresh token** (prefer env `LINEAR_OAUTH_REFRESH_TOKEN`). With
      * {@link oauthClientId} and {@link oauthClientSecret}, enables refresh on expiry / auth errors.
      */

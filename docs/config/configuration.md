@@ -44,7 +44,7 @@ Env is merged **only into an existing** `plugins[]` entry with the matching `pac
 | Variable | Target |
 |----------|--------|
 | `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL` | Options for `@agent-detective/jira-adapter` (`apiToken`, `email`, `baseUrl`). |
-| `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_ID`, `LINEAR_OAUTH_CLIENT_SECRET`, `LINEAR_OAUTH_REDIRECT_BASE_URL`, `LINEAR_OAUTH_REFRESH_TOKEN` | Options for `@agent-detective/linear-adapter` (`apiKey`, `webhookSigningSecret`, OAuth fields). See [plugins/linear-adapter.md](../plugins/linear-adapter.md). |
+| `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_ID`, `LINEAR_OAUTH_CLIENT_SECRET`, `LINEAR_OAUTH_REDIRECT_BASE_URL`, `LINEAR_OAUTH_REFRESH_TOKEN`, `LINEAR_OAUTH_ACTOR` (`user` or `app`) | Options for `@agent-detective/linear-adapter` (`apiKey`, `webhookSigningSecret`, OAuth fields, `oauthActor`). See [plugins/linear-adapter.md](../plugins/linear-adapter.md). |
 | `JIRA_AUTO_ANALYSIS_COOLDOWN_MS` | `options.autoAnalysisCooldownMs` on the Jira plugin (default 600000). |
 | `JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS` | `options.missingLabelsReminderCooldownMs` (default 60000). |
 | `REPO_CONTEXT_GIT_LOG_MAX_COMMITS` | Positive integer → `options.repoContext.gitLogMaxCommits` (local-repos). |

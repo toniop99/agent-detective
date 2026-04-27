@@ -88,7 +88,13 @@ export function buildLinearOAuthRoutes(deps: LinearOAuthRouteDeps): RouteDefinit
     },
     async handler(_req: FastifyRequest, reply: FastifyReply) {
       const state = createLinearOAuthState(clientSecret);
-      const url = buildLinearAuthorizeUrl({ clientId, redirectUri, scope, state });
+      const url = buildLinearAuthorizeUrl({
+        clientId,
+        redirectUri,
+        scope,
+        state,
+        actor: config.oauthActor === 'app' ? 'app' : undefined,
+      });
       logger?.info('linear-adapter: redirecting to Linear OAuth authorize URL');
       return reply.redirect(url, 302);
     },
