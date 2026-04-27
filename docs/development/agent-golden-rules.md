@@ -4,7 +4,7 @@ These rules keep the monorepo buildable, type-safe, and easy for agents to navig
 
 ## Do
 
-- Import shared types and contracts from **`@agent-detective/types`** (single source of truth).
+- **Plugin authors:** import everything from **`@agent-detective/sdk`** (types, runtime helpers, service constants — single dependency). **Host code only:** `@agent-detective/types` is the type-only contract, used inside `src/` and the host-facing workspace packages.
 - Use **`.ts`** for source and **`.test.ts`** for tests.
 - Use **ESM** with **`.js` extensions** in import specifiers (e.g. `from './foo.js'`) so emitted JS resolves.
 - Run **`pnpm run build`** before publishing packages; run **`pnpm run build:app`** for the root **`dist/index.js`** used by **`pnpm start`** and Docker.
@@ -13,7 +13,7 @@ These rules keep the monorepo buildable, type-safe, and easy for agents to navig
 
 - Edit generated **`dist/`** output by hand.
 - Import the root app with deep relatives from **`packages/*`** (e.g. `../../../src/core/...`) — CI rejects this; use workspace packages instead.
-- **Compile-import another plugin** from a plugin package (e.g. `pr-pipeline` importing `@agent-detective/local-repos-plugin` in `src/`) — use **`@agent-detective/types`** for shared ports and **`getService()`** at runtime ([ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md)); `pnpm run lint` runs **`scripts/check-plugin-cross-imports.mjs`**.
+- **Compile-import another plugin** from a plugin package (e.g. `pr-pipeline` importing `@agent-detective/local-repos-plugin` in `src/`) — use **`@agent-detective/sdk`** for shared ports (re-exported from the type-only `@agent-detective/types`) and **`getService()`** at runtime ([ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md)); `pnpm run lint` runs **`scripts/check-plugin-cross-imports.mjs`**.
 - Create **`.js`** files next to **`.ts`** sources.
 - Set **`rootDir`** in a package `tsconfig` to span multiple unrelated trees.
 
@@ -53,10 +53,10 @@ Full definitions: [`packages/types/src/index.ts`](../../packages/types/src/index
 
 ## Common failures
 
-### `Cannot find module '@agent-detective/types'`
+### `Cannot find module '@agent-detective/sdk'`
 
 **Cause:** Used a deep relative path into another folder instead of the workspace package.  
-**Fix:** `import type { … } from '@agent-detective/types'`.
+**Fix:** `import { … } from '@agent-detective/sdk'`. Plugins should never depend on `@agent-detective/types` directly; the sdk re-exports every plugin-facing type.
 
 ### Plugin build / `rootDir is outside rootDir`
 

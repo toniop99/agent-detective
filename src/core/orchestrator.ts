@@ -1,10 +1,10 @@
-import {
-  StandardEvents,
-  type EventBus,
-  type AgentRunner,
-  type EnqueueFn,
-  type TaskEvent,
-  type Logger,
+import { StandardEvents } from '@agent-detective/sdk';
+import type {
+  EventBus,
+  AgentRunner,
+  EnqueueFn,
+  TaskEvent,
+  Logger,
 } from '@agent-detective/types';
 
 export interface OrchestratorDeps {

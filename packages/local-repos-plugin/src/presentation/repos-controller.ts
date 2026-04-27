@@ -3,8 +3,8 @@ import {
   defineRoute,
   registerRoutes,
   type RouteDefinition,
-} from '@agent-detective/core';
-import type { FastifyInstance } from 'fastify';
+  type FastifyScope,
+} from '@agent-detective/sdk';
 import type { LocalReposContext } from '../domain/types.js';
 
 const PLUGIN_TAG = '@agent-detective/local-repos-plugin';
@@ -72,6 +72,6 @@ export function buildReposRoutes(localRepos: LocalReposContext): RouteDefinition
   return [listRepos, getRepo];
 }
 
-export function registerReposRoutes(app: FastifyInstance, localRepos: LocalReposContext): void {
+export function registerReposRoutes(app: FastifyScope, localRepos: LocalReposContext): void {
   registerRoutes(app, buildReposRoutes(localRepos));
 }

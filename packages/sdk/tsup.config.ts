@@ -10,8 +10,6 @@ export default defineConfig({
     '@agent-detective/types',
     'fastify',
     'fastify-type-provider-zod',
-    '@fastify/swagger',
-    'openapi-types',
     'zod',
   ],
 });

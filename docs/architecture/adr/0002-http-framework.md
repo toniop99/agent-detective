@@ -6,13 +6,13 @@ Accepted
 
 ## Context
 
-The root HTTP app is **Express 5** wired in [`src/server.ts`](../../../src/server.ts), with a homegrown decorator + OpenAPI layer in [`packages/core/src/`](../../../packages/core/src/) (`decorators.ts`, `controller.ts`, `metadata.ts`, `spec-generator.ts`). Plugins receive a `Proxy`-prefixed Express app via [`createPrefixedApp`](../../../src/core/plugin-system.ts) and either call `app.get/post/...` or return controller instances; routes are introspected via `reflect-metadata` after `app.listen` to build an OpenAPI spec rendered by Scalar at `/docs`.
+The root HTTP app was **Express 5** wired in [`src/server.ts`](../../../src/server.ts), with a homegrown decorator + OpenAPI layer in `packages/core/src/` (`decorators.ts`, `controller.ts`, `metadata.ts`, `spec-generator.ts`) — the package has since been renamed to [`packages/sdk/src/`](../../../packages/sdk/src/) and the decorator code deleted as part of this migration. Plugins receive a `Proxy`-prefixed Express app via [`createPrefixedApp`](../../../src/core/plugin-system.ts) and either call `app.get/post/...` or return controller instances; routes are introspected via `reflect-metadata` after `app.listen` to build an OpenAPI spec rendered by Scalar at `/docs`.
 
 The model works but has well-known rough edges:
 
 - **No runtime request validation.** Decorators like `@RequestBody({ schema })` are documentation-only; handlers manually check `if (!agentId || !prompt)` ([`src/core/core-api-controller.ts`](../../../src/core/core-api-controller.ts)).
 - **Hand-written JSON Schema literals.** ~100 lines of inline JSON Schema in [`packages/jira-adapter/src/presentation/jira-webhook-controller.ts`](../../../packages/jira-adapter/src/presentation/jira-webhook-controller.ts), drifting from the runtime payloads.
-- **Two schema worlds.** Plugin **config** uses Zod 4 via [`zodToPluginSchema`](../../../packages/core/src/zod-to-plugin-schema.ts); HTTP **request/response** schemas are hand-written JSON. Zod 4 is already in the catalog.
+- **Two schema worlds.** Plugin **config** uses Zod 4 via [`zodToPluginSchema`](../../../packages/sdk/src/zod-to-plugin-schema.ts); HTTP **request/response** schemas are hand-written JSON. Zod 4 is already in the catalog.
 - **In-house framework surface to maintain.** ~600 LoC of decorators, controller scanning, and OpenAPI generation that mature libraries provide off the shelf.
 - **Plugin scoping is a Proxy hack.** [`createPrefixedApp`](../../../src/core/plugin-system.ts) wraps Express in a `Proxy` to rewrite paths — fragile around middleware ordering and error boundaries.
 - **Late spec assembly.** [`src/index.ts`](../../../src/index.ts) builds the OpenAPI spec **after `app.listen`**, coupling startup ordering to the docs pipeline.

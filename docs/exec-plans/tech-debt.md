@@ -5,3 +5,5 @@ Short, **repo-local** reminders for patterns to fix or revisit. Prefer [ADR](../
 - *(Add items as one line each; remove when resolved.)*
 
 ## Resolved (recent)
+
+- **Plugin SDK package split** — `@agent-detective/core` renamed to `@agent-detective/sdk`; HTTP type declarations moved into `@agent-detective/types`; host-only `applyTagGroups` and tag constants moved into `src/core/openapi/`. Plan: [`completed/2026-04-plugin-sdk-package.md`](completed/2026-04-plugin-sdk-package.md).

@@ -1,4 +1,4 @@
-import type { Logger } from '@agent-detective/types';
+import type { Logger } from '@agent-detective/sdk';
 import type { JiraTaskInfo } from '../../domain/types.js';
 
 export interface IgnoreHandlerDeps {

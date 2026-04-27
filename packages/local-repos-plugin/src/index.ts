@@ -1,12 +1,12 @@
-import type {
-  Plugin,
-  BuildRepoContextOptions,
-  AgentRunner,
-  PluginContext,
-  Logger,
-  RepoMatcher,
-} from '@agent-detective/types';
-import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
+import {
+  definePlugin,
+  REPO_MATCHER_SERVICE,
+  type BuildRepoContextOptions,
+  type AgentRunner,
+  type PluginContext,
+  type Logger,
+  type RepoMatcher,
+} from '@agent-detective/sdk';
 import type {
   LocalReposPluginOptions,
   ValidatedRepo,
@@ -27,7 +27,7 @@ import { registerReposRoutes } from './presentation/repos-controller.js';
 import { createRepoAnalyzer } from './application/analyzer.js';
 import * as z from 'zod';
 import { localReposPluginOptionsSchema } from './application/options-schema.js';
-import { zodToPluginSchema } from '@agent-detective/core';
+import { zodToPluginSchema } from '@agent-detective/sdk';
 
 export { localReposPluginOptionsSchema } from './application/options-schema.js';
 
@@ -86,7 +86,7 @@ async function processRepos(options: LocalReposPluginOptions, agentRunner?: Agen
   return results;
 }
 
-const localReposPlugin: Plugin = {
+const localReposPlugin = definePlugin({
   name: '@agent-detective/local-repos-plugin',
   version: '0.1.0',
   schemaVersion: '1.0',
@@ -182,7 +182,7 @@ const localReposPlugin: Plugin = {
 
     registerReposRoutes(scope, localRepos);
   },
-};
+});
 
 export default localReposPlugin;
 

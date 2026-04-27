@@ -9,7 +9,8 @@ import {
 } from 'fastify-type-provider-zod';
 import swagger from '@fastify/swagger';
 import { z } from 'zod';
-import { applyTagGroups, defineRoute, registerRoutes } from '@agent-detective/core';
+import { defineRoute, registerRoutes } from '@agent-detective/sdk';
+import { applyTagGroups } from '../../../src/core/openapi/tag-groups.js';
 
 /**
  * End-to-end check that `defineRoute` + the Zod type provider:

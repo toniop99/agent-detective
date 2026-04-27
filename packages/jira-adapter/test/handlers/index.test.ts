@@ -16,7 +16,7 @@ import {
   type PrWorkflowInput,
   type PrWorkflowService,
   type RepoMatcher,
-} from '@agent-detective/types';
+} from '@agent-detective/sdk';
 
 interface MockComment {
   issueKey: string;

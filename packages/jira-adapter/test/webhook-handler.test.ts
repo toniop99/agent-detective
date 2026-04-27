@@ -7,7 +7,7 @@ import {
   summarizeWebhookPayload,
 } from '../src/application/webhook-handler.js';
 import type { HandlerContext } from '../src/application/handlers/index.js';
-import type { EventBus, Logger } from '@agent-detective/types';
+import type { EventBus, Logger } from '@agent-detective/sdk';
 
 function createNoopContext(): HandlerContext {
   const noopLogger: Logger = {

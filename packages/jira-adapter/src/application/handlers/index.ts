@@ -7,7 +7,7 @@ import {
   type Logger,
   type MatchedRepo,
   type RepoMatcher,
-} from '@agent-detective/types';
+} from '@agent-detective/sdk';
 import type { JiraAdapterConfig, JiraWebhookEventType, JiraEventConfig, JiraTaskInfo } from '../../domain/types.js';
 import { getDefaultAcknowledgmentMessage } from '../../domain/types.js';
 import { handleAcknowledge, AcknowledgeHandlerDeps } from './acknowledge-handler.js';

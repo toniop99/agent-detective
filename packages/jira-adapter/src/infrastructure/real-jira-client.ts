@@ -1,6 +1,6 @@
 import { Version3Client } from 'jira.js';
 import { HttpException } from 'jira.js';
-import type { Logger } from '@agent-detective/types';
+import type { Logger } from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from '../domain/types.js';
 import type { JiraClient, JiraAttachmentRecord, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';

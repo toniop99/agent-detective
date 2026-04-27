@@ -1,12 +1,12 @@
 import { createJiraWebhookHandler } from './application/webhook-handler.js';
 import { createMockJiraClient } from './infrastructure/mock-jira-client.js';
 import { createRealJiraClient } from './infrastructure/real-jira-client.js';
-import { StandardEvents, type Plugin, type TaskEvent } from '@agent-detective/types';
+import { StandardEvents, definePlugin, type TaskEvent } from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from './domain/types.js';
 import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
-import { zodToPluginSchema } from '@agent-detective/core';
+import { zodToPluginSchema } from '@agent-detective/sdk';
 import { stampComment } from './domain/comment-trigger.js';
 
 export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './application/options-schema.js';
@@ -17,7 +17,7 @@ const SCHEMA_VERSION = '1.0';
 
 const pluginSchema = zodToPluginSchema(jiraAdapterOptionsSchema);
 
-const jiraAdapterPlugin: Plugin = {
+const jiraAdapterPlugin = definePlugin({
   name: PLUGIN_NAME,
   version: PLUGIN_VERSION,
   schemaVersion: SCHEMA_VERSION,
@@ -99,6 +99,6 @@ const jiraAdapterPlugin: Plugin = {
     const webhookUrlPath = `/plugins/${PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-')}/webhook/jira`;
     extContext.logger?.info(`Jira adapter registered at POST ${webhookUrlPath} (mockMode: ${mockMode})`);
   },
-};
+});
 
 export default jiraAdapterPlugin;

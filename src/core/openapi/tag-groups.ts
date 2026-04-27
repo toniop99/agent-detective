@@ -1,25 +1,6 @@
 import type { OpenAPI } from 'openapi-types';
-import { CORE_PLUGIN_TAG, SCALAR_TAG_GROUPS, createTagDescription } from './constants.js';
-
-export interface TagGroup {
-  name: string;
-  tags: string[];
-}
-
-export interface ApplyTagGroupsOptions {
-  /**
-   * Tags to place under the "Plugins" group. When omitted, all tags on the
-   * spec other than {@link CORE_PLUGIN_TAG} are treated as plugin tags
-   * (typical case: the spec is generated from `@fastify/swagger` after every
-   * route has been registered, and tag names match plugin names).
-   */
-  pluginTags?: string[];
-  /**
-   * Extra tag descriptions, keyed by tag name. Each entry overrides the
-   * default description produced by {@link createTagDescription}.
-   */
-  descriptions?: Record<string, string>;
-}
+import type { ApplyTagGroupsOptions, TagGroup } from '@agent-detective/types';
+import { CORE_PLUGIN_TAG, SCALAR_TAG_GROUPS, createTagDescription } from './tags.js';
 
 /**
  * Mutates a Fastify-generated OpenAPI document to:

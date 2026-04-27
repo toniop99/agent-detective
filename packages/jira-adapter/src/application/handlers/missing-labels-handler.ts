@@ -1,4 +1,4 @@
-import type { Logger } from '@agent-detective/types';
+import type { Logger } from '@agent-detective/sdk';
 import type { JiraClient } from '../../infrastructure/jira-client.js';
 import type { JiraTaskInfo } from '../../domain/types.js';
 import { stampComment } from '../../domain/comment-trigger.js';

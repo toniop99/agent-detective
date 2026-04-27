@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import {
-  CORE_PLUGIN_TAG,
-  defineRoute,
-  registerRoutes,
-  type RouteDefinition,
-} from '@agent-detective/core';
+import { defineRoute, registerRoutes, type RouteDefinition } from '@agent-detective/sdk';
+import { CORE_PLUGIN_TAG } from './openapi/tags.js';
 import type {
   AgentRunner,
   EnqueueFn,

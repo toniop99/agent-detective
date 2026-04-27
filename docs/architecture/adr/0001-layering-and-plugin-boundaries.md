@@ -20,7 +20,7 @@ We want:
 2. **Ports in `@agent-detective/types`** — Shared contracts stay in the types package; plugins implement or consume them via the service registry. Avoid compile-time imports from another plugin package for **interfaces** (prefer types + `getService`).
 
 3. **Per-package layering** — Inside each plugin package we use four logical layers where it helps:
-   - **presentation** — HTTP routes (Fastify scopes + `defineRoute()` from `@agent-detective/core`)
+   - **presentation** — HTTP routes (Fastify scopes + `defineRoute()` from `@agent-detective/sdk`)
    - **application** — use cases, handler orchestration, plugin Zod options
    - **domain** — pure transforms and plugin-local domain types (no I/O)
    - **infrastructure** — external systems (Jira REST, Git host APIs, mocks)

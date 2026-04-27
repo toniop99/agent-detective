@@ -8,11 +8,8 @@ import {
 import swagger from '@fastify/swagger';
 import scalarReference from '@scalar/fastify-api-reference';
 import type { OpenAPI } from 'openapi-types';
-import {
-  CORE_PLUGIN_TAG,
-  applyTagGroups,
-  createTagDescription,
-} from '@agent-detective/core';
+import { applyTagGroups } from './core/openapi/tag-groups.js';
+import { CORE_PLUGIN_TAG, createTagDescription } from './core/openapi/tags.js';
 import { createRequestLogger, type Observability } from '@agent-detective/observability';
 import type { AgentRunner, EnqueueFn } from '@agent-detective/types';
 import { registerCoreApiRoutes } from './core/core-api-controller.js';

@@ -1,4 +1,4 @@
-import type { TaskEvent } from '@agent-detective/types';
+import type { TaskEvent } from '@agent-detective/sdk';
 import type { JiraIssue, JiraDescription, JiraPayload } from './types.js';
 
 export function normalizeJiraPayload(payload: JiraPayload): TaskEvent {

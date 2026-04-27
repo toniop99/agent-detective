@@ -18,7 +18,8 @@ export default defineConfig({
     '@scalar/fastify-api-reference',
     '@scalar/openapi-types',
     'openapi-types',
-    '@agent-detective/core',
+    '@agent-detective/sdk',
+    '@agent-detective/types',
     '@agent-detective/observability',
   ],
 });

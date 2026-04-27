@@ -30,9 +30,9 @@ A plugin is an ES module that exports a plain object with the following structur
 
 ```typescript
 // packages/my-adapter/src/index.ts
-import type { Plugin, PluginContext } from '@agent-detective/types';
+import { definePlugin, type PluginContext } from '@agent-detective/sdk';
 
-const myPlugin: Plugin = {
+export default definePlugin({
   name: '@myorg/my-adapter',   // unique package name
   version: '1.0.0',                     // semver version
   schemaVersion: '1.0',                 // must be '1.0'
@@ -50,9 +50,7 @@ const myPlugin: Plugin = {
     // scope: encapsulated Fastify instance mounted at /plugins/{sanitized-name}
     // context: core dependencies (see Section 2)
   }
-};
-
-export default myPlugin;
+});
 ```
 
 ### Required Fields
@@ -333,7 +331,7 @@ packages/my-jira/
     "test": "tsx --test"
   },
   "dependencies": {
-    "@agent-detective/types": "^1.0.0"
+    "@agent-detective/sdk": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
@@ -344,15 +342,20 @@ packages/my-jira/
 
 ### Webhook + services pattern (sketch)
 
-Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are registered via `defineRoute()` + `registerRoutes(scope, ...)` from `@agent-detective/core` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
+Use **`context.getService`** to obtain the local-repos service (or the **`REPO_MATCHER_SERVICE`** matcher's `matchByLabels` when you only need a path). Use **`context.enqueue`** for serialized work. Plugin routes are registered via `defineRoute()` + `registerRoutes(scope, ...)` from `@agent-detective/sdk` (see [plugin-development.md](plugin-development.md)); the effective URL is under **`/plugins/{sanitized-name}/`**.
 
 The official **jira-adapter** implements the full Jira + fan-out flow — treat it as the reference, not the stale snippet below. This sketch shows the *correct* `PluginContext` surface:
 
 ```typescript
 // Sketch — not a full drop-in. See packages/jira-adapter for production code.
-import type { Plugin, PluginContext, TaskEvent, RepoMatcher } from '@agent-detective/types';
-import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
-import type { LocalReposService } from '@agent-detective/local-repos-plugin';
+import {
+  REPO_MATCHER_SERVICE,
+  type Plugin,
+  type PluginContext,
+  type TaskEvent,
+  type RepoMatcher,
+  type LocalReposService,
+} from '@agent-detective/sdk';
 
 type JiraClient = { addComment(issueKey: string, text: string): Promise<void> };
 
@@ -418,7 +421,7 @@ export default plugin;
 
 ```typescript
 // packages/my-jira/src/normalizer.ts
-import type { TaskEvent } from '@agent-detective/types';
+import type { TaskEvent } from '@agent-detective/sdk';
 
 export function normalizePayload(payload: JiraPayload): TaskEvent {
   const issue = payload.issue || payload;
@@ -470,7 +473,7 @@ This pattern handles conversational messages where a user asks a question. The p
 
 ```typescript
 // packages/my-telegram/src/index.ts
-import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/sdk';
 
 const plugin: Plugin = {
   name: '@myorg/agent-detective-telegram',
@@ -553,7 +556,7 @@ Handles bot commands like `/analyze`, `/status`, `/help`. Commands are typically
 
 ```typescript
 // packages/my-slash-command/src/index.ts
-import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/types';
+import type { Plugin, PluginContext, TaskEvent } from '@agent-detective/sdk';
 
 const plugin: Plugin = {
   name: '@myorg/agent-detective-slack',
@@ -604,7 +607,7 @@ Polls an external API periodically instead of receiving webhooks. Useful for che
 
 ```typescript
 // packages/my-poller/src/index.ts
-import type { Plugin, PluginContext } from '@agent-detective/types';
+import type { Plugin, PluginContext } from '@agent-detective/sdk';
 
 const plugin: Plugin = {
   name: '@myorg/agent-detective-poller',
@@ -730,7 +733,7 @@ my-adapter/
     "test": "tsx --test"
   },
   "dependencies": {
-    "@agent-detective/types": "^1.0.0"
+    "@agent-detective/sdk": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
@@ -837,12 +840,14 @@ Stops an active agent run.
 `PluginContext` does **not** include `repoMapping` or `buildRepoContext` directly.
 
 - **`REPO_MATCHER_SERVICE`** — register/consume a `RepoMatcher` (`matchByLabels`, `matchAllByLabels`, `listConfiguredLabels`). The bundled **local-repos-plugin** provides the implementation; the **jira-adapter** consumes it for label → repo resolution.
-- **`@agent-detective/local-repos-plugin`** service — a `LocalReposService` with `localRepos`, `buildRepoContext(repoPath, options?)`, and `formatRepoContextForPrompt`. `BuildRepoContextOptions` in `@agent-detective/types` only supports `{ maxCommits?: number }` (file search was removed; agents search the tree themselves).
+- **`@agent-detective/local-repos-plugin`** service — a `LocalReposService` with `localRepos`, `buildRepoContext(repoPath, options?)`, and `formatRepoContextForPrompt`. `BuildRepoContextOptions` (re-exported from `@agent-detective/sdk`) only supports `{ maxCommits?: number }` (file search was removed; agents search the tree themselves).
 
 ```typescript
-import { REPO_MATCHER_SERVICE } from '@agent-detective/types';
-import type { RepoMatcher } from '@agent-detective/types';
-import type { LocalReposService } from '@agent-detective/local-repos-plugin';
+import {
+  REPO_MATCHER_SERVICE,
+  type RepoMatcher,
+  type LocalReposService,
+} from '@agent-detective/sdk';
 
 const matcher = context.getService<RepoMatcher>(REPO_MATCHER_SERVICE);
 const m = matcher.matchByLabels(['my-repo-name']);
@@ -1101,7 +1106,7 @@ The `webhookBehavior` option lets you define what action to take for each Jira w
 
 Matching is **label-only** and **deterministic**. The Jira adapter consumes
 the `RepoMatcher` service (`REPO_MATCHER_SERVICE` from
-`@agent-detective/types`) which `local-repos-plugin` registers. The matcher
+`@agent-detective/sdk`) which `local-repos-plugin` registers. The matcher
 exposes two methods:
 
 - `matchByLabels(labels) → MatchedRepo | null` — first match (label-order).

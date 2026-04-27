@@ -1,5 +1,5 @@
 import { gitLog, gitShow, gitDiff } from './git-log.js';
-import type { RepoContext, BuildRepoContextOptions } from '@agent-detective/types';
+import type { RepoContext, BuildRepoContextOptions } from '@agent-detective/sdk';
 
 export async function buildRepoContext(repoPath: string, options: BuildRepoContextOptions = {}): Promise<RepoContext> {
   const { maxCommits = 50, logger, gitCommandTimeoutMs, gitMaxBufferBytes } = options;

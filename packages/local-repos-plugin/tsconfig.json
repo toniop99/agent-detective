@@ -19,8 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
     "paths": {
-      "@agent-detective/types": ["../../types/src/index.ts"],
-      "@agent-detective/core": ["../../core/src/index.ts"]
+      "@agent-detective/sdk": ["../../sdk/src/index.ts"]
     }
   },
   "include": ["src/**/*", "test/**/*"]

@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execLocal } from '@agent-detective/process-utils';
-import type { AgentRunner, AgentOutput, AgentUsage, Logger, PrWorkflowInput, LocalReposService } from '@agent-detective/types';
+import type { AgentRunner, AgentOutput, AgentUsage, Logger, PrWorkflowInput, LocalReposService } from '@agent-detective/sdk';
 import { createBitbucketPullRequest } from '../infrastructure/bitbucket-pr.js';
 import { createGithubPullRequest } from '../infrastructure/github-pr.js';
 import { resolveBitbucketAuth, resolveGithubToken } from '../infrastructure/resolve-tokens.js';

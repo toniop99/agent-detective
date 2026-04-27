@@ -1,15 +1,19 @@
-import type { Plugin, PluginContext, LocalReposService } from '@agent-detective/types';
-import { PR_WORKFLOW_SERVICE, type PrWorkflowService } from '@agent-detective/types';
+import {
+  definePlugin,
+  zodToPluginSchema,
+  PR_WORKFLOW_SERVICE,
+  type PluginContext,
+  type LocalReposService,
+  type PrWorkflowService,
+} from '@agent-detective/sdk';
 import * as z from 'zod';
-import { zodToPluginSchema } from '@agent-detective/core';
 import { prPipelineOptionsSchema } from './application/options-schema.js';
 import { runPrWorkflow, cleanupWorktrees } from './application/run-pr-workflow.js';
 
-// registerService is not exported from core for plugin - use context.registerService
 const schema = zodToPluginSchema(prPipelineOptionsSchema);
 const PLUGIN = '@agent-detective/pr-pipeline' as const;
 
-const prPipelinePlugin: Plugin = {
+const prPipelinePlugin = definePlugin({
   name: PLUGIN,
   version: '0.1.0',
   schemaVersion: '1.0',
@@ -49,7 +53,7 @@ const prPipelinePlugin: Plugin = {
     ctx.onShutdown(() => cleanupWorktrees(log ?? console));
     log?.info('pr-pipeline: registered; Jira #agent-detective pr comments can use this service');
   },
-};
+});
 
 export default prPipelinePlugin;
 export { prPipelineOptionsSchema } from './application/options-schema.js';
