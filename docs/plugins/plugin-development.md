@@ -318,8 +318,8 @@ const PLUGIN_TAG = '@myorg/agent-detective-jira-plus';
 
 const WebhookBody = z.object({
   webhookEvent: z.string(),
-  issue: z.object({ key: z.string() }).passthrough(),
-}).passthrough();
+  issue: z.object({ key: z.string() }).loose(),
+}).loose();
 
 const WebhookResponse = z.object({
   status: z.literal('queued'),
@@ -392,6 +392,8 @@ const jiraPlusPlugin: Plugin = {
 
 export default jiraPlusPlugin;
 ```
+
+**Zod 4:** On `z.object()`, `.passthrough()` is deprecated. Use `.loose()` when extra keys should still pass validation and serialization (common for webhook bodies and evolving API shapes).
 
 ---
 

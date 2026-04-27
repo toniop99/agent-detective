@@ -133,9 +133,9 @@ await app.register(scalar, { routePrefix: '/docs' });
 const JiraWebhookBody = z.object({
   webhookEvent: z.string().optional(),
   issue_event_type_name: z.string().optional(),
-  issue: z.object({ key: z.string(), fields: z.record(z.unknown()) }).passthrough().optional(),
-  comment: z.object({ body: z.string() }).passthrough().optional(),
-}).passthrough();
+  issue: z.object({ key: z.string(), fields: z.record(z.unknown()) }).loose().optional(),
+  comment: z.object({ body: z.string() }).loose().optional(),
+}).loose();
 
 export async function jiraWebhookPlugin(scope: FastifyInstance, ctx: PluginContext) {
   scope.withTypeProvider<ZodTypeProvider>().route({
@@ -165,7 +165,7 @@ await fastify.register(jiraWebhookPlugin, { prefix: `/plugins/${sanitizePluginNa
 **Pros**
 
 - **Plugin model fits 1:1.** `fastify.register(plugin, { prefix })` replaces `createPrefixedApp` and gives each plugin a real encapsulation boundary (own hooks, own error handler, own decorators).
-- **Validation, serialization, and OpenAPI from one Zod object.** The Jira controller's ~100 lines of hand-written JSON Schema collapse to one `z.object`.
+- **Validation, serialization, and OpenAPI from one Zod object.** The Jira controller's ~100 lines of hand-written JSON Schema collapse to one `z.object`. On Zod 4, use `.loose()` (not deprecated `.passthrough()`) when the schema must allow unknown keys on objects — see [`packages/jira-adapter/src/presentation/jira-webhook-controller.ts`](../../../packages/jira-adapter/src/presentation/jira-webhook-controller.ts).
 - **Built-in async error handling.** Errors thrown in handlers route through `setErrorHandler`; no `try/catch + next(err)`.
 - **Faster** (~2x throughput vs Express in the typical case) and **ESM-first**, which matches our `"type": "module"` setup.
 - **Hooks** (`onRequest`, `preHandler`, `onResponse`) cover the request-logger / metrics ports cleanly.

@@ -32,11 +32,11 @@ const JiraWebhookBody = z
     user: z.record(z.string(), z.unknown()).optional(),
     changelog: z.record(z.string(), z.unknown()).optional(),
   })
-  .passthrough();
+  .loose();
 
 const JiraWebhookQuery = z
   .object({ webhookEvent: z.string().optional() })
-  .passthrough();
+  .loose();
 
 const JiraWebhookOk = z
   .object({
@@ -44,7 +44,7 @@ const JiraWebhookOk = z
     taskId: z.string().optional(),
     message: z.string().optional(),
   })
-  .passthrough();
+  .loose();
 
 const JiraWebhookError = z.object({
   status: z.literal('error'),
