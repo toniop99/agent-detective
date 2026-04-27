@@ -40,7 +40,7 @@ const JiraWebhookQuery = z
 
 const JiraWebhookOk = z
   .object({
-    status: z.enum(['success', 'ignored', 'error']),
+    status: z.enum(['success', 'ignored', 'error', 'queued']),
     taskId: z.string().optional(),
     message: z.string().optional(),
   })

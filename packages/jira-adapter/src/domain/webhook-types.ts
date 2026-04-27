@@ -61,7 +61,7 @@ export interface SimplifiedJiraPayload {
 }
 
 export interface JiraWebhookResponse {
-  status: 'success' | 'error' | 'ignored';
+  status: 'success' | 'error' | 'ignored' | 'queued';
   taskId?: string;
   message?: string;
 }
