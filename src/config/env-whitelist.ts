@@ -153,13 +153,21 @@ export function applyPluginEnvWhitelist(config: AppConfig): void {
   const linearWebhookSecret = process.env.LINEAR_WEBHOOK_SIGNING_SECRET;
   const linearOAuthClientId = process.env.LINEAR_OAUTH_CLIENT_ID;
   const linearOAuthClientSecret = process.env.LINEAR_OAUTH_CLIENT_SECRET;
-  if (linearApiKey || linearWebhookSecret || linearOAuthClientId || linearOAuthClientSecret) {
+  const linearOAuthRedirectBase = process.env.LINEAR_OAUTH_REDIRECT_BASE_URL;
+  if (
+    linearApiKey ||
+    linearWebhookSecret ||
+    linearOAuthClientId ||
+    linearOAuthClientSecret ||
+    linearOAuthRedirectBase
+  ) {
     const opts = getExistingPluginOptions(config, LINEAR_PACKAGE);
     if (opts) {
       if (linearApiKey) opts.apiKey = linearApiKey;
       if (linearWebhookSecret) opts.webhookSigningSecret = linearWebhookSecret;
       if (linearOAuthClientId) opts.oauthClientId = linearOAuthClientId;
       if (linearOAuthClientSecret) opts.oauthClientSecret = linearOAuthClientSecret;
+      if (linearOAuthRedirectBase) opts.oauthRedirectBaseUrl = linearOAuthRedirectBase;
     }
   }
 

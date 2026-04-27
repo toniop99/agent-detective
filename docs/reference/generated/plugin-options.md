@@ -213,6 +213,12 @@ Anchor: `linear-adapter`
     "oauthClientSecret": {
       "type": "string"
     },
+    "oauthRedirectBaseUrl": {
+      "type": "string"
+    },
+    "oauthScopes": {
+      "type": "string"
+    },
     "skipWebhookSignatureVerification": {
       "default": false,
       "type": "boolean"

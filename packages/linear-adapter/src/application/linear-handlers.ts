@@ -343,6 +343,12 @@ function buildFanOutAckMessage(analyzed: readonly MatchedRepo[], skipped: readon
   return lines.join('\n');
 }
 
+function actorIdFromLinearActorKey(actorKey: string): string | undefined {
+  if (actorKey.startsWith('user:')) return actorKey.slice(5);
+  if (actorKey.startsWith('bot:')) return actorKey.slice(4);
+  return undefined;
+}
+
 async function fanOutPr(
   currentMatches: readonly MatchedRepo[],
   taskInfo: LinearTaskInfo,
@@ -386,6 +392,42 @@ async function fanOutPr(
     return;
   }
 
+  let issueComments: string[] | undefined;
+  if (config.fetchIssueComments) {
+    try {
+      const allComments = await linearGraph.listCommentsForPr(taskInfo.issueUuid);
+      const prPhrase = config.prTriggerPhrase;
+      const analyzePhrase = config.retryTriggerPhrase;
+      issueComments = allComments
+        .filter((c) => {
+          const actorId = actorIdFromLinearActorKey(c.actorKey);
+          if (isOwnLinearComment(c.text, actorId, config.botActorIds)) return false;
+          if (hasTriggerPhrase(c.text, prPhrase)) return false;
+          if (hasTriggerPhrase(c.text, analyzePhrase)) return false;
+          return true;
+        })
+        .map((c) => {
+          const who = c.actorKey;
+          const text = c.text.slice(0, 2_000);
+          return `[${c.createdAt}] ${who}:\n${text}`;
+        })
+        .slice(-30);
+    } catch (err) {
+      logger?.warn(`linear-adapter: failed to fetch comments for ${taskInfo.key}: ${(err as Error).message}`);
+    }
+  }
+
+  let imageAttachments: Array<{ id: string; filename: string; mimeType: string; size: number }> | undefined;
+  try {
+    const attachments = await linearGraph.listImageAttachments(taskInfo.issueUuid);
+    if (attachments.length > 0) {
+      imageAttachments = attachments;
+      logger?.info(`linear-adapter: found ${attachments.length} image attachment(s) for ${taskInfo.key}`);
+    }
+  } catch (err) {
+    logger?.warn(`linear-adapter: failed to fetch attachments for ${taskInfo.key}: ${(err as Error).message}`);
+  }
+
   for (const match of repos) {
     pr.startPrWorkflow({
       issueKey: taskInfo.issueUuid,
@@ -398,13 +440,13 @@ async function fanOutPr(
         addComment: async (issueId, text, opts) => {
           await linearGraph.addIssueComment(issueId, text, opts?.parentId ? { parentId: opts.parentId } : undefined);
         },
-        downloadAttachment: async (_id: string) => {
-          throw new Error('linear-adapter: downloadAttachment is not implemented for PR image flow');
-        },
+        downloadAttachment: (id) => linearGraph.downloadAttachment(id),
       },
       analysisPrompt: eventConfig.analysisPrompt || config.analysisPrompt,
       ...(prCommentContext ? { prCommentContext } : {}),
+      ...(issueComments?.length ? { issueComments } : {}),
       ...(triggerCommentId ? { triggerCommentId } : {}),
+      ...(imageAttachments?.length ? { imageAttachments } : {}),
     });
   }
 }

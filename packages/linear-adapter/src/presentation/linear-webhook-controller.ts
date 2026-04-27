@@ -120,27 +120,7 @@ export function buildLinearWebhookRoutes(deps: LinearWebhookRouteDeps): RouteDef
     },
   });
 
-  const oauthCallback = defineRoute({
-    method: 'GET',
-    url: '/oauth/callback',
-    schema: {
-      tags: [PLUGIN_TAG],
-      summary: 'OAuth callback (stub)',
-      description: 'Reserved for Linear OAuth install flow; not implemented in Phase B scaffold.',
-      querystring: z.object({ code: z.string().optional(), state: z.string().optional() }).loose(),
-      response: {
-        501: z.object({ status: z.literal('error'), message: z.string() }),
-      },
-    },
-    async handler(_req: FastifyRequest, reply: FastifyReply) {
-      return reply.code(501).send({
-        status: 'error',
-        message: 'Linear OAuth callback is not implemented yet',
-      });
-    },
-  });
-
-  return [webhookPost, oauthCallback];
+  return [webhookPost];
 }
 
 export function registerLinearWebhookRoutes(app: FastifyScope, deps: LinearWebhookRouteDeps): void {

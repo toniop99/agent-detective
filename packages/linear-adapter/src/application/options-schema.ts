@@ -43,6 +43,13 @@ export const linearAdapterOptionsSchema = z
     /** OAuth app client secret. Prefer env via {@link applyPluginEnvWhitelist}. */
     oauthClientSecret: z.string().optional(),
     /**
+     * Public base URL of this host (no trailing slash), used to build the OAuth redirect URI:
+     * `{oauthRedirectBaseUrl}/plugins/agent-detective-linear-adapter/oauth/callback`.
+     */
+    oauthRedirectBaseUrl: z.string().optional(),
+    /** OAuth scopes for `/oauth/start` (Linear space-separated). Default: `read,write`. */
+    oauthScopes: z.string().optional(),
+    /**
      * When true, accepts webhooks without a valid signature (local dev only).
      */
     skipWebhookSignatureVerification: z.boolean().default(false),
@@ -63,7 +70,7 @@ export const linearAdapterOptionsSchema = z
     botActorIds: z.array(z.string()).optional(),
     autoAnalysisCooldownMs: z.number().int().min(0).default(10 * 60_000),
     missingLabelsReminderCooldownMs: z.number().int().min(0).default(60_000),
-    /** Reserved for parity with Jira; PR flow does not yet fetch Linear comment threads. */
+    /** When true, PR workflow includes human Linear comments (filtered like Jira). */
     fetchIssueComments: z.boolean().default(false),
   })
   .strict();

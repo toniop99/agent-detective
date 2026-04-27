@@ -9,6 +9,7 @@ import {
   registerLinearJsonWithRawBody,
   registerLinearWebhookRoutes,
 } from './presentation/linear-webhook-controller.js';
+import { registerLinearOAuthRoutes } from './presentation/linear-oauth-controller.js';
 
 export { linearAdapterOptionsSchema } from './application/options-schema.js';
 
@@ -110,9 +111,16 @@ const linearAdapterPlugin = definePlugin({
     });
 
     registerLinearWebhookRoutes(scope, { webhookHandler, config: cfg, logger: extContext.logger });
+    registerLinearOAuthRoutes(scope, { config: cfg, logger: extContext.logger });
 
-    const webhookUrlPath = `/plugins/${PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-')}/webhook/linear`;
+    const pluginPathSeg = PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-');
+    const webhookUrlPath = `/plugins/${pluginPathSeg}/webhook/linear`;
     extContext.logger?.info(`Linear adapter registered at POST ${webhookUrlPath} (mockMode: ${mockMode})`);
+    if (cfg.oauthClientId?.trim() && cfg.oauthClientSecret?.trim() && cfg.oauthRedirectBaseUrl?.trim()) {
+      extContext.logger?.info(
+        `Linear OAuth: GET /plugins/${pluginPathSeg}/oauth/start → callback under ${cfg.oauthRedirectBaseUrl.replace(/\/$/, '')}/plugins/${pluginPathSeg}/oauth/callback`
+      );
+    }
   },
 });
 
