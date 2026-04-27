@@ -35,7 +35,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 ### 3) Webhooks + signing
 
 - Verify payloads with app **signing secret** (headers/algorithm per Linear webhook docs at implementation time).
-- **Idempotency:** Log delivery/event ids; optional short TTL dedup for retries.
+- **Idempotency:** `Linear-Delivery` header + in-memory TTL dedup (`webhookDeliveryDedupWindowMs`, default 10 minutes; `0` disables).
 
 ### 4) GraphQL + `@linear/sdk`
 
@@ -45,7 +45,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 
 - **RepoMatcher:** Linear issue **labels** (and team/project context) normalized like Jira labels.
 - **Triggers:** Comment phrases (analyze / PR) + optional config filters (label/state).
-- **Threading:** Map Linear comment threading to closest parity with Jira `parentId` during spike.
+- **Threading:** Analyze path uses `linearReplyParentId` (reply under trigger comment). PR fan-out posts “starting PR” / missing **pr-pipeline** replies under the **PR trigger comment** when `triggerCommentId` is present.
 
 ### 6) Risks and mitigations
 
@@ -68,7 +68,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 - [x] `pr-pipeline` uses **`issueTracker`** / **`PrIssueTrackerClient`**; Jira adapter passes the port; `PrJiraClient` kept as deprecated alias.
 - [x] Config: `pnpm-workspace.yaml` catalog `@linear/sdk`, `config/default.json` disabled plugin entry, `AGENTS.md` / `README.md`, `env-whitelist` for `LINEAR_*`, `docs:plugins` regenerated.
 - [x] Tests: unit tests for signing + options schema; routing/OAuth exchange E2E **not** added yet; manual smoke **not** run.
-- [ ] Docs: full operator/plugin prose under `docs/plugins` for Linear (optional follow-up).
+- [x] Docs: operator/plugin prose under [`docs/plugins/linear-adapter.md`](../../plugins/linear-adapter.md), index entry in [`docs/plugins/plugins.md`](../../plugins/plugins.md), env table in [`docs/config/configuration.md`](../../config/configuration.md), manual smoke [`docs/e2e/linear-manual-e2e.md`](../../e2e/linear-manual-e2e.md).
 - [x] Landing: `apps/landing` strings mention Linear alongside Jira.
 
 ## Progress log
@@ -78,6 +78,7 @@ Ship `@agent-detective/linear-adapter` with **Phase B** as the baseline: **OAuth
 | 2026-04-27 | Branch `feat/linear-adapter-phase-b`: tracker port in types + `pr-pipeline`; new `@agent-detective/linear-adapter` (webhook verify, stub handler, env + docs artifacts); `pr-pipeline` `dependsOn` trimmed to `local-repos-plugin` only. |
 | 2026-04-27 | Linear adapter: webhook routing + analyze/PR fan-out + `TASK_COMPLETED` post-back; `webhookBehavior` + triggers aligned with Jira; `apiKey` required when plugin enabled. |
 | 2026-04-27 | OAuth routes + PR fan-out parity (comments/attachments); **`oauthRefreshToken`** + refresh grant (`exchangeLinearRefreshToken`), PAT vs OAuth `LinearClient` (`apiKey` vs `accessToken`), proactive/reactive refresh in `createLinearGraph`; env `LINEAR_OAUTH_REFRESH_TOKEN`. |
+| 2026-04-27 | Phase B wrap: **`Linear-Delivery`** dedup (`webhookDeliveryDedupWindowMs`), PR ack comments threaded under trigger comment, docs (`linear-adapter.md`, plugins index, configuration env table, `e2e/linear-manual-e2e.md`). |
 
 ## Out of scope (v1)
 

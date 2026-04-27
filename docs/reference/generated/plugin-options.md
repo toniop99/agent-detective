@@ -226,6 +226,12 @@ Anchor: `linear-adapter`
       "default": false,
       "type": "boolean"
     },
+    "webhookDeliveryDedupWindowMs": {
+      "default": 600000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
     "webhookBehavior": {
       "default": {
         "defaults": {
@@ -351,6 +357,7 @@ Anchor: `linear-adapter`
     "enabled",
     "mockMode",
     "skipWebhookSignatureVerification",
+    "webhookDeliveryDedupWindowMs",
     "webhookBehavior",
     "analysisReadOnly",
     "maxReposPerIssue",

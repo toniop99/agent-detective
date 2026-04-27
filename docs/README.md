@@ -14,7 +14,7 @@ AI-powered code analysis (Jira, webhooks, PR pipeline, local repos, and more). T
 | **Short tool references** | [references/](references/) | pnpm, Turbo, ESM — low-token entry |
 | **Agent golden rules** | [development/agent-golden-rules.md](development/agent-golden-rules.md) | Do / don’t, plugins, common failures |
 | **Design** | [architecture/](architecture/) | System view, layering, [ADR](architecture/adr/) |
-| **Jira (manual E2E)** | [e2e/](e2e/) | Tunnel, webhooks, pr-pipeline walkthroughs |
+| **Jira / Linear (manual E2E)** | [e2e/](e2e/) | Tunnel, webhooks, pr-pipeline walkthroughs; [Linear](e2e/linear-manual-e2e.md) |
 | **Reference (generated + changelog)** | [reference/](reference/) | Zod-generated option schemas, [CHANGELOG](reference/CHANGELOG.md) |
 
 ## Pointers

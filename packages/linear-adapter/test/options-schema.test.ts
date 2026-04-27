@@ -8,6 +8,7 @@ describe('linearAdapterOptionsSchema', () => {
     assert.equal(r.enabled, false);
     assert.equal(r.mockMode, true);
     assert.equal(r.skipWebhookSignatureVerification, false);
+    assert.equal(r.webhookDeliveryDedupWindowMs, 10 * 60_000);
   });
 
   test('parses minimal enabled config with apiKey', () => {

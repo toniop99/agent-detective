@@ -62,6 +62,11 @@ export const linearAdapterOptionsSchema = z
      * When true, accepts webhooks without a valid signature (local dev only).
      */
     skipWebhookSignatureVerification: z.boolean().default(false),
+    /**
+     * In-memory dedup window (ms) for the `Linear-Delivery` header. Retries reuse the same id;
+     * set to `0` to disable. Default 10 minutes.
+     */
+    webhookDeliveryDedupWindowMs: z.number().int().min(0).default(10 * 60_000),
     webhookBehavior: linearWebhookBehaviorSchema.default(DEFAULT_LINEAR_WEBHOOK_BEHAVIOR),
     analysisPrompt: z.string().optional(),
     /**

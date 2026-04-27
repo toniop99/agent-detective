@@ -66,7 +66,7 @@ In CI, `pnpm docs:plugins:check` and `pnpm docs:config:check` fail if the genera
 
 | Need | Document |
 |------|----------|
-| Full env reference, Jira, pr-pipeline, local-repos, validation | [configuration.md](configuration.md) |
+| Full env reference, Jira, Linear, pr-pipeline, local-repos, validation | [configuration.md](configuration.md) |
 | Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](../reference/generated/plugin-options.md) |
 | Top-level app config table + JSON Schema (from Zod) | [generated/app-config.md](../reference/generated/app-config.md) |
 | Plugin system and `schema` in code | [plugins.md](../plugins/plugins.md) (e.g. schema system) |

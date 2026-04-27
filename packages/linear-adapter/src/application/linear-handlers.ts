@@ -367,6 +367,8 @@ async function fanOutPr(
     repos = repos.slice(0, cap);
   }
 
+  const prThreadOpts = triggerCommentId ? { parentId: triggerCommentId } : undefined;
+
   if (repos.length > 1 || skippedByCap.length > 0) {
     try {
       await linearGraph.addIssueComment(
@@ -374,7 +376,8 @@ async function fanOutPr(
         stampComment(
           `Starting **PR** workflow for: ${repos.map((r) => `\`${r.name}\``).join(', ')}. ` +
             (skippedByCap.length ? `Skipped by cap: ${skippedByCap.map((r) => r.name).join(', ')}.` : '')
-        )
+        ),
+        prThreadOpts
       );
     } catch (err) {
       logger?.warn(`linear-adapter: fanOutPr ack failed: ${(err as Error).message}`);
@@ -387,7 +390,8 @@ async function fanOutPr(
       taskInfo.issueUuid,
       stampComment(
         '**pr-pipeline** is not loaded. Add `@agent-detective/pr-pipeline` to `plugins` in config to enable PR creation from Linear.'
-      )
+      ),
+      prThreadOpts
     );
     return;
   }

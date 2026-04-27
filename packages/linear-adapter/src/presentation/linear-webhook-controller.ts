@@ -10,6 +10,7 @@ import {
 } from '@agent-detective/sdk';
 import type { FastifyInstance } from 'fastify';
 import { isWebhookTimestampFresh, verifyLinearWebhookSignature } from '../infrastructure/verify-linear-signature.js';
+import { shouldSkipLinearWebhookDelivery } from '../infrastructure/linear-webhook-dedup.js';
 import type { LinearAdapterConfig } from '../application/options-schema.js';
 import type { createLinearWebhookHandler } from '../application/webhook-handler.js';
 
@@ -52,6 +53,13 @@ function getLinearSignature(req: FastifyRequest): string | undefined {
   const h = req.headers['linear-signature'];
   if (typeof h === 'string') return h;
   if (Array.isArray(h) && typeof h[0] === 'string') return h[0];
+  return undefined;
+}
+
+function getLinearDeliveryId(req: FastifyRequest): string | undefined {
+  const h = req.headers['linear-delivery'];
+  if (typeof h === 'string' && h.trim()) return h.trim();
+  if (Array.isArray(h) && typeof h[0] === 'string' && h[0].trim()) return h[0].trim();
   return undefined;
 }
 
@@ -109,6 +117,15 @@ export function buildLinearWebhookRoutes(deps: LinearWebhookRouteDeps): RouteDef
             logger?.warn('linear-adapter: webhook timestamp outside allowed window');
             return reply.code(401).send({ status: 'error', message: 'Stale webhookTimestamp' });
           }
+        }
+
+        const deliveryId = getLinearDeliveryId(req);
+        const dedupMs = config.webhookDeliveryDedupWindowMs ?? 0;
+        if (shouldSkipLinearWebhookDelivery(deliveryId, dedupMs)) {
+          logger?.info(
+            `linear-adapter: skipping duplicate webhook (Linear-Delivery=${deliveryId ?? 'missing'}, windowMs=${dedupMs})`
+          );
+          return { status: 'ignored', message: 'duplicate Linear-Delivery' };
         }
 
         const result = await webhookHandler.handleWebhook((req.body ?? {}) as Record<string, unknown>);
