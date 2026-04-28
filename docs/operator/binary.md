@@ -97,18 +97,18 @@ If you only want to validate the configuration (without checking tools/plugins):
 
 ## Verifying signatures (cosign)
 
-Release assets are signed using **Sigstore cosign keyless** signatures. Each binary/checksum/SBOM has an accompanying `.sig` and `.cert` file.
+Release assets are signed with **Cosign v3** keyless signing. Each binary, checksum file, and SBOM has a matching **`.sigstore.json`** bundle (signature + certificate + transparency metadata).
 
-Install `cosign`, then verify (example for linux-x64):
+Install [Cosign v3](https://docs.sigstore.dev/cosign/system_config/installation/) or newer, download the artifact and its bundle from the same release, then verify (example for linux-x64):
 
 ```bash
-cosign verify-blob \
-  --cert agent-detective-linux-x64.cert \
-  --signature agent-detective-linux-x64.sig \
-  --certificate-identity-regexp '.*' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  agent-detective-linux-x64
+cosign verify-blob agent-detective-linux-x64 \
+  --bundle agent-detective-linux-x64.sigstore.json \
+  --certificate-identity-regexp 'https://github.com/[^/]+/[^/]+/\.github/workflows/binary\.yml@refs/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
+
+Use a broader `--certificate-identity-regexp '.*'` only if you need a quick check and accept a weaker identity binding.
 
 ## SBOM
 
