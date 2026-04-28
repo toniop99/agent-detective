@@ -168,12 +168,16 @@ export default definePlugin({
 | `agentRunner` | `AgentRunner` | Execute AI agent prompts |
 | `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
 | `getService<T>(name)` | `function` | Get a registered service by name with type safety |
+| `getServiceFromPlugin<T>(name, providerPluginName)` | `function` | Get a service from a specific provider plugin |
 | `registerCapability(name)` | `function` | Register a capability provided by this plugin |
 | `hasCapability(name)` | `function` | Check if a capability is registered |
 | `config` | `object` | Validated plugin configuration |
 | `logger` | `Logger` | Structured logging |
 | `enqueue` | `function` | Queue tasks for sequential execution |
 
+#### Capabilities vs services vs dependencies
+
+- Use **services** (`registerService` / `getService`) for concrete APIs shared across plugins.\n- Use **`dependsOn`** when you require a specific plugin’s side-effects (typically a service registration) before your plugin runs.\n- Use **capabilities** (`registerCapability`, `requiresCapabilities`) for broad feature-gating where the specific provider plugin is not important.\n- Prefer SDK constants (`StandardCapabilities.*` from `@agent-detective/sdk`) rather than inventing new strings.\n\nWhen multiple plugins provide the same capability-backed service, `getService(...)` selects a default provider by preferring **first-party** plugins (`@agent-detective/*`), otherwise using **configuration order**. Use `getServiceFromPlugin(...)` if you need a specific provider.\n
 ---
 
 ## Building Your Plugin

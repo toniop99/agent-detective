@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { createPluginSystem } from '../../src/core/plugin-system.js';
 import type { AgentRunner, Plugin, TaskQueue } from '../../src/core/types.js';
 import type { EventBus } from '@agent-detective/types';
+import { CODE_ANALYSIS_SERVICE, StandardCapabilities } from '@agent-detective/sdk';
 
 function createNoopEventBus(): EventBus {
   return {
@@ -427,7 +428,7 @@ describe('Plugin System', () => {
         name: 'missing-cap-plugin',
         version: '1.0.0',
         schemaVersion: '1.0',
-        requiresCapabilities: ['code-analysis'],
+        requiresCapabilities: [StandardCapabilities.CODE_ANALYSIS],
         register: () => {},
       };
 
@@ -436,9 +437,94 @@ describe('Plugin System', () => {
 
         assert.ok(mockLogger.error.mock.calls.length > 0);
         assert.match(mockLogger.error.mock.calls[0].arguments[0], /requires capability 'code-analysis' which is not provided/);
+        assert.match(mockLogger.error.mock.calls[0].arguments[0], /Available capabilities: \(none\)/);
       } finally {
         await testApp.close();
       }
+    });
+  });
+
+  describe('Service registry (multi-provider)', () => {
+    it('prefers first-party provider when multiple providers register the same capability-backed service', async () => {
+      let selectedProvider: string | null = null;
+
+      const thirdPartyProvider: Plugin = {
+        name: 'acme.example/analysis',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        register: (_scope, ctx) => {
+          ctx.registerService(CODE_ANALYSIS_SERVICE, { provider: 'third-party' });
+        },
+      };
+
+      const firstPartyProvider: Plugin = {
+        name: '@agent-detective/analysis',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        register: (_scope, ctx) => {
+          ctx.registerService(CODE_ANALYSIS_SERVICE, { provider: 'first-party' });
+        },
+      };
+
+      const consumer: Plugin = {
+        name: 'consumer',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        register: (_scope, ctx) => {
+          const svc = ctx.getService<{ provider: string }>(CODE_ANALYSIS_SERVICE);
+          selectedProvider = svc.provider;
+        },
+      };
+
+      await pluginSystem.loadPlugin(thirdPartyProvider, app, {});
+      await pluginSystem.loadPlugin(firstPartyProvider, app, {});
+      await pluginSystem.loadPlugin(consumer, app, {});
+
+      assert.equal(selectedProvider, 'first-party');
+    });
+
+    it('allows binding to a specific provider via getServiceFromPlugin', async () => {
+      let selectedProvider: string | null = null;
+
+      const provider: Plugin = {
+        name: '@agent-detective/analysis',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        register: (_scope, ctx) => {
+          ctx.registerService(CODE_ANALYSIS_SERVICE, { provider: 'first-party' });
+        },
+      };
+
+      const consumer: Plugin = {
+        name: 'consumer',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        dependsOn: ['@agent-detective/analysis'],
+        register: (_scope, ctx) => {
+          const svc = ctx.getServiceFromPlugin<{ provider: string }>(CODE_ANALYSIS_SERVICE, '@agent-detective/analysis');
+          selectedProvider = svc.provider;
+        },
+      };
+
+      await pluginSystem.loadPlugin(provider, app, {});
+      await pluginSystem.loadPlugin(consumer, app, {});
+
+      assert.equal(selectedProvider, 'first-party');
+    });
+
+    it('throws a clear error when getServiceFromPlugin provider is missing', async () => {
+      const consumer: Plugin = {
+        name: 'consumer',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        dependsOn: ['@agent-detective/analysis'],
+        register: (_scope, ctx) => {
+          ctx.getServiceFromPlugin(CODE_ANALYSIS_SERVICE, '@agent-detective/analysis');
+        },
+      };
+
+      const loaded = await pluginSystem.loadPlugin(consumer, app, {});
+      assert.equal(loaded, null);
     });
   });
 

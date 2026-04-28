@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FastifyInstance } from 'fastify';
+import { CODE_ANALYSIS_SERVICE, REPO_CONTEXT_SERVICE } from '@agent-detective/sdk';
 import type {
   Agent,
   EnqueueFn,
@@ -83,9 +84,19 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
   }
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
-  const servicesRegistry = new Map<string, unknown>();
+  const servicesRegistry = new Map<string, Map<string, unknown>>();
   const capabilitiesRegistry = new Set<string>();
   const shutdownHooks: Array<() => void | Promise<void>> = [];
+
+  const MULTI_PROVIDER_SERVICE_KEYS = new Set<string>([
+    // Capability-backed services
+    REPO_CONTEXT_SERVICE,
+    CODE_ANALYSIS_SERVICE,
+  ]);
+
+  function isFirstPartyPlugin(pluginName: string): boolean {
+    return pluginName.startsWith('@agent-detective/');
+  }
 
   function registerCapability(capability: string): void {
     capabilitiesRegistry.add(capability);
@@ -95,19 +106,56 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return capabilitiesRegistry.has(capability);
   }
 
-  function registerService<T>(name: string, service: T): void {
-    if (servicesRegistry.has(name)) {
+  function registerServiceForPlugin<T>(providerPluginName: string, name: string, service: T): void {
+    const existing = servicesRegistry.get(name);
+    if (!existing) {
+      servicesRegistry.set(name, new Map([[providerPluginName, service as unknown]]));
+      return;
+    }
+
+    const hadProvider = existing.has(providerPluginName);
+    const hadAny = existing.size > 0;
+
+    if (hadProvider) {
+      logger.warn(`Service ${name} already registered, overwriting`);
+    } else if (hadAny && !MULTI_PROVIDER_SERVICE_KEYS.has(name)) {
       logger.warn(`Service ${name} already registered, overwriting`);
     }
-    servicesRegistry.set(name, service);
+
+    existing.set(providerPluginName, service as unknown);
+  }
+
+  function getServiceFromPlugin<T>(name: string, providerPluginName: string): T {
+    const providers = servicesRegistry.get(name);
+    const service = providers?.get(providerPluginName);
+    if (!service) {
+      const knownProviders = providers ? Array.from(providers.keys()) : [];
+      const suffix = knownProviders.length ? ` Known providers: ${knownProviders.join(', ')}` : '';
+      throw new Error(
+        `Service ${name} not found for provider ${providerPluginName}. Ensure the providing plugin is loaded.${suffix}`
+      );
+    }
+    return service as T;
+  }
+
+  function selectDefaultProviderService(_name: string, providers: Map<string, unknown>): unknown {
+    if (providers.size === 1) {
+      return providers.values().next().value;
+    }
+    // Prefer first-party providers over third-party; otherwise fall back to
+    // registration (config) order (Map preserves insertion order).
+    for (const [providerName, service] of providers) {
+      if (isFirstPartyPlugin(providerName)) return service;
+    }
+    return providers.values().next().value;
   }
 
   function getService<T>(name: string): T {
-    const service = servicesRegistry.get(name);
-    if (!service) {
+    const providers = servicesRegistry.get(name);
+    if (!providers || providers.size === 0) {
       throw new Error(`Service ${name} not found. Ensure the providing plugin is loaded.`);
     }
-    return service as T;
+    return selectDefaultProviderService(name, providers) as T;
   }
 
   function buildPluginContext(plugin: Plugin, mergedConfig: Record<string, unknown>): PluginContext {
@@ -120,8 +168,9 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           ? logger.child({ plugin: plugin.name })
           : logger,
       events,
-      registerService,
+      registerService: <T>(name: string, service: T) => registerServiceForPlugin(plugin.name, name, service),
       getService,
+      getServiceFromPlugin,
       registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
       registerCapability,
       hasCapability,
@@ -204,8 +253,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     if (plugin.requiresCapabilities) {
       for (const req of plugin.requiresCapabilities) {
         if (!capabilitiesRegistry.has(req)) {
+          const available = Array.from(capabilitiesRegistry.values()).sort();
           logger.error(
-            `Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin.`,
+            `Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin. Available capabilities: ${
+              available.length ? available.join(', ') : '(none)'
+            }`,
           );
         }
       }
@@ -357,8 +409,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       if (plugin && plugin.requiresCapabilities) {
         for (const req of plugin.requiresCapabilities) {
           if (!capabilitiesRegistry.has(req)) {
+            const available = Array.from(capabilitiesRegistry.values()).sort();
             logger.error(
-              `Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin.`,
+              `Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin. Available capabilities: ${
+                available.length ? available.join(', ') : '(none)'
+              }`,
             );
           }
         }

@@ -1,7 +1,7 @@
 import { createJiraWebhookHandler } from './application/webhook-handler.js';
 import { createMockJiraClient } from './infrastructure/mock-jira-client.js';
 import { createRealJiraClient } from './infrastructure/real-jira-client.js';
-import { StandardEvents, definePlugin, type TaskEvent } from '@agent-detective/sdk';
+import { StandardCapabilities, StandardEvents, definePlugin, type TaskEvent } from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from './domain/types.js';
 import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
 import * as z from 'zod';
@@ -23,7 +23,7 @@ const jiraAdapterPlugin = definePlugin({
   schemaVersion: SCHEMA_VERSION,
   schema: pluginSchema,
   dependsOn: ['@agent-detective/local-repos-plugin'],
-  requiresCapabilities: ['code-analysis'],
+  requiresCapabilities: [StandardCapabilities.CODE_ANALYSIS],
 
   async register(scope, context) {
     const extContext = context;

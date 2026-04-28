@@ -36,6 +36,9 @@ List plugins in `config/default.json` (and overrides), as described in [configur
 
 If your plugin’s `name` is `@myorg/b` and it calls `getService` from another plugin, set **`dependsOn: ['@myorg/a']`** on the plugin object (use the **Plugin `name`**, not necessarily the package string). The core orders loads topologically. First-party example: [AGENTS.md](../../AGENTS.md) (`dependsOn` in practice).
 
+## `requiresCapabilities`
+
+Use `requiresCapabilities` when you don’t care *which* plugin provides a feature, only that the feature exists.\n\n- Prefer SDK constants from `@agent-detective/sdk` (`StandardCapabilities.*`).\n- If you define a custom capability in a third-party plugin, use a stable **namespaced** string like `acme.example/my-feature`.\n+
 ## Public npm (or GitHub Packages)
 
 1. Build your package so **`dist/index.js`** is the ESM default export and **`default` exports the `Plugin` object.  
