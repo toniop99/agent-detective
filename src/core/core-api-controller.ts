@@ -22,6 +22,7 @@ export interface CoreApiControllerDeps {
   config: {
     plugins?: Array<{ package?: string }>;
   };
+  pluginStatus?: () => { loaded: string[]; failures: Array<{ plugin: string; stage: string; message: string }> };
 }
 
 const ServerInfoResponse = z.object({
@@ -50,6 +51,18 @@ const AgentInfoResponse = z.array(
 const QueueStatusResponse = z.object({
   status: z.literal('ok'),
   backend: z.string(),
+});
+
+const PluginStatusResponse = z.object({
+  configured: z.array(z.string()),
+  loaded: z.array(z.string()),
+  failures: z.array(
+    z.object({
+      plugin: z.string(),
+      stage: z.string(),
+      message: z.string(),
+    })
+  ),
 });
 
 const ErrorResponse = z.object({
@@ -114,7 +127,7 @@ function writeSse(stream: NodeJS.WritableStream, payload: unknown): void {
  * that flow into Fastify (see ADR 0002).
  */
 export function buildCoreApiRoutes(deps: CoreApiControllerDeps): RouteDefinition[] {
-  const { agentModels, agentRunner, enqueue, observability, config } = deps;
+  const { agentModels, agentRunner, enqueue, observability, config, pluginStatus } = deps;
 
   const getServerInfo = defineRoute({
     method: 'GET',
@@ -183,6 +196,28 @@ export function buildCoreApiRoutes(deps: CoreApiControllerDeps): RouteDefinition
     },
     handler() {
       return { status: 'ok' as const, backend: 'memory' };
+    },
+  });
+
+  const pluginsStatus = defineRoute({
+    method: 'GET',
+    url: '/api/plugins',
+    schema: {
+      tags: [CORE_PLUGIN_TAG],
+      summary: 'Plugin status',
+      description: 'Returns configured plugins, loaded plugins, and recent plugin load failures',
+      response: { 200: PluginStatusResponse },
+    },
+    handler() {
+      const configured = (config.plugins ?? [])
+        .map((p) => p.package)
+        .filter((p): p is string => Boolean(p));
+      const status = pluginStatus?.() ?? { loaded: [], failures: [] };
+      return {
+        configured,
+        loaded: status.loaded,
+        failures: status.failures,
+      };
     },
   });
 
@@ -332,7 +367,7 @@ export function buildCoreApiRoutes(deps: CoreApiControllerDeps): RouteDefinition
     },
   });
 
-  return [getServerInfo, getHealth, listAgents, queueStatus, runAgent, processEvent];
+  return [getServerInfo, getHealth, listAgents, queueStatus, pluginsStatus, runAgent, processEvent];
 }
 
 /**

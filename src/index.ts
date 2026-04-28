@@ -82,6 +82,10 @@ orchestrator.start();
 
 const { app } = await createServer(config, observability, defaultModels, agentRunner, enqueue, {
   getPluginTags: () => pluginSystem.getPluginTags(),
+  getPluginStatus: () => ({
+    loaded: pluginSystem.getLoadedPlugins().map((p) => `${p.name}@${p.version}`),
+    failures: pluginSystem.getPluginLoadFailures(),
+  }),
 });
 
 await pluginSystem.loadAll(app, config);

@@ -655,6 +655,10 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     return Array.from(loadedPlugins.values());
   }
 
+  function getPluginLoadFailures(): Array<{ plugin: string; stage: 'import' | 'validate' | 'register'; message: string }> {
+    return [...pluginLoadFailures];
+  }
+
   /** Tag names to surface under the Scalar "Plugins" group on `/docs`. */
   function getPluginTags(): string[] {
     return Array.from(loadedPlugins.keys());
@@ -674,6 +678,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     loadPlugin,
     loadAll,
     getLoadedPlugins,
+    getPluginLoadFailures,
     getPluginTags,
     enqueue: enqueueDelegate,
     shutdown,
