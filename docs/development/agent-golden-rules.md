@@ -1,21 +1,36 @@
+---
+title: "Golden rules (humans & agents)"
+description: Do-and-don't checklist that keeps the monorepo buildable, type-safe, and navigable.
+sidebar:
+  order: 4
+---
+
 # Golden rules (humans & agents)
 
 These rules keep the monorepo buildable, type-safe, and easy for agents to navigate. **`AGENTS.md` at the repo root stays short** — this file is the expanded checklist.
 
 ## Do
 
+:::tip[Best practices]
+
 - **Plugin authors:** import everything from **`@agent-detective/sdk`** (types, runtime helpers, service constants — single dependency). **Host code only:** `@agent-detective/types` is the type-only contract, used inside `src/` and the host-facing workspace packages.
 - Use **`.ts`** for source and **`.test.ts`** for tests.
 - Use **ESM** with **`.js` extensions** in import specifiers (e.g. `from './foo.js'`) so emitted JS resolves.
 - Run **`pnpm run build`** before publishing packages; run **`pnpm run build:app`** for the root **`dist/index.js`** used by **`pnpm start`** and Docker.
 
+:::
+
 ## Do not
+
+:::danger[These will break the build or CI]
 
 - Edit generated **`dist/`** output by hand.
 - Import the root app with deep relatives from **`packages/*`** (e.g. `../../../src/core/...`) — CI rejects this; use workspace packages instead.
 - **Compile-import another plugin** from a plugin package (e.g. `pr-pipeline` importing `@agent-detective/local-repos-plugin` in `src/`) — use **`@agent-detective/sdk`** for shared ports (re-exported from the type-only `@agent-detective/types`) and **`getService()`** at runtime ([ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md)); `pnpm run lint` runs **`scripts/check-plugin-cross-imports.mjs`**.
 - Create **`.js`** files next to **`.ts`** sources.
 - Set **`rootDir`** in a package `tsconfig` to span multiple unrelated trees.
+
+:::
 
 ## Plugin HTTP and loading
 
@@ -54,6 +69,8 @@ Full definitions: [`packages/types/src/index.ts`](../../packages/types/src/index
 
 ## Common failures
 
+:::danger
+
 ### `Cannot find module '@agent-detective/sdk'`
 
 **Cause:** Used a deep relative path into another folder instead of the workspace package.  
@@ -73,6 +90,8 @@ Full definitions: [`packages/types/src/index.ts`](../../packages/types/src/index
 
 **Cause:** Missing **`.js`** suffix in ESM imports or missing **`"type": "module"`** in `package.json`.  
 **Fix:** Align imports and `package.json` with sibling packages.
+
+:::
 
 ## Where to read next
 

@@ -1,3 +1,13 @@
+---
+title: Generated plugin option schemas
+description: Zod-generated JSON Schema for all bundled plugin option types.
+sidebar:
+  order: 2
+  badge:
+    text: Generated
+    variant: note
+---
+
 # Generated plugin option schemas
 
 Do not edit by hand. Regenerate with `pnpm docs:plugins`.

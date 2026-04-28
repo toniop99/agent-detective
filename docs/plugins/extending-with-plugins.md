@@ -1,3 +1,10 @@
+---
+title: "Extending with plugins"
+description: Install custom plugins from npm, local paths, or Docker volumes.
+sidebar:
+  order: 1
+---
+
 # Extending the app with custom plugins
 
 Use a **Plugin** (see `Plugin` in [`@agent-detective/types`](../../packages/types/src/index.ts)) to add HTTP routes, services, and event handling. This page explains how to **install and wire** a plugin in your deployment. For the full API, patterns, and official bundles, see [plugins.md](plugins.md). For a **TypeScript project template** and long examples, see [plugin-development.md](plugin-development.md).

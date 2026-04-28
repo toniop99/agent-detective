@@ -1,3 +1,10 @@
+---
+title: "Migration and history (archive)"
+description: Breaking changes, removed APIs, and notable migration notes for the codebase.
+sidebar:
+  order: 6
+---
+
 # Migration and history (archive)
 
 The codebase is **TypeScript** with shared types in `@agent-detective/types`. This page lists **breaking or notable changes**; for day-to-day setup use [development.md](development.md) and [configuration.md](../config/configuration.md). For how to follow releases and upgrade deploys, see [upgrading.md](../operator/upgrading.md).

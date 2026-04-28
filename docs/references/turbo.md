@@ -1,3 +1,10 @@
+---
+title: Turborepo
+description: Cheat sheet for Turborepo task graph, caching, and common build commands.
+sidebar:
+  order: 3
+---
+
 # Turborepo (cheat sheet)
 
 - **Tasks** are defined per package (`build`, `typecheck`, `lint`, `test`). Root runs **`turbo run <task>`** over the graph.

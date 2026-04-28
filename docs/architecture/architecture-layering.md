@@ -1,3 +1,10 @@
+---
+title: Layering and hexagonal-style layout
+description: Hexagonal ports-and-adapters layering and package structure for workspace plugins.
+sidebar:
+  order: 2
+---
+
 # Layering and hexagonal-style layout
 
 This repository uses a **pragmatic hexagonal (ports & adapters) + layered** layout inside workspace packages.

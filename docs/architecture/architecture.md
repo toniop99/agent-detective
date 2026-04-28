@@ -1,3 +1,10 @@
+---
+title: Architecture
+description: System architecture overview, plugin model, type system, and component diagram.
+sidebar:
+  order: 1
+---
+
 # Architecture
 
 ## Design Principles

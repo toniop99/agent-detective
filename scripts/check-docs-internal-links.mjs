@@ -18,7 +18,7 @@ function walkMarkdown(dir, out) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
     if (ent.isDirectory()) walkMarkdown(p, out);
-    else if (ent.isFile() && ent.name.endsWith('.md')) out.push(p);
+    else if (ent.isFile() && (ent.name.endsWith('.md') || ent.name.endsWith('.mdx'))) out.push(p);
   }
 }
 
@@ -57,11 +57,18 @@ for (const mdPath of mdFiles) {
       continue;
     }
     if (!fs.existsSync(target)) {
-      violations.push({
-        md: path.relative(repoRoot, mdPath),
-        href: m[1].trim(),
-        reason: 'missing file',
-      });
+      const alt = target.endsWith('.md')
+        ? target.replace(/\.md$/, '.mdx')
+        : target.endsWith('.mdx')
+          ? target.replace(/\.mdx$/, '.md')
+          : null;
+      if (!alt || !fs.existsSync(alt)) {
+        violations.push({
+          md: path.relative(repoRoot, mdPath),
+          href: m[1].trim(),
+          reason: 'missing file',
+        });
+      }
     }
   }
 }

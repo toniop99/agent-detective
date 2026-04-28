@@ -1,3 +1,10 @@
+---
+title: "Plugin Development Guide"
+description: Complete plugin API reference with patterns, TaskEvent, schema system, and examples.
+sidebar:
+  order: 2
+---
+
 # Plugin Development Guide
 
 Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers the plugin **APIs** and **patterns** for authors. For **where to point `config.plugins[].package` and how to use Docker / npm** for custom plugins, see [extending-with-plugins.md](extending-with-plugins.md) first.

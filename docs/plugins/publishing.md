@@ -1,3 +1,10 @@
+---
+title: "Publishing Guide"
+description: Publish workspace packages to npm and Docker images to GitHub Container Registry.
+sidebar:
+  order: 5
+---
+
 # Publishing Guide
 
 This guide covers how to publish packages to npm for the agent-detective monorepo.

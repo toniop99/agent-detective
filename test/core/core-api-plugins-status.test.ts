@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import Fastify from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
-import { createObservability } from '@agent-detective/observability';
+import { createObservability, DEFAULT_OBSERVABILITY_CONFIG } from '@agent-detective/observability';
 import { registerCoreApiRoutes } from '../../src/core/core-api-controller.js';
 
 describe('/api/plugins', () => {
@@ -10,7 +10,9 @@ describe('/api/plugins', () => {
     const app = Fastify({ logger: false }).withTypeProvider<ZodTypeProvider>();
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
-    const observability = createObservability({ logging: { level: 'silent' as any } });
+    const observability = createObservability({
+      logging: { ...DEFAULT_OBSERVABILITY_CONFIG.logging, level: 'error' },
+    });
 
     registerCoreApiRoutes(app, {
       observability,

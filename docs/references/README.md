@@ -1,3 +1,10 @@
+---
+title: Agent-oriented references
+description: Quick-reference pages for pnpm, Turborepo, and ESM import conventions.
+sidebar:
+  order: 1
+---
+
 # Agent-oriented references
 
 Short pages (progressive disclosure): stable facts and commands without rereading the full guides.

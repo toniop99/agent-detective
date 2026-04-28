@@ -1,3 +1,10 @@
+---
+title: Execution plans
+description: Index and template for versioned multi-step execution plans and initiatives.
+sidebar:
+  order: 1
+---
+
 # Execution plans
 
 Versioned **intent, steps, and acceptance criteria** for multi-step or cross-cutting work so agents (and humans) are not limited to chat history.

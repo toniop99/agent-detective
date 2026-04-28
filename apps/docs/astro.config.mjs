@@ -13,6 +13,21 @@ export default defineConfig({
     starlight({
       title: 'Agent Detective',
       description: 'AI-powered code analysis; plugins for Jira and more.',
+      lastUpdated: true,
+      editLink: {
+        // The default Starlight edit link uses the on-disk content path.
+        // Because we sync docs/ → apps/docs/src/content/docs, we override the EditLink component
+        // to map routes back to docs/ paths in git.
+        baseUrl: 'https://github.com/toniop99/agent-detective/edit/main/',
+      },
+      head: [
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/docs/favicon-32.png' } },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/docs/apple-touch-icon.png' } },
+      ],
+      components: {
+        EditLink: './src/components/EditLink.astro',
+      },
+      customCss: ['./src/styles/custom.css'],
       social: [
         {
           icon: 'external',
@@ -50,24 +65,27 @@ export default defineConfig({
           autogenerate: { directory: 'development' },
         },
         {
-          label: 'Execution plans',
-          autogenerate: { directory: 'exec-plans' },
-        },
-        {
-          label: 'Tool references',
-          autogenerate: { directory: 'references' },
-        },
-        {
           label: 'Architecture',
           autogenerate: { directory: 'architecture' },
         },
         {
-          label: 'Jira (E2E)',
+          label: 'E2E walkthroughs',
+          badge: { text: 'Ops', variant: 'note' },
           autogenerate: { directory: 'e2e' },
         },
         {
           label: 'Reference',
           autogenerate: { directory: 'reference' },
+        },
+        {
+          label: 'Execution plans',
+          collapsed: true,
+          autogenerate: { directory: 'exec-plans' },
+        },
+        {
+          label: 'Tool references',
+          collapsed: true,
+          autogenerate: { directory: 'references' },
         },
       ],
     }),

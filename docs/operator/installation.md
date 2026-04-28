@@ -1,3 +1,10 @@
+---
+title: "Installation and deployment paths"
+description: Choose how to run agent-detective â€” container, compose, source, or bare metal.
+sidebar:
+  order: 1
+---
+
 # Installation and deployment paths
 
 Choose how you run agent-detective on a host or in your cluster. This page is the **entry point**; the detailed guides are linked below.
@@ -17,7 +24,9 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
 | **From source (git + pnpm)** | You fork the repo, change `packages/`, or run without a prebuilt image | Node.js 24+, pnpm 10+ (see root [package.json](../../package.json) `packageManager`), git |
 | **Bare metal: systemd + reverse proxy** | No Docker; long-running service on a VM with nginx or similar | [deployment.md](deployment.md) (systemd, nginx, sizing) |
 
-**Kubernetes or Helm:** this repository does not ship charts. Run the [GHCR image](docker.md#published-image-ghcr) with your platformâ€™s standard workload manifest and the same `config` + env model as in [docker.md](docker.md).
+:::note[Kubernetes]
+This repository does not ship Helm charts. Run the [GHCR image](docker.md#published-image-ghcr) with your platformâ€™s standard workload manifest and the same `config` + env model as in [docker.md](docker.md).
+:::
 
 ## Host capabilities
 
@@ -28,6 +37,10 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
 - **Agent CLIs:** the image or host must be able to run the configured agent (e.g. `opencode` in the default image). See [docker.md](docker.md#image-targets-dockerfile) and [cursor-agent.md](../development/cursor-agent.md) for adding other agents.
 
 ## Configuration (all paths)
+
+:::caution
+Use `config/local.json` (gitignored) or environment variables for secrets. Never commit API tokens or credentials to `config/default.json`.
+:::
 
 1. Read the **[configuration hub](../config/configuration-hub.md)** for load order and top-level `config` shape.
 2. Use [configuration.md](../config/configuration.md) for the full env whitelist and plugin narratives.
@@ -49,7 +62,7 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
 
 If you build from a clone, use the upstream repository (or your forkâ€™s URL):
 
-```bash
+```bash title="Clone from GitHub"
 git clone https://github.com/toniop99/agent-detective.git
 cd agent-detective
 ```
