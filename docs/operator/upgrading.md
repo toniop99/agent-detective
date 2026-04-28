@@ -7,7 +7,7 @@ sidebar:
 
 # Staying up to date
 
-Use this page when you deploy from a **released image**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together [CHANGELOG.md](../reference/CHANGELOG.md), [migration.md](../development/migration.md), and the container registry.
+Use this page when you deploy from a **released image**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together GitHub Releases, [migration.md](../development/migration.md), and the container registry.
 
 **Other operator hubs:** [installation.md](installation.md) (deploy paths) · [configuration-hub.md](../config/configuration-hub.md) (config load order and keys).
 
@@ -15,7 +15,7 @@ Use this page when you deploy from a **released image**, track **main** in git, 
 
 | Channel | Use for |
 |---------|---------|
-| **[CHANGELOG.md](../reference/CHANGELOG.md)** | Breaking or notable config and API changes in the repo |
+| **GitHub Releases** | Breaking or notable config and API changes in the repo |
 | **[migration.md](../development/migration.md)** | Short archive of config moves and conventions (not a full version history) |
 | **GitHub Releases** | Created when a **`v*.*.*`** tag is pushed; includes image pull commands (see [.github/workflows/release.yml](../../.github/workflows/release.yml)) |
 | **Watching the repository** | Notifications for releases, discussions, or commits (your choice in GitHub **Watch**) |
@@ -40,10 +40,10 @@ Because **`main` keeps advancing**, the next push to `main` overwrites **`latest
 ### Upgrade runbook (Docker / Compose)
 
 :::tip[Before you upgrade]
-Always read the CHANGELOG and migration guide **before** pulling a new image. Test the upgrade in a staging environment if possible.
+Always read the release notes and migration guide **before** pulling a new image. Test the upgrade in a staging environment if possible.
 :::
 
-1. Read **[CHANGELOG.md](../reference/CHANGELOG.md)** since the tag you currently run (and [migration.md](../development/migration.md) if linked).
+1. Read GitHub Release notes since the tag you currently run (and [migration.md](../development/migration.md) if linked).
 2. Update `config` if new or changed keys are required — see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). Regenerate local reference if you maintain a fork: `pnpm docs:plugins`.
 3. **Pull** the new image tag (or bump the digest in your manifest).
 4. Redeploy (compose, orchestrator, or `docker run` as you do today).
@@ -63,7 +63,7 @@ pnpm run build
 pnpm run build:app
 ```
 
-1. Same as above: **CHANGELOG** + **migration** + **config** review.
+1. Same as above: release notes + **migration** + **config** review.
 2. If you change bundled plugin Zod schemas in a fork, run **`pnpm docs:plugins`** and commit [generated/plugin-options.md](../reference/generated/plugin-options.md) if you track it.
 3. Run tests in CI or locally: `pnpm test`, `pnpm run typecheck` (as in [development.md](../development/development.md)).
 

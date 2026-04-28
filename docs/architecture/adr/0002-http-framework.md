@@ -26,7 +26,7 @@ The model works but has well-known rough edges:
 
 The product direction (more plugins, more event sources, more endpoints) makes "validate everything at the boundary, generate OpenAPI from the same source of truth" valuable enough to revisit the framework.
 
-This ADR evaluates four candidates and recommends one. The migration plan is tracked separately in [`docs/exec-plans/completed/2026-04-http-layer-modernization.md`](../../exec-plans/completed/2026-04-http-layer-modernization.md).
+This ADR evaluates four candidates and recommends one. Migration planning notes live under `docs/exec-plans/` (see the index at `docs/exec-plans/README.md`).
 
 ## Candidates
 
@@ -283,7 +283,7 @@ Rationale, in priority order:
 5. **NestJS (C) duplicates our composition model.** Two systems to teach, two ways to register a route — net negative.
 6. **Hono (D) is attractive but loses ecosystem and encapsulation.** Better fit for a serverless-first project than for a self-hosted Node integration hub.
 
-**Decision approved 2026-04-26.** The migration is tracked by [`2026-04-http-layer-modernization.md`](../../exec-plans/completed/2026-04-http-layer-modernization.md).
+**Decision approved 2026-04-26.**
 
 ## Consequences
 
@@ -296,7 +296,7 @@ Rationale, in priority order:
 
 ## References
 
-- [`docs/exec-plans/completed/2026-04-http-layer-modernization.md`](../../exec-plans/completed/2026-04-http-layer-modernization.md) — migration plan with acceptance criteria.
+- `docs/exec-plans/` — migration planning notes and acceptance criteria (when maintained).
 - [ADR 0001 — layering and plugin boundaries](./0001-layering-and-plugin-boundaries.md) — keeps applying; this ADR only changes the framework under the presentation layer.
 - [`docs/plugins/plugins.md`](../../plugins/plugins.md) — plugin author guide; updated alongside Phase 2.
 - [Fastify](https://fastify.dev/) · [`fastify-type-provider-zod`](https://github.com/turkerdev/fastify-type-provider-zod) · [`@scalar/fastify-api-reference`](https://github.com/scalar/scalar/tree/main/packages/fastify-api-reference)

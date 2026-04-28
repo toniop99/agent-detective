@@ -61,7 +61,17 @@ ${rows}
 `;
 }
 
-const body = `# Generated top-level app config (Zod)
+const body = `---
+title: Generated top-level app config (Zod)
+description: Zod-generated JSON Schema for the top-level application configuration object.
+sidebar:
+  order: 1
+  badge:
+    text: Generated
+    variant: note
+---
+
+# Generated top-level app config (Zod)
 
 Do not edit by hand. Regenerate with \`pnpm docs:config\`.
 
