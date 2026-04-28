@@ -14,6 +14,7 @@ node_modules/
 
 # Build outputs
 dist/
+dist-sea/
 packages/types/dist/
 packages/jira-adapter/dist/
 

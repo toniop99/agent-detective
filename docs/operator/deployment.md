@@ -171,6 +171,11 @@ curl -sS http://localhost:3001/api/health
 curl -sS http://localhost:3001/api/agent/list
 ```
 
+## API docs
+
+- Interactive docs UI: `GET /docs` (Docker / from-source)
+- Native binary (SEA): UI is disabled; use `GET /docs/openapi.json` (see [binary.md](binary.md))
+
 ## Log management
 
 Structured logs go to **stdout/stderr** (captured by journald under systemd). Set log level via `observability` / `LOG_LEVEL` / `OBSERVABILITY_LOG_LEVEL` (see [configuration.md](../config/configuration.md)).

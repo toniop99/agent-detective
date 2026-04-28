@@ -87,4 +87,5 @@ Workspace packages may be published per [publishing.md](../plugins/publishing.md
 - [configuration-hub.md](../config/configuration-hub.md) — where settings live
 - [docker.md](docker.md#published-image-ghcr) — pull, compose, env
 - [installation.md](installation.md) — deployment paths
+- [releasing.md](releasing.md) — maintainers: create a new tag/release
 - [publishing.md](../plugins/publishing.md) — image tags and release automation (maintainers)

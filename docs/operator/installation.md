@@ -21,6 +21,7 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
 |------|-------------|---------------|
 | **Container image (GHCR)** | Production on a single host or small team; minimal build steps | Docker (or compatible runtime), a `config/` directory to mount, secrets via env (see [configuration.md](../config/configuration.md)) |
 | **Docker Compose (build or pull)** | Same as above, but you want `compose` and optional bind mounts for `config/` and `plugins/` | [docker.md](docker.md) (includes [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) for pull-only) |
+| **Native binary (GitHub Releases)** | Single executable on a host (no system Node.js/pnpm); best for bare-metal installs | Download the binary, a `config/` directory, and agent CLIs on `PATH` (use `doctor` to verify) |
 | **From source (git + pnpm)** | You fork the repo, change `packages/`, or run without a prebuilt image | Node.js 24+, pnpm 10+ (see root [package.json](../../package.json) `packageManager`), git |
 | **Bare metal: systemd + reverse proxy** | No Docker; long-running service on a VM with nginx or similar | [deployment.md](deployment.md) (systemd, nginx, sizing) |
 
@@ -52,6 +53,7 @@ Use `config/local.json` (gitignored) or environment variables for secrets. Never
 | Topic | Document |
 |-------|----------|
 | Docker, Compose, production image, GHCR | [docker.md](docker.md) |
+| Native binary (GitHub Releases) | [binary.md](binary.md) |
 | systemd, nginx, health checks, troubleshooting (no Docker) | [deployment.md](deployment.md) |
 | Config files, env, plugins | [configuration.md](../config/configuration.md) |
 | Releases, pinning images, git upgrade | [upgrading.md](upgrading.md) |
