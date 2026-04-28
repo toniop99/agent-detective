@@ -191,7 +191,7 @@ jobs:
             - `agent-detective-linux-arm64`
             - `agent-detective-darwin-arm64`
             - `sbom-<target>.cdx.json` (CycloneDX SBOM)
-            - `*.sig` / `*.cert` (cosign signatures + certificates)
+            - `*.sigstore.json` (Cosign v3 Sigstore bundles for signatures)
 
             Then run:
 

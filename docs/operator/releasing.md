@@ -52,7 +52,7 @@ After the tag is pushed:
   - `agent-detective-darwin-arm64`
   - `checksums-*.txt`
   - `sbom-*.cdx.json` (CycloneDX)
-  - `*.sig` / `*.cert` (cosign keyless signatures + certificates)
+  - `*.sigstore.json` (Cosign v3 Sigstore bundles for the binary, checksums, and SBOM)
 
 ## 5) Smoke test (recommended)
 
