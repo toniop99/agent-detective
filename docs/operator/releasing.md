@@ -46,7 +46,7 @@ Re-running a failed workflow in the Actions UI **only re-runs the same commit** 
 After the tag is pushed:
 
 - `release.yml` publishes multi-arch Docker images and creates the GitHub Release
-- `binary.yml` (Node **25** in Actions, for integrated `node --build-sea`) uploads:
+- `binary.yml` (pinned **Node 25.9.x** in Actions for integrated `node --build-sea`; bump the pin in the workflow when you adopt a newer 25 release) uploads:
   - `agent-detective-linux-x64`
   - `agent-detective-linux-arm64`
   - `agent-detective-darwin-arm64`

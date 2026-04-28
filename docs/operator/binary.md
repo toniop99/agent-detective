@@ -124,7 +124,7 @@ If you maintain this repository and need to publish new binaries, see [releasing
 
 ## Maintainers: building a SEA binary locally
 
-CI uses **Node 25** and `node --build-sea` (see `.github/workflows/binary.yml`). Match that locally, or follow the Node 24 flow in the [Single executable applications](https://nodejs.org/api/single-executable-applications.html) docs if you cannot upgrade yet.
+CI pins a concrete **Node 25.x** (see `node-version` in `.github/workflows/binary.yml`) and uses `node --build-sea`. Use the same major locally, or follow the Node 24 flow in the [Single executable applications](https://nodejs.org/api/single-executable-applications.html) docs if you cannot upgrade yet.
 
 ## systemd
 
