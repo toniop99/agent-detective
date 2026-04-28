@@ -36,9 +36,12 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
 
+      # Pin a concrete Node 25.x: major-only "25" can incorrectly resolve to the
+      # runner tool-cache (20/22/24) instead of downloading Node 25 — see actions/setup-node README.
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '25.9.0'
+          token: ${{ github.token }}
 
       - run: pnpm install --frozen-lockfile
 
