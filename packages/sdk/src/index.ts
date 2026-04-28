@@ -142,6 +142,7 @@ export type {
   ResolveRepoOptions,
   PrWorkflowService,
   PrWorkflowInput,
+  PrIssueTrackerClient,
   PrJiraClient,
 } from '@agent-detective/types';
 

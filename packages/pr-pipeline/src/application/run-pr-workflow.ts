@@ -232,7 +232,7 @@ export interface RunPrWorkflowDeps {
  * Returns an empty array when images are disabled or none are available.
  */
 export async function downloadImagesToTempDir(
-  input: Pick<PrWorkflowInput, 'jira' | 'imageAttachments' | 'issueKey'>,
+  input: Pick<PrWorkflowInput, 'issueTracker' | 'imageAttachments' | 'issueKey'>,
   options: PrPipelineOptions,
   logger: Pick<Logger, 'info' | 'warn'>
 ): Promise<{ paths: string[]; tempDir: string | null }> {
@@ -254,7 +254,7 @@ export async function downloadImagesToTempDir(
       continue;
     }
     try {
-      const buf = await input.jira.downloadAttachment(att.id);
+      const buf = await input.issueTracker.downloadAttachment(att.id);
       if (tempDir === null) {
         tempDir = await mkdtemp(join(tmpdir(), `ad-img-${input.issueKey.replace(/[^a-z0-9]+/gi, '-')}-`));
       }
@@ -276,10 +276,10 @@ export async function downloadImagesToTempDir(
  */
 export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowDeps): Promise<void> {
   const { localRepos, agentRunner, options, logger } = deps;
-  const { issueKey, issueSummary, taskDescription, match, jira, analysisPrompt, prCommentContext, issueComments, triggerCommentId, imageAttachments } = input;
+  const { issueKey, issueSummary, taskDescription, match, issueTracker, analysisPrompt, prCommentContext, issueComments, triggerCommentId, imageAttachments } = input;
   const commentCtx = (prCommentContext || '').trim().slice(0, 12_000);
   const threadOpts = triggerCommentId ? { parentId: triggerCommentId } : undefined;
-  const postComment = (body: string) => jira.addComment(issueKey, body, threadOpts);
+  const postComment = (body: string) => issueTracker.addComment(issueKey, body, threadOpts);
   const cfg = localRepos.getSourceRepoConfig(match.name);
   if (!cfg) {
     await postComment(stampJiraPr(`**pr-pipeline:** no source config for repo \`${match.name}\`.`));
@@ -380,7 +380,7 @@ export async function runPrWorkflow(input: PrWorkflowInput, deps: RunPrWorkflowD
     }
 
     const { paths: imagePaths, tempDir: downloadedTempDir } = await downloadImagesToTempDir(
-      { jira, imageAttachments, issueKey },
+      { issueTracker, imageAttachments, issueKey },
       options,
       logger
     );

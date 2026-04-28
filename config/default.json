@@ -92,6 +92,13 @@
       }
     },
     {
+      "package": "@agent-detective/linear-adapter",
+      "options": {
+        "enabled": false,
+        "mockMode": true
+      }
+    },
+    {
       "package": "@agent-detective/pr-pipeline",
       "options": {
         "prBranchPrefix": "hotfix/",

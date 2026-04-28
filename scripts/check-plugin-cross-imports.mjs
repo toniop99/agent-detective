@@ -21,6 +21,7 @@ const repoRoot = path.resolve(__dirname, '..');
 /** Plugin package names (npm `name` field) — keep in sync with packages that register via Plugin. */
 const PLUGIN_NAMES = new Set([
   '@agent-detective/jira-adapter',
+  '@agent-detective/linear-adapter',
   '@agent-detective/local-repos-plugin',
   '@agent-detective/pr-pipeline',
 ]);

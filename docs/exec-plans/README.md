@@ -10,7 +10,7 @@ Use **`active/`** when work spans multiple PRs, packages, or needs explicit chec
 
 | Path | Use |
 |------|-----|
-| [`active/`](./active/) | Current work — one markdown file per initiative (`YYYY-mm-topic.md` or similar). |
+| [`active/`](./active/) | Current work — one markdown file per initiative (`YYYY-mm-topic.md` or similar). Example: [`active/2026-04-linear-adapter.md`](./active/2026-04-linear-adapter.md). |
 | [`completed/`](./completed/) | Done plans — move here when merged or abandoned (short note if abandoned). |
 
 ## Template (copy into a new file)

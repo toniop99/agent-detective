@@ -38,6 +38,7 @@ For day-to-day development you usually only need `pnpm dev`. CI and release imag
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |
 | `@agent-detective/jira-adapter` | Jira webhook adapter |
+| `@agent-detective/linear-adapter` | Linear webhook adapter (OAuth + signed webhooks; task routing in progress) |
 
 ## Configuration
 

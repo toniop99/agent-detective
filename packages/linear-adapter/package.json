@@ -1,0 +1,41 @@
+{
+  "name": "@agent-detective/linear-adapter",
+  "version": "0.1.0",
+  "description": "Linear webhook adapter for agent-detective",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "test:watch": "tsx --test --watch \"test/**/*.test.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "agent-detective",
+    "linear",
+    "adapter"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@agent-detective/sdk": "workspace:*",
+    "@linear/sdk": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

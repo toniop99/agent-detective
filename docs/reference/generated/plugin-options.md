@@ -5,6 +5,7 @@ Do not edit by hand. Regenerate with `pnpm docs:plugins`.
 Source files:
 
 - `packages/jira-adapter/src/application/options-schema.ts`
+- `packages/linear-adapter/src/application/options-schema.ts`
 - `packages/local-repos-plugin/src/application/options-schema.ts`
 - `packages/pr-pipeline/src/application/options-schema.ts`
 
@@ -175,6 +176,208 @@ Anchor: `jira-adapter`
     "retryTriggerPhrase",
     "prTriggerPhrase",
     "webhookBehavior",
+    "autoAnalysisCooldownMs",
+    "missingLabelsReminderCooldownMs",
+    "fetchIssueComments"
+  ],
+  "additionalProperties": false
+}
+```
+
+### @agent-detective/linear-adapter
+
+Anchor: `linear-adapter`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "mockMode": {
+      "default": true,
+      "type": "boolean"
+    },
+    "apiKey": {
+      "type": "string"
+    },
+    "webhookSigningSecret": {
+      "type": "string"
+    },
+    "oauthClientId": {
+      "type": "string"
+    },
+    "oauthClientSecret": {
+      "type": "string"
+    },
+    "oauthRedirectBaseUrl": {
+      "type": "string"
+    },
+    "oauthScopes": {
+      "type": "string"
+    },
+    "oauthActor": {
+      "default": "user",
+      "type": "string",
+      "enum": [
+        "user",
+        "app"
+      ]
+    },
+    "oauthAppCommentDisplayName": {
+      "type": "string"
+    },
+    "oauthAppCommentDisplayIconUrl": {
+      "type": "string"
+    },
+    "oauthRefreshToken": {
+      "type": "string"
+    },
+    "skipWebhookSignatureVerification": {
+      "default": false,
+      "type": "boolean"
+    },
+    "webhookDeliveryDedupWindowMs": {
+      "default": 600000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "webhookBehavior": {
+      "default": {
+        "defaults": {
+          "action": "ignore",
+          "acknowledgmentMessage": "Thanks for the update! I will review this issue and provide feedback shortly."
+        },
+        "events": {
+          "linear:Issue:create": {
+            "action": "analyze"
+          },
+          "linear:Comment:create": {
+            "action": "analyze"
+          }
+        }
+      },
+      "type": "object",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "analyze",
+                "acknowledge",
+                "ignore"
+              ]
+            },
+            "analysisPrompt": {
+              "type": "string"
+            },
+            "acknowledgmentMessage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false
+        },
+        "events": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "analyze",
+                  "acknowledge",
+                  "ignore"
+                ]
+              },
+              "analysisPrompt": {
+                "type": "string"
+              },
+              "acknowledgmentMessage": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "defaults"
+      ],
+      "additionalProperties": false
+    },
+    "analysisPrompt": {
+      "type": "string"
+    },
+    "analysisReadOnly": {
+      "default": true,
+      "type": "boolean"
+    },
+    "missingLabelsMessage": {
+      "type": "string"
+    },
+    "maxReposPerIssue": {
+      "default": 5,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "retryTriggerPhrase": {
+      "default": "#agent-detective analyze",
+      "type": "string",
+      "minLength": 1
+    },
+    "prTriggerPhrase": {
+      "default": "#agent-detective pr",
+      "type": "string",
+      "minLength": 1
+    },
+    "botActorIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "autoAnalysisCooldownMs": {
+      "default": 600000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "missingLabelsReminderCooldownMs": {
+      "default": 60000,
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "fetchIssueComments": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "enabled",
+    "mockMode",
+    "oauthActor",
+    "skipWebhookSignatureVerification",
+    "webhookDeliveryDedupWindowMs",
+    "webhookBehavior",
+    "analysisReadOnly",
+    "maxReposPerIssue",
+    "retryTriggerPhrase",
+    "prTriggerPhrase",
     "autoAnalysisCooldownMs",
     "missingLabelsReminderCooldownMs",
     "fetchIssueComments"

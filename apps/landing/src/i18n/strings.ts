@@ -91,9 +91,9 @@ export const strings: Record<Lang, LandingStrings> = {
   en: {
     meta: {
       pageTitle:
-        'Agent Detective | AI code analysis for Jira, Slack & your repo',
+        'Agent Detective | AI code analysis for Jira, Linear, Slack & your repo',
       description:
-        'Event-driven AI code analysis. Plugins normalize Jira, Telegram, Slack and more; repo-grounded insight, optional PR automation, self-hosted observability.',
+        'Event-driven AI code analysis. Plugins normalize Jira, Linear, Telegram, Slack and more; repo-grounded insight, optional PR automation, self-hosted observability.',
     },
     layout: {
       skipToContent: 'Skip to content',
@@ -133,7 +133,7 @@ export const strings: Record<Lang, LandingStrings> = {
       titleHighlight: 'codebase',
       titleAfter: ', not just the ticket',
       subtitleHtml:
-        'Your agents listen where work happens—<strong class="text-paper-50 font-medium">Jira, Telegram, Slack</strong>—and answer with <span class="text-evidence-300/90">grounded, repo-level insight</span>, not generic filler. One core; plugins and config define the rest.',
+        'Your agents listen where work happens—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—and answer with <span class="text-evidence-300/90">grounded, repo-level insight</span>, not generic filler. One core; plugins and config define the rest.',
       readDocs: 'Read the docs',
       viewGithub: 'View on GitHub',
       pullImage: 'Pull image',
@@ -161,7 +161,7 @@ export const strings: Record<Lang, LandingStrings> = {
       items: [
         {
           title: 'Source-agnostic events',
-          body: 'Webhooks and adapters become one task model—Jira, chat, or your own plugin. The agent runner does not care who knocked.',
+          body: 'Webhooks and adapters become one task model—Jira, Linear, chat, or your own plugin. The agent runner does not care who knocked.',
         },
         {
           title: 'Repo-grounded analysis',
@@ -179,7 +179,7 @@ export const strings: Record<Lang, LandingStrings> = {
       introHtml:
         'The same path every time: <strong class="text-paper-50">normalize</strong>, <strong class="text-paper-50">analyze</strong>, <strong class="text-paper-50">answer</strong>. You keep control of config, secrets, and where the model runs. Embed AI into your engineering workflow as a governed, extensible automation service.',
       steps: [
-        'Event arrives: Jira, Slack, or your adapter—normalized into a single task model.',
+        'Event arrives: Jira, Linear, Slack, or your adapter—normalized into a single task model.',
         'The core agent uses local repo context and your matching rules to analyze and reason.',
         'Output where you need it: issue comments, optional PR flow, and full observability trail.',
       ],
@@ -195,9 +195,9 @@ export const strings: Record<Lang, LandingStrings> = {
   es: {
     meta: {
       pageTitle:
-        'Agent Detective | Análisis de código con IA para Jira, Slack y tu repo',
+        'Agent Detective | Análisis de código con IA para Jira, Linear, Slack y tu repo',
       description:
-        'Análisis de código con IA orientado a eventos. Plugins normalizan Jira, Telegram, Slack y más; información anclada al repositorio, automatización opcional de PRs y observabilidad en tu propia infraestructura.',
+        'Análisis de código con IA orientado a eventos. Plugins normalizan Jira, Linear, Telegram, Slack y más; información anclada al repositorio, automatización opcional de PRs y observabilidad en tu propia infraestructura.',
     },
     layout: {
       skipToContent: 'Ir al contenido',
@@ -237,7 +237,7 @@ export const strings: Record<Lang, LandingStrings> = {
       titleHighlight: 'base de código',
       titleAfter: ', no solo en el ticket',
       subtitleHtml:
-        'Tus agentes escuchan donde ocurre el trabajo—<strong class="text-paper-50 font-medium">Jira, Telegram, Slack</strong>—y responden con <span class="text-evidence-300/90">contexto real del repositorio</span>, no relleno genérico. Un núcleo; plugins y configuración definen el resto.',
+        'Tus agentes escuchan donde ocurre el trabajo—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—y responden con <span class="text-evidence-300/90">contexto real del repositorio</span>, no relleno genérico. Un núcleo; plugins y configuración definen el resto.',
       readDocs: 'Leer la documentación',
       viewGithub: 'Ver en GitHub',
       pullImage: 'Imagen Docker',
@@ -265,7 +265,7 @@ export const strings: Record<Lang, LandingStrings> = {
       items: [
         {
           title: 'Eventos independientes de la fuente',
-          body: 'Webhooks y adaptadores se unifican en un modelo de tarea: Jira, chat o tu propio plugin. Al ejecutor del agente no le importa quién llamó.',
+          body: 'Webhooks y adaptadores se unifican en un modelo de tarea: Jira, Linear, chat o tu propio plugin. Al ejecutor del agente no le importa quién llamó.',
         },
         {
           title: 'Análisis anclado al repo',
@@ -283,7 +283,7 @@ export const strings: Record<Lang, LandingStrings> = {
       introHtml:
         'El mismo camino siempre: <strong class="text-paper-50">normalizar</strong>, <strong class="text-paper-50">analizar</strong>, <strong class="text-paper-50">responder</strong>. Tú controlas la configuración, los secretos y dónde corre el modelo. Integra la IA en tu flujo de ingeniería como un servicio gobernado y extensible.',
       steps: [
-        'Llega el evento: Jira, Slack o tu adaptador—normalizado a un único modelo de tarea.',
+        'Llega el evento: Jira, Linear, Slack o tu adaptador—normalizado a un único modelo de tarea.',
         'El agente del núcleo usa el contexto del repo local y tus reglas de matching para analizar y razonar.',
         'Salida donde la necesitas: comentarios en incidencias, flujo opcional de PRs y trazabilidad completa de observabilidad.',
       ],

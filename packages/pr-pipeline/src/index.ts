@@ -18,7 +18,7 @@ const prPipelinePlugin = definePlugin({
   version: '0.1.0',
   schemaVersion: '1.0',
   schema,
-  dependsOn: ['@agent-detective/local-repos-plugin', '@agent-detective/jira-adapter'],
+  dependsOn: ['@agent-detective/local-repos-plugin'],
 
   register(_scope, context) {
     const ctx = context as PluginContext;
