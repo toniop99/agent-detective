@@ -1,8 +1,19 @@
+---
+title: "Deployment guide"
+description: Single-server bare-metal deployment with systemd, reverse proxy, and sizing.
+sidebar:
+  order: 3
+---
+
 # Deployment guide
 
 Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md), [configuration-hub.md](../config/configuration-hub.md), and [configuration.md](../config/configuration.md). When you’ve deployed before and need **new tags or git pulls**, see [upgrading.md](upgrading.md).
 
 ## Prerequisites
+
+:::note[System requirements]
+All versions below are **minimum** requirements. Using older versions may work but is not tested or supported.
+:::
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
@@ -20,7 +31,7 @@ Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. U
 
 ## Installation (from source)
 
-```bash
+```bash title="Clone, install, and build"
 git clone https://github.com/toniop99/agent-detective.git
 cd agent-detective
 pnpm install
@@ -32,7 +43,7 @@ Use your own fork’s `https://github.com/<owner>/<repo>.git` URL if you are not
 
 Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](../config/configuration.md).
 
-```bash
+```bash title="Start the server"
 pnpm start
 ```
 
@@ -44,7 +55,7 @@ For development with hot reload: `pnpm run dev`. See [development.md](../develop
 
 **Example** `config/default.json` skeleton for a bare-metal install (full plugin fields: [generated/plugin-options.md](../reference/generated/plugin-options.md)):
 
-```json
+```json title="config/default.json"
 {
   "port": 3001,
   "agent": "opencode",
@@ -77,7 +88,7 @@ Full options: [generated/plugin-options.md](../reference/generated/plugin-option
 
 Create `/etc/systemd/system/agent-detective.service`:
 
-```ini
+```ini title="/etc/systemd/system/agent-detective.service"
 [Unit]
 Description=Agent Detective
 After=network.target
@@ -96,7 +107,7 @@ Environment=PORT=3001
 WantedBy=multi-user.target
 ```
 
-```bash
+```bash title="Set up systemd service"
 sudo useradd -r -s /usr/sbin/nologin agent-detective
 sudo mkdir -p /opt/agent-detective
 sudo cp -r . /opt/agent-detective
@@ -116,7 +127,7 @@ View logs: `sudo journalctl -u agent-detective -f`.
 
 **Canonical** HTTPS example in this repo (use this; do not maintain a second copy in other docs). If you run **Docker** and put nginx on the host, `proxy_pass` to the **published** port; timing and headers below still apply. Compose and ports: [docker.md](docker.md#production-style-run-single-host).
 
-```nginx
+```nginx title="nginx reverse proxy"
 server {
     listen 443 ssl;
     server_name agent-detective.example.com;
@@ -141,6 +152,10 @@ server {
 
 ## Security
 
+:::caution[Production hardening]
+Never store API tokens or credentials in `config/*.json` files that may be committed to version control. Use environment variables or `config/local.json` (gitignored) for secrets.
+:::
+
 - Restrict firewall to SSH, HTTP, HTTPS as needed: `sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw enable`
 - Jira: configure webhook URL and, if used, shared secrets in Jira; prefer `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` from the environment (see [configuration.md](../config/configuration.md)) instead of tokens in config files.
 
@@ -151,7 +166,7 @@ The HTTP API is under **`/api`**.
 - **`GET /api/health`** — JSON includes `"status"`: `ok` | `degraded` | `unhealthy` (see [observability.md](observability.md)).
 - **`GET /api/agent/list`** — agent availability
 
-```bash
+```bash title="Health and agent checks"
 curl -sS http://localhost:3001/api/health
 curl -sS http://localhost:3001/api/agent/list
 ```

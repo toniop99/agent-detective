@@ -1,3 +1,10 @@
+---
+title: "Manual E2E: Jira comment → PR pipeline"
+description: End-to-end test of Jira comment triggering PR creation via worktree and host API.
+sidebar:
+  order: 3
+---
+
 # Manual E2E: Jira comment → PR pipeline (worktree, agent, host PR)
 
 This guide walks through testing **Jira-triggered pull request creation** end to end: a **comment** on a ticket (default trigger `#agent-detective pr`) is matched to a local clone via **labels**, the **pr-pipeline** plugin runs a **write-mode** agent in a **git worktree**, then either **dry-runs** or **pushes and opens a PR** on **GitHub** or **Bitbucket Cloud**. It complements the read-only analysis walkthrough in [jira-manual-e2e.md](jira-manual-e2e.md).

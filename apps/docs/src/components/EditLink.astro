@@ -1,0 +1,90 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+type Badge = string | { text: string; variant?: string; class?: string };
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object';
+}
+
+function getEditBase(): string {
+  return 'https://github.com/toniop99/agent-detective/edit/main/';
+}
+
+function repoRootFromHere(): string {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  // apps/docs/src/components → repo root
+  return path.resolve(here, '../../../..');
+}
+
+function resolveSourcePath(routeId: string): string | null {
+  // Starlight home page is hand-authored in apps/docs, not synced from docs/.
+  if (!routeId || routeId === 'index') {
+    return 'apps/docs/src/content/docs/index.mdx';
+  }
+
+  // `docs/README.md` is published as `/overview/` by the sync script.
+  if (routeId === 'overview') {
+    return 'docs/README.md';
+  }
+
+  // Default: map route id → docs/<id>.mdx|.md
+  const repoRoot = repoRootFromHere();
+  const candidates = [`docs/${routeId}.mdx`, `docs/${routeId}.md`];
+  for (const rel of candidates) {
+    if (fs.existsSync(path.join(repoRoot, rel))) return rel;
+  }
+  // Fall back to the first candidate so the link is at least predictable.
+  return candidates[0];
+}
+
+const route = Astro.locals.starlightRoute;
+const routeId = route?.id ?? '';
+const sourceRel = resolveSourcePath(routeId);
+const href = sourceRel ? new URL(sourceRel, getEditBase()).href : null;
+
+// If Starlight ever adds per-page frontmatter editUrl, preserve it as a fallback.
+const entryData = isObject(route?.entry) && isObject(route.entry.data) ? route.entry.data : null;
+const frontmatterEditUrl =
+  entryData && typeof entryData.editUrl === 'string' ? (entryData.editUrl as string) : null;
+const editUrl = href ?? frontmatterEditUrl;
+
+// Hide the link if we somehow can't compute anything.
+if (!editUrl) return null;
+
+const label = 'Edit page';
+const badge = (route?.entry?.data as { badge?: Badge } | undefined)?.badge;
+---
+
+<a class="sl-edit-link" href={editUrl} target="_blank" rel="noreferrer">
+  {label}
+  {badge ? <span class="sl-badge">{typeof badge === 'string' ? badge : badge.text}</span> : null}
+</a>
+
+<style>
+  /* Keep close to Starlight’s default edit link styling. */
+  .sl-edit-link {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+    font: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+  }
+  .sl-edit-link:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  .sl-badge {
+    font: var(--sl-text-xs);
+    color: var(--sl-color-gray-1);
+    background: color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+  }
+</style>
+

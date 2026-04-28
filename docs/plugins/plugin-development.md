@@ -1,3 +1,10 @@
+---
+title: "Third-Party Plugin Development Guide"
+description: Build, package, and distribute third-party plugins with TypeScript and the SDK.
+sidebar:
+  order: 3
+---
+
 # Third-Party Plugin Development Guide
 
 This guide explains how to **develop** and **build** third-party plugins (TypeScript, `dist/`, examples). **How to install and wire** a plugin in production (npm, private registry, `/app/plugins` mounts) is in **[extending-with-plugins.md](extending-with-plugins.md)** — read that first if you only need deployment steps.

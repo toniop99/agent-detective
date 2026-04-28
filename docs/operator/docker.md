@@ -1,3 +1,10 @@
+---
+title: "Docker"
+description: Run agent-detective in containers for local development or production deployment.
+sidebar:
+  order: 2
+---
+
 # Docker
 
 Run **agent-detective** in containers for local development or production-style deployment on a single host. For a comparison with bare-metal and from-source installs, see [installation.md](installation.md).
@@ -8,6 +15,10 @@ Run **agent-detective** in containers for local development or production-style 
 - Optional: Docker Compose v2
 
 The image copies **`pnpm-workspace.yaml`** (workspace is **`packages/*`** plus the root app), **`pnpm-lock.yaml`**, and runs **`pnpm install --frozen-lockfile`** so the lockfile in git must match the Docker build context.
+
+:::tip[Keep the lockfile in sync]
+Run `pnpm install` on the host before building so `pnpm-lock.yaml` is up to date. A stale lockfile is the most common cause of Docker build failures.
+:::
 
 ## Image targets (`Dockerfile`)
 
@@ -28,7 +39,7 @@ Compose and the production image healthcheck use this path (not `/health`).
 
 From the repository root:
 
-```bash
+```bash title="Build and start dev containers"
 docker compose build
 docker compose up
 ```
@@ -39,13 +50,13 @@ This uses **`docker-compose.yml`**, target **`dev`**, and mounts `./src`, `./pac
 
 ### Rebuild after dependency changes
 
-```bash
+```bash title="Force full rebuild"
 docker compose build --no-cache
 ```
 
 ## Production-style run (single host)
 
-```bash
+```bash title="Build and start production containers"
 docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -64,13 +75,15 @@ Environment variables (see also [configuration.md](../config/configuration.md) a
 | `REPO_CONTEXT_*`, `SUMMARY_MAX_OUTPUT_CHARS`, `JIRA_*` | As in [configuration.md](../config/configuration.md#plugin-env-whitelist-first-party) |
 | `JIRA_API_TOKEN` / `JIRA_EMAIL` / `JIRA_BASE_URL` | Jira adapter when that plugin is listed in config |
 
-**Jira secrets:** pass `JIRA_API_TOKEN`, `JIRA_EMAIL`, and `JIRA_BASE_URL` in the environment (`.env` next to compose, CI variables, or your orchestrator). This repository’s compose file does **not** require Docker Swarm-style secret files.
+:::caution[Keep secrets out of images]
+Pass `JIRA_API_TOKEN`, `JIRA_EMAIL`, and `JIRA_BASE_URL` in the environment (`.env` next to compose, CI variables, or your orchestrator). This repository’s compose file does **not** require Docker Swarm-style secret files. Never bake secrets into images or commit them to config files.
+:::
 
 **TLS in front of the app:** The nginx `server` / `proxy_pass` **example** (long timeouts, headers for the API) lives in a single place: [deployment.md#reverse-proxy-nginx](deployment.md#reverse-proxy-nginx) — set `proxy_pass` to the host port that maps to the container’s `3001` (or your `PORT`).
 
 ### Build production image only
 
-```bash
+```bash title="Build and run production image"
 docker build --target production --build-arg AGENTS=opencode,claude -t agent-detective:latest .
 docker run --rm -p 3001:3001 -v "$(pwd)/config:/app/config:ro" agent-detective:latest
 ```
@@ -93,7 +106,11 @@ Images are published to **`ghcr.io/<owner>/<repo>`** (for this upstream repo: **
 
 ### Pull and run (Docker CLI)
 
-```bash
+:::tip[Recommended for quick starts]
+The GHCR image ships with `opencode` pre-installed. Mount your `config/` directory and pass secrets via environment variables.
+:::
+
+```bash title="Pull and run from GHCR"
 docker pull ghcr.io/toniop99/agent-detective:latest
 docker run -d --name agent-detective -p 3001:3001 \
   -v "$(pwd)/config:/app/config:ro" \
@@ -107,14 +124,14 @@ Optional: mount custom plugins and pass Jira or model overrides (same variables 
 
 From a directory that contains **`config/`** (copy [`config/default.json`](../../config/default.json) from the repo or your own files) and optionally **`plugins/`**:
 
-```bash
+```bash title="Pull and start with Compose"
 docker compose -f docker-compose.ghcr.yml pull
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
 Override the image (for example a fork or a release tag):
 
-```bash
+```bash title="Override image tag"
 export GHCR_IMAGE=ghcr.io/toniop99/agent-detective:stable
 docker compose -f docker-compose.ghcr.yml up -d
 ```
@@ -125,7 +142,7 @@ agent-detective shells out to **`opencode`**; it does not store provider API key
 
 ### Quick verification
 
-```bash
+```bash title="Verify image and endpoints"
 docker run --rm ghcr.io/toniop99/agent-detective:latest bash -lc 'command -v opencode && opencode --version'
 wget -qO- http://127.0.0.1:3001/api/health
 wget -qO- http://127.0.0.1:3001/api/agent/list
@@ -137,7 +154,7 @@ Expect **`opencode`** in the agent list with **`available": true`** after a succ
 
 With Docker installed:
 
-```bash
+```bash title="Local image smoke test"
 docker build --target production -t agent-detective:local .
 docker run --rm -p 3001:3001 -v "$(pwd)/config:/app/config:ro" agent-detective:local
 # In another terminal:
@@ -150,6 +167,10 @@ wget -qO- http://127.0.0.1:3001/api/health
 - [deployment.md](deployment.md) — bare metal, systemd, and the **single** [nginx](deployment.md#reverse-proxy-nginx) example referenced above
 
 ## Troubleshooting
+
+:::caution
+Do not edit files inside the running container. Changes are lost when the container restarts. Use bind mounts or rebuild the image instead.
+:::
 
 - **Plugins not loading in the image:** Ensure `config/*.json` lists plugins that exist in the image (`node_modules` or mounted `./packages`). Built plugins are loaded from **`packages/<name>/dist/index.js`** when the bare package import is unavailable.
 - **`pnpm install` fails in Docker:** The dev and builder stages use the **same pnpm major** as `package.json` `packageManager` via Corepack; keep them in sync when upgrading.

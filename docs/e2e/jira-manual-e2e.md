@@ -1,3 +1,10 @@
+---
+title: "Manual E2E: Jira webhook → local server → repo context → comment"
+description: Step-by-step walkthrough for testing the Jira webhook-to-analysis flow locally.
+sidebar:
+  order: 2
+---
+
 # Manual E2E: Jira webhook → local server → repo context → comment
 
 This guide walks through testing the full path locally, including how Jira Cloud reaches your machine, what to configure, and how to verify each step.

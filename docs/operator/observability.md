@@ -1,3 +1,10 @@
+---
+title: "Observability Package"
+description: Structured logging, metrics, tracing, and health checks for agent-detective.
+sidebar:
+  order: 5
+---
+
 # Observability Package
 
 The `@agent-detective/observability` package provides structured logging, metrics, tracing, and health checks for the agent-detective application.
@@ -15,7 +22,7 @@ Observability is a first-class concern in agent-detective. The package provides:
 
 ## Quick Start
 
-```typescript
+```typescript title="Basic setup"
 import { createObservability } from '@agent-detective/observability';
 
 const obs = createObservability({
@@ -33,7 +40,7 @@ obs.metrics.increment('http_requests_total', { method: 'GET' });
 
 ### Programmatic Configuration
 
-```typescript
+```typescript title="Full configuration example"
 import { createObservability } from '@agent-detective/observability';
 
 const obs = createObservability({
@@ -62,6 +69,10 @@ const obs = createObservability({
 
 ### Environment Variable Overrides
 
+:::tip[Debugging in production]
+Set `OBSERVABILITY_LOG_LEVEL=debug` temporarily to get verbose output when diagnosing issues. Use `OBSERVABILITY_LOG_FORMAT=pretty` for human-readable logs during local development.
+:::
+
 All configuration can be overridden via environment variables:
 
 | Environment Variable | Type | Default | Description |
@@ -83,7 +94,7 @@ All configuration can be overridden via environment variables:
 
 ### Creating a Logger
 
-```typescript
+```typescript title="Create a logger instance"
 import { createLogger } from '@agent-detective/observability';
 
 const logger = createLogger({
@@ -123,7 +134,7 @@ JSON logs include:
 - `context` — Additional context fields
 
 Example output:
-```json
+```json title="Structured log entry"
 {"level":"info","time":"2026-04-15T22:00:00.000Z","msg":"Server started","service":"agent-detective","port":3001}
 ```
 
@@ -131,7 +142,7 @@ Example output:
 
 ### Metrics Registry
 
-```typescript
+```typescript title="Create metrics registry"
 import { createMetrics } from '@agent-detective/observability';
 
 const metrics = createMetrics({
@@ -170,7 +181,7 @@ metrics.set('custom_gauge', 100, { label: 'value' });
 
 When enabled, metrics are exposed at `/api/metrics` in Prometheus format:
 
-```
+```text title="Prometheus scrape output"
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
 http_requests_total{method="GET",path="/api/health",status="200"} 42
@@ -184,7 +195,7 @@ agent_runs_total{agent="opencode",status="success"} 15
 
 ### Health Checker
 
-```typescript
+```typescript title="Create health checker"
 import { createHealthChecker } from '@agent-detective/observability';
 
 const health = createHealthChecker({
@@ -202,7 +213,7 @@ const health = createHealthChecker({
 
 ### Health Check Response
 
-```json
+```json title="GET /api/health"
 {
   "status": "healthy",
   "timestamp": "2026-04-15T22:00:00.000Z",
@@ -218,7 +229,7 @@ const health = createHealthChecker({
 
 ### Tracing Context
 
-```typescript
+```typescript title="Set up tracing"
 import { createTracing } from '@agent-detective/observability';
 
 const tracing = createTracing({
@@ -244,7 +255,7 @@ const span = tracing.startSpan('operation-name', ctx);
 
 ### Request Logging Plugin (Fastify)
 
-```typescript
+```typescript title="Register request logging"
 import { createRequestLogger } from '@agent-detective/observability';
 
 await app.register(createRequestLogger({
@@ -259,7 +270,11 @@ await app.register(createRequestLogger({
 
 ### Correlation Middleware
 
-```typescript
+:::tip[Tracing requests end-to-end]
+Pass an `X-Correlation-ID` header from your reverse proxy or load balancer. The middleware propagates it through all log entries for that request, making it easy to trace a single request across services.
+:::
+
+```typescript title="Register correlation middleware"
 import { createCorrelationMiddleware } from '@agent-detective/observability';
 
 await app.register(createCorrelationMiddleware());
@@ -275,7 +290,7 @@ The plugin:
 
 ### With the Fastify server
 
-```typescript
+```typescript title="Fastify integration"
 import Fastify from 'fastify';
 import { createObservability, createRequestLogger } from '@agent-detective/observability';
 
@@ -371,7 +386,7 @@ Plugin routes are available under `/plugins/<plugin-name>/*`.
 
 If `DOCS_AUTH_REQUIRED` is set to `true`, you must provide an `X-API-KEY` header:
 
-```bash
+```bash title="Authenticated docs access"
 curl -H "X-API-KEY: your-api-key" http://localhost:3001/docs
 ```
 

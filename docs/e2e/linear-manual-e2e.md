@@ -1,3 +1,10 @@
+---
+title: "Manual E2E: Linear webhook → local server"
+description: Checklist for verifying the Linear adapter webhook and OAuth flows end to end.
+sidebar:
+  order: 4
+---
+
 # Manual E2E: Linear webhook → local server
 
 Short checklist to verify **`@agent-detective/linear-adapter`** end-to-end. For **webhooks vs OAuth**, **manual token copy**, **404 / attribution FAQ**, and the **Linear “Create application”** form, see [linear-adapter.md](../plugins/linear-adapter.md) (read that page first if anything in this checklist is unclear).

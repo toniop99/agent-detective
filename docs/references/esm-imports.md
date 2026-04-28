@@ -1,3 +1,10 @@
+---
+title: ESM imports in TypeScript
+description: Rules for .js extension imports and ESM module conventions in this repo.
+sidebar:
+  order: 4
+---
+
 # ESM imports in TypeScript
 
 - **`"type": "module"`** in `package.json` for ESM packages (this repo).

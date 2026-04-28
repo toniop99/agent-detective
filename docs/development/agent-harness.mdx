@@ -1,20 +1,40 @@
+---
+title: "Agent harness — runbook"
+description: How to boot the app, verify changes, and debug when something breaks.
+sidebar:
+  order: 2
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Agent harness — runbook
 
 This page is for **humans steering and agents executing**: how to boot the app, verify changes, and find signals when something breaks. Keep long prose in **`docs/`**; keep **`AGENTS.md`** as a short index.
 
 ## Quick verify (from repo root)
 
-```bash
-pnpm install
-pnpm run build          # workspace packages (Turbo)
-pnpm run typecheck
-pnpm run lint           # includes package-root import guard (see below)
-pnpm test
-```
+<Steps>
+1. Install dependencies and build workspace packages:
+   ```bash
+   pnpm install
+   pnpm run build
+   ```
+
+2. Run type checking and linting:
+   ```bash
+   pnpm run typecheck
+   pnpm run lint
+   ```
+
+3. Run the full test suite:
+   ```bash
+   pnpm test
+   ```
+</Steps>
 
 After config or plugin option schema edits, regenerate and check drift:
 
-```bash
+```bash title="Regenerate generated docs"
 pnpm docs:config
 pnpm docs:plugins
 # CI equivalents:
@@ -24,10 +44,20 @@ pnpm run docs:plugins:check
 
 ## Run the server
 
-```bash
-pnpm run dev            # tsx watch — local development
-pnpm run build:app && pnpm start   # production-style bundle
-```
+<Tabs syncKey="run-mode">
+  <TabItem label="Development">
+    ```bash
+    pnpm run dev
+    ```
+    Uses `tsx` watch mode — restarts on file changes.
+  </TabItem>
+  <TabItem label="Production">
+    ```bash
+    pnpm run build:app && pnpm start
+    ```
+    Bundles to `dist/index.js` first, then runs the production entrypoint.
+  </TabItem>
+</Tabs>
 
 Default config: **`config/default.json`**; overrides: **`config/local.json`** (deep merge). See [Configuration hub](../config/configuration-hub.md).
 
@@ -48,9 +78,11 @@ Default config: **`config/default.json`**; overrides: **`config/local.json`** (d
 
 ### Parallel runs (PORT)
 
-When two clones or worktrees run the server locally, set a **distinct `PORT`** per instance (environment or config) so listeners and smoke scripts do not collide. Example:
+:::note
+When two clones or worktrees run the server locally, set a **distinct `PORT`** per instance (environment or config) so listeners and smoke scripts do not collide.
+:::
 
-```bash
+```bash title="Run on a custom port"
 PORT=3001 pnpm run dev
 ```
 
@@ -60,7 +92,7 @@ Then hit health on that port (see below).
 
 With the server listening (dev or `pnpm start` after `build:app`):
 
-```bash
+```bash title="Health check"
 curl -sf "http://127.0.0.1:${PORT:-3000}/api/health"
 curl -sf "http://127.0.0.1:${PORT:-3000}/api/metrics" | head
 ```
@@ -74,7 +106,7 @@ Adjust the path if your deployment uses a different base URL. High-chatter route
 
 ## Site and docs builds
 
-```bash
+```bash title="Documentation site commands"
 pnpm run docs:site:sync    # mirror docs/ → Starlight content
 pnpm run docs:site:dev     # Starlight dev
 pnpm run docs:site:landing # docs + landing for same artifact as GitHub Pages
@@ -90,11 +122,13 @@ Starlight home **`apps/docs/src/content/docs/index.mdx`** is **not** overwritten
 - **`scripts/check-plugin-cross-imports.mjs`** — fails if one **plugin** package compile-imports another (ADR 0001); use **`@agent-detective/types`** and **`getService()`**.
 - **`scripts/check-docs-internal-links.mjs`** — fails on broken **relative** links from **`docs/**/*.md`** into the repo.
 
-**Remediation:** [Agent golden rules](./agent-golden-rules.md) · [ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md).
+:::caution
+If any lint guard fails, see [Agent golden rules](./agent-golden-rules.md) and [ADR 0001](../architecture/adr/0001-layering-and-plugin-boundaries.md) for remediation.
+:::
 
 ## Related
 
 - [Agent workflow](./agent-workflow.md) — suggested PR loop and review expectations.
-- [Agent golden rules](./agent-golden-rules.md) — do / don’t / common failures.
+- [Agent golden rules](./agent-golden-rules.md) — do / don't / common failures.
 - [Development guide](./development.md) — monorepo and tooling detail.
 - [Documentation map](../README.md) — all `docs/` areas.

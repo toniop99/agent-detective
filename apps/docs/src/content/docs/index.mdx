@@ -1,11 +1,21 @@
 ---
 title: Agent Detective
 description: AI-powered code analysis, plugins, and the PR pipeline. Pick a path below or use the sidebar.
+template: splash
+hero:
+  title: Agent Detective
+  tagline: AI-powered code analysis with plugins for Jira, Linear, and more. Self-hosted, open source, and extensible.
+  actions:
+    - text: Get started
+      link: /docs/operator/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Build a plugin
+      link: /docs/plugins/extending-with-plugins/
+      variant: minimal
 ---
 
-import { CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
-
-**Source of truth** for prose is the [`docs/`](https://github.com/toniop99/agent-detective/tree/main/docs) folder in git. This site is built with [Starlight](https://starlight.astro.build) plus a sync step (`pnpm run docs:site:sync` or `prebuild` on the docs app). Enable **GitHub Pages** with the **GitHub Actions** source if the live URL is not deployed yet.
+import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
 ## Choose a path
 
@@ -58,7 +68,7 @@ import { CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 	<LinkCard
 		title="Golden rules"
 		href={import.meta.env.BASE_URL + 'development/agent-golden-rules/'}
-		description="Do / don’t for the monorepo; common failures and fixes."
+		description="Do / don't for the monorepo; common failures and fixes."
 	/>
 	<LinkCard
 		title="Execution plans"

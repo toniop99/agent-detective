@@ -1,0 +1,30 @@
+/*
+ * Agent Detective docs — brand alignment with the landing page.
+ * Landing palette: ink (dark bg), paper (light text), evidence (blue accent), amber (highlights).
+ * See apps/landing/src/styles/global.css for the source-of-truth palette.
+ */
+
+:root {
+  /* Evidence blue → Starlight accent (links, active nav, highlights) */
+  --sl-color-accent-low: #0f1d33;
+  --sl-color-accent: #3d7ae8;
+  --sl-color-accent-high: #a8ceff;
+
+  /* Ink / paper → Starlight gray scale */
+  --sl-color-gray-1: #f5f2eb;
+  --sl-color-gray-2: #e0dbd1;
+  --sl-color-gray-3: #8a857f;
+  --sl-color-gray-4: #50494a;
+  --sl-color-gray-5: #1e1e22;
+  --sl-color-gray-6: #0d0d10;
+  --sl-color-gray-7: #050506;
+
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* Slightly warmer paper tones in light mode */
+:root[data-theme='light'] {
+  --sl-color-gray-6: #282425;
+  --sl-color-gray-7: #110f0e;
+}

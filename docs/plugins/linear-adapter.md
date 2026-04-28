@@ -1,3 +1,13 @@
+---
+title: "Linear adapter"
+description: Configure the Linear adapter for webhooks, OAuth, label matching, and PR fan-out.
+sidebar:
+  order: 4
+  badge:
+    text: New
+    variant: tip
+---
+
 # Linear adapter (`@agent-detective/linear-adapter`)
 
 Bundled plugin that receives **Linear webhooks**, matches issues to local repos via **labels** (same idea as the Jira adapter), and fans out **code analysis** tasks or the **PR pipeline** when `@agent-detective/pr-pipeline` is installed.

@@ -1,5 +1,8 @@
 ---
-title: "pnpm workspace (cheat sheet)"
+title: pnpm workspace
+description: Cheat sheet for pnpm workspace layout, catalog dependencies, and install commands.
+sidebar:
+  order: 2
 ---
 
 # pnpm workspace (cheat sheet)
@@ -9,4 +12,4 @@ title: "pnpm workspace (cheat sheet)"
 - **`catalog:`** — shared versions live in `pnpm-workspace.yaml` `catalog`; depend with `"zod": "catalog:"` etc.
 - **Install:** from repo root, `pnpm install` (use **`--frozen-lockfile`** in CI).
 
-More: [Development guide](/docs/development/development/).
+More: [Development guide](https://github.com/toniop99/agent-detective/blob/main/docs/development/development.md).

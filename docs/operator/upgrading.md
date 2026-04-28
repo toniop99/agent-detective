@@ -1,3 +1,10 @@
+---
+title: "Staying up to date"
+description: Upgrade runbooks for container images, git clones, and published npm packages.
+sidebar:
+  order: 4
+---
+
 # Staying up to date
 
 Use this page when you deploy from a **released image**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together [CHANGELOG.md](../reference/CHANGELOG.md), [migration.md](../development/migration.md), and the container registry.
@@ -26,9 +33,15 @@ The image name follows **`ghcr.io/<owner>/<repo>`** (for this upstream: **`ghcr.
 | **`latest`** | **Push to `main`** ([docker.yml](../../.github/workflows/docker.yml)) (and also written by [release.yml](../../.github/workflows/release.yml) for tag builds) | **Moving target** — usually the newest `main` build; not ideal as an immutable production pin |
 | **`stable`**, **`X`**, **`X.Y`**, **`X.Y.Z`** | **Version tags** `vX.Y.Z` ([release.yml](../../.github/workflows/release.yml)) | **Production-friendly** — pin **`X.Y.Z`** (or a digest) for reproducible deploys |
 
-Because **`main` keeps advancing**, the next push to `main` overwrites **`latest`** even after a release. Use **`X.Y.Z`** or **`stable`** (updated per release) when you want a deliberate upgrade, not the tip of `main`.
+:::caution[Breaking changes]
+Because **`main` keeps advancing**, the next push to `main` overwrites **`latest`** even after a release. Use **`X.Y.Z`** or **`stable`** (updated per release) when you want a deliberate upgrade, not the tip of `main`. Pinning `latest` in production can pull in breaking changes without warning.
+:::
 
 ### Upgrade runbook (Docker / Compose)
+
+:::tip[Before you upgrade]
+Always read the CHANGELOG and migration guide **before** pulling a new image. Test the upgrade in a staging environment if possible.
+:::
 
 1. Read **[CHANGELOG.md](../reference/CHANGELOG.md)** since the tag you currently run (and [migration.md](../development/migration.md) if linked).
 2. Update `config` if new or changed keys are required — see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). Regenerate local reference if you maintain a fork: `pnpm docs:plugins`.
@@ -42,7 +55,7 @@ Keep **secrets in env** ([configuration.md](../config/configuration.md)); do not
 
 For operators who run **`pnpm start`** from a built tree:
 
-```bash
+```bash title="Pull and rebuild from source"
 git fetch origin
 git checkout <branch-or-tag>   # e.g. main or a release tag
 pnpm install --frozen-lockfile
@@ -63,9 +76,11 @@ Workspace packages may be published per [publishing.md](../plugins/publishing.md
 
 ## Summary
 
+:::tip[Key takeaways]
 - **Containers:** pin **`ghcr.io/…:X.Y.Z`** or digest; avoid treating **`latest`** as immutable in production.
 - **Config:** merge [configuration-hub.md](../config/configuration-hub.md) rules; watch **CHANGELOG** for breaking keys.
 - **Source:** pull, install, build, then deploy; keep `config/local.json` and env out of git.
+:::
 
 ## See also
 

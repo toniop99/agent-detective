@@ -1,3 +1,10 @@
+---
+title: "Application configuration"
+description: "Full reference for JSON config files, env whitelist, plugin options, and validation."
+sidebar:
+  order: 2
+---
+
 # Application configuration
 
 **Short index:** [configuration-hub.md](configuration-hub.md) (load order, top-level keys, where to look next).
@@ -11,7 +18,11 @@ Configuration is loaded at process startup from JSON files under the **`config/`
 | `config/default.json` | Base settings (checked into the repo). |
 | `config/local.json` | Optional overrides (typically gitignored). |
 
-`local.json` is **deep-merged** over `default.json`. Arrays are replaced, not concatenated.
+`local.json` is **deep-merged** over `default.json`.
+
+:::caution[Array merge behavior]
+Arrays are replaced, not concatenated.
+:::
 
 ## Core env whitelist
 
@@ -38,7 +49,12 @@ These variables override or extend the merged JSON when set:
 
 ## Plugin system strictness (`pluginSystem`)
 
-`pluginSystem` controls whether the host **fails startup** on plugin wiring issues.\n\n- `pluginSystem.failOnContractErrors` (default: `true`): abort startup when capability-backed contract validation fails (for example a plugin requires `StandardCapabilities.CODE_ANALYSIS` but no provider registered `CODE_ANALYSIS_SERVICE`).\n- `pluginSystem.failOnDependencyErrors` (default: `true`): abort startup when `dependsOn` resolution reports missing dependencies or circular cycles.\n- `pluginSystem.failOnPluginLoadErrors` (default: `true`): abort startup when any configured plugin fails to import, fails schema/options validation (including unrecognized option keys), or throws during `register()`.\n+
+`pluginSystem` controls whether the host **fails startup** on plugin wiring issues.
+
+- `pluginSystem.failOnContractErrors` (default: `true`): abort startup when capability-backed contract validation fails (for example a plugin requires `StandardCapabilities.CODE_ANALYSIS` but no provider registered `CODE_ANALYSIS_SERVICE`).
+- `pluginSystem.failOnDependencyErrors` (default: `true`): abort startup when `dependsOn` resolution reports missing dependencies or circular cycles.
+- `pluginSystem.failOnPluginLoadErrors` (default: `true`): abort startup when any configured plugin fails to import, fails schema/options validation (including unrecognized option keys), or throws during `register()`.
+
 ## Observability log level
 
 `@agent-detective/observability` reads **`OBSERVABILITY_LOG_LEVEL`**. If you set **`LOG_LEVEL`** to `debug`, `info`, `warn`, or `error` and leave `OBSERVABILITY_LOG_LEVEL` unset, the app mirrors `LOG_LEVEL` into `OBSERVABILITY_LOG_LEVEL` before observability starts.
@@ -46,6 +62,10 @@ These variables override or extend the merged JSON when set:
 ## Plugin env whitelist (first-party)
 
 Env is merged **only into an existing** `plugins[]` entry with the matching `package` string (plugins are not auto-added from env alone).
+
+:::danger[Secrets]
+`JIRA_API_TOKEN`, `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_SECRET`, `GITHUB_TOKEN`, `GH_TOKEN`, `BITBUCKET_TOKEN`, and `BITBUCKET_APP_PASSWORD` are **secrets**. Never commit them to version control. Use environment variables or a secrets manager in production; `config/local.json` (gitignored) is acceptable for local dev only.
+:::
 
 | Variable | Target |
 |----------|--------|
@@ -84,7 +104,9 @@ Set **`enabled`: false** in this plugin’s `options` to keep the pr-pipeline en
 | `triage.timeoutMs` | number | `60000` | Timeout in ms for the triage agent call |
 | `triage.customPrompt` | string | — | Extra instructions appended to the triage prompt |
 
+:::tip
 **Precedence (always):** values from **environment variables** override the same keys in **merged JSON** (`default.json` + `local.json`) for both the [plugin env merge](#plugin-env-whitelist-first-party) at load time and, for tokens, the [runtime resolution](#host-credentials-precedence) used when the job runs. Prefer secrets in **env** in production; use `config/local.json` (gitignored) for local dev if you accept file-based secrets.
+:::
 
 ### Host credentials precedence
 
@@ -99,7 +121,7 @@ Set **`enabled`: false** in this plugin’s `options` to keep the pr-pipeline en
 Empty or whitespace-only values are ignored; the next source in the chain is used.
 
 **Bitbucket — new API token (recommended):** Bitbucket now issues **API tokens** under *Personal settings → API tokens*. These use your Bitbucket **username** + the token value as HTTP Basic credentials — the same format as the old app passwords. Set:
-```
+```bash title="Terminal"
 BITBUCKET_USERNAME=<your-bitbucket-username>   # not your email
 BITBUCKET_APP_PASSWORD=<your-api-token>
 ```
@@ -154,7 +176,7 @@ Zod option schemas for bundled plugins drive both runtime validation in `registe
 
 Regenerate after editing the bundled plugins’ Zod schemas (see [architecture-layering.md](../architecture/architecture-layering.md) for paths; e.g. `packages/jira-adapter/src/application/options-schema.ts`, `packages/linear-adapter/src/application/options-schema.ts`, `packages/pr-pipeline/src/application/options-schema.ts`, `packages/local-repos-plugin/src/application/options-schema.ts`):
 
-```bash
+```bash title="Regenerate plugin options"
 pnpm docs:plugins
 ```
 

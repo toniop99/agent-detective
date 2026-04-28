@@ -1,3 +1,10 @@
+---
+title: "Configuration overview"
+description: "Load order, top-level config keys, env whitelist, and links to detailed references."
+sidebar:
+  order: 1
+---
+
 # Configuration overview
 
 :::caution[Secrets]
@@ -41,7 +48,9 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
+:::note
 The schema rejects **unknown top-level keys** (strict validation).
+:::
 
 A **table and full JSON Schema (draft-7) kept in sync with Zod** are in **[generated/app-config.md](../reference/generated/app-config.md)** — regenerate with `pnpm docs:config` after changing `src/config/schema.ts` (the same way `pnpm docs:plugins` updates plugin options).
 
@@ -51,13 +60,13 @@ A **table and full JSON Schema (draft-7) kept in sync with Zod** are in **[gener
 
 When you change Zod in `packages/*/src/application/options-schema.ts` (bundled plugins), regenerate the markdown reference and commit the diff:
 
-```bash
+```bash title="Regenerate plugin options"
 pnpm docs:plugins
 ```
 
 When you change the top-level app schema in `src/config/schema.ts`:
 
-```bash
+```bash title="Regenerate app config reference"
 pnpm docs:config
 ```
 

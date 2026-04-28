@@ -1,3 +1,10 @@
+---
+title: Technical debt
+description: Rolling notes on known rough edges, patterns to fix, and recently resolved items.
+sidebar:
+  order: 2
+---
+
 # Technical debt (rolling notes)
 
 Short, **repo-local** reminders for patterns to fix or revisit. Prefer [ADR](../architecture/adr/) for decisions; use this for “known rough edges” agents should not amplify.

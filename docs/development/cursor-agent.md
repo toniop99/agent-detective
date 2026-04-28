@@ -1,3 +1,10 @@
+---
+title: "Cursor Agent CLI"
+description: Install, configure, and run the Cursor Agent CLI for background coding tasks.
+sidebar:
+  order: 5
+---
+
 # Cursor Agent CLI
 
 The in-app agent id is **`cursor`**. It runs the [Cursor Agent CLI](https://cursor.com/docs/cli/overview), whose binary is **`agent`** on your `PATH` (not to be confused with this project’s `agent` config key in JSON — that is the *default* agent *id*).

@@ -1,3 +1,10 @@
+---
+title: "ADR 0001: Layering, plugin boundaries, and monolith-first composition"
+description: Architecture decision record for layering, plugin boundaries, and monolith-first design.
+sidebar:
+  order: 3
+---
+
 # ADR 0001: Layering, plugin boundaries, and monolith-first composition
 
 ## Status

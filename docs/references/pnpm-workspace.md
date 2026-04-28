@@ -1,3 +1,10 @@
+---
+title: pnpm workspace
+description: Cheat sheet for pnpm workspace layout, catalog dependencies, and install commands.
+sidebar:
+  order: 2
+---
+
 # pnpm workspace (cheat sheet)
 
 - **Root** is the main app; **`packages/*`** are workspace packages. Declared in [`pnpm-workspace.yaml`](../../pnpm-workspace.yaml).

@@ -1,3 +1,10 @@
+---
+title: End-to-end (manual) guides
+description: Overview and index of manual E2E testing walkthroughs for all adapters.
+sidebar:
+  order: 1
+---
+
 # End-to-end (manual) guides
 
 Long walkthroughs for **Jira** integrations. General deploy and config docs are under [../README.md](../README.md).

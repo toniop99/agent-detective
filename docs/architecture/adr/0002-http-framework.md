@@ -1,3 +1,10 @@
+---
+title: "ADR 0002: HTTP framework and OpenAPI generation"
+description: Architecture decision record for adopting Fastify with Zod-based OpenAPI generation.
+sidebar:
+  order: 4
+---
+
 # ADR 0002: HTTP framework and OpenAPI generation
 
 ## Status
