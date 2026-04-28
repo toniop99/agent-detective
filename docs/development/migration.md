@@ -36,4 +36,4 @@ There is no `build:plugin` script; build individual packages with `pnpm --filter
 - [Observability](../operator/observability.md) — logging/metrics package
 - Git history for the full 2026 migration narrative and older edits
 
-**Breaking config changes** from recent cleanups are listed in the repo **CHANGELOG** (if present) or release notes; see `docs/reference/CHANGELOG.md` when upgrading.
+**Breaking config changes** from recent cleanups are listed in release notes (GitHub Releases) when upgrading.

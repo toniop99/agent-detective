@@ -76,4 +76,4 @@ Replace `toniop99/agent-detective` with your fork’s `owner/name` on GitHub if 
 - Root [README.md](../../README.md) — quick start and GHCR one-liner
 - [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` volume for custom plugins
 - [publishing.md](../plugins/publishing.md) — building and publishing the image (maintainers)
-- [CHANGELOG.md](../reference/CHANGELOG.md) — breaking config and behavior notes
+- Release notes live in GitHub Releases; see `docs/operator/upgrading.md`.
