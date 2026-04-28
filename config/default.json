@@ -12,6 +12,11 @@
       "defaultModel": "composer-2"
     }
   },
+  "pluginSystem": {
+    "failOnContractErrors": true,
+    "failOnDependencyErrors": true,
+    "failOnPluginLoadErrors": true
+  },
   "observability": {
     "serviceName": "agent-detective",
     "logging": {

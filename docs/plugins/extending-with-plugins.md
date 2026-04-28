@@ -10,7 +10,7 @@ The core resolves each `plugins[]` entry’s `package` string at startup (see [`
 |-----------|------------|
 | **npm-style name** (e.g. `@myorg/adapter`) | `import()` from **`node_modules`** at the app root (add the dependency to the **root** `package.json` with pnpm or npm, then run install). |
 | **Relative or absolute file path** (starts with `./`, `../`, or `/`) | ES module import from a path on disk, resolved from **`process.cwd()`** (in the official image, **`/app`**). |
-| **`@agent-detective/<short>` from this monorepo** | If a bare `import` fails, the loader tries **`packages/<short>/dist/index.js`**, else **`src/index.js`** (dev) — the normal **fork / workspace** layout. |
+| **`@agent-detective/<short>` from this monorepo** | If a bare `import` fails, the loader tries **`packages/<short>/dist/index.js`**. If that does not exist, it only falls back to **`packages/<short>/src/index.js`** when that file exists (plain JS sources). In a TypeScript workspace you typically need to run **`pnpm run build`** (or a watch build) so `dist/` exists. |
 
 A failed import logs a warning and the plugin is skipped (other plugins still load). Fix paths, add dependencies, or ensure `cwd` is the app root (important in Docker: **`WORKDIR /app`**, mount paths under that tree when using absolute paths).
 
@@ -36,6 +36,9 @@ List plugins in `config/default.json` (and overrides), as described in [configur
 
 If your plugin’s `name` is `@myorg/b` and it calls `getService` from another plugin, set **`dependsOn: ['@myorg/a']`** on the plugin object (use the **Plugin `name`**, not necessarily the package string). The core orders loads topologically. First-party example: [AGENTS.md](../../AGENTS.md) (`dependsOn` in practice).
 
+## `requiresCapabilities`
+
+Use `requiresCapabilities` when you don’t care *which* plugin provides a feature, only that the feature exists.\n\n- Prefer SDK constants from `@agent-detective/sdk` (`StandardCapabilities.*`).\n- If you define a custom capability in a third-party plugin, use a stable **namespaced** string like `acme.example/my-feature`.\n+
 ## Public npm (or GitHub Packages)
 
 1. Build your package so **`dist/index.js`** is the ESM default export and **`default` exports the `Plugin` object.  

@@ -102,6 +102,7 @@ register(scope, context: PluginContext) {
 | `logger` | `Logger` | Logger with `.info()`, `.warn()`, `.error()` |
 | `registerService<T>(name, service)` | `function` | Register a service for other plugins to consume |
 | `getService<T>(name)` | `function` | Get a registered service by name with type safety |
+| `getServiceFromPlugin<T>(name, providerPluginName)` | `function` | Get a service from a specific provider plugin |
 | `registerCapability(name)` | `function` | Register a capability provided by this plugin |
 | `hasCapability(name)` | `function` | Check if a capability is registered |
 | `registerAgent(agent)` | `function` | Register a new AI agent provider |
@@ -122,6 +123,9 @@ There is **no** `enqueue` option on `createPluginSystem`; use `taskQueue` or the
 
 Plugins can share functionality by registering services. This is preferred over accessing the `plugins` dictionary directly as it provides better type safety and error handling.
 
+### Capabilities (`registerCapability`, `requiresCapabilities`)
+
+Capabilities are a **standardized feature vocabulary** that answers: “is *some* loaded plugin providing this feature?”\n\n- Use **`dependsOn`** when you require a specific plugin to be loaded first (usually because you call `getService(...)` for a service it registers).\n- Use **`requiresCapabilities`** when you only care that *someone* provides a feature, regardless of which plugin.\n- Prefer SDK-owned constants from `@agent-detective/sdk` (`StandardCapabilities.*`) over ad-hoc strings.\n- Third-party plugins that define custom capabilities should use **stable, namespaced strings** (e.g. `acme.example/repo-matching`) to avoid collisions.\n\nWhen multiple plugins register the same **capability-backed service** (like `CODE_ANALYSIS_SERVICE`), the host selects a default provider by:\n\n- preferring **first-party** plugins (`@agent-detective/*`)\n- otherwise using the **`config.plugins[]` order** as a stable tie-break\n+\n+The host validates capability-backed contracts at boot. In strict mode it can abort startup when a plugin requires a capability but the mapped service key is missing.\n\nTo fail startup on *any* plugin load/config error (import failure, schema/options validation error, or register exception), enable `pluginSystem.failOnPluginLoadErrors`.\n
 #### Providing a Service
 
 ```typescript

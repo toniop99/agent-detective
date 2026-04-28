@@ -34,6 +34,27 @@ export const appConfigSchema = z
     agent: z.string().optional(),
     agents: z.record(z.string(), agentsEntrySchema).optional(),
     plugins: z.array(pluginEntrySchema).optional(),
+    pluginSystem: z
+      .object({
+        /**
+         * When true, the host aborts startup if plugin contract validation
+         * detects missing capability-backed providers (e.g. requires capability
+         * but no mapped service is registered).
+         */
+        failOnContractErrors: z.boolean().optional(),
+        /**
+         * When true, the host aborts startup if plugin dependency resolution
+         * detects missing dependencies or circular cycles.
+         */
+        failOnDependencyErrors: z.boolean().optional(),
+        /**
+         * When true, the host aborts startup if any configured plugin fails
+         * to import, validate, or register.
+         */
+        failOnPluginLoadErrors: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
     /** Merged into `createObservability` / request logger; `requestLogger.excludePaths` is read in `server.ts`. */
     observability: z.record(z.string(), z.unknown()).optional(),
     docsAuthRequired: z.boolean().optional(),

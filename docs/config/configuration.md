@@ -30,9 +30,15 @@ These variables override or extend the merged JSON when set:
 | `OBSERVABILITY_REQUEST_LOGGER_EXCLUDE_PATHS` | Comma-separated paths; merged into `observability.requestLogger.excludePaths` (default logs skip `/api/health` and `/api/metrics`). |
 | `DOCS_AUTH_REQUIRED` | `true` / `false` — require `X-API-KEY` for `/docs`. |
 | `DOCS_API_KEY` | API key value when docs auth is enabled. |
+| `PLUGINS_FAIL_ON_CONTRACT_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnContractErrors` (abort startup on plugin contract validation errors). |
+| `PLUGINS_FAIL_ON_DEPENDENCY_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnDependencyErrors` (abort startup on missing/circular `dependsOn`). |
+| `PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnPluginLoadErrors` (abort startup when any plugin fails import/validate/register). |
 
 `RunAgentOptions` (orchestrator, Core API) supports **`threadId`**: passed to each agent’s shell command for session resume (opencode, claude, cursor). For HTTP, set `options.threadId` on `POST /api/agent/run` or `context.threadId` on `POST /api/events`.
 
+## Plugin system strictness (`pluginSystem`)
+
+`pluginSystem` controls whether the host **fails startup** on plugin wiring issues.\n\n- `pluginSystem.failOnContractErrors` (default: `true`): abort startup when capability-backed contract validation fails (for example a plugin requires `StandardCapabilities.CODE_ANALYSIS` but no provider registered `CODE_ANALYSIS_SERVICE`).\n- `pluginSystem.failOnDependencyErrors` (default: `true`): abort startup when `dependsOn` resolution reports missing dependencies or circular cycles.\n- `pluginSystem.failOnPluginLoadErrors` (default: `true`): abort startup when any configured plugin fails to import, fails schema/options validation (including unrecognized option keys), or throws during `register()`.\n+
 ## Observability log level
 
 `@agent-detective/observability` reads **`OBSERVABILITY_LOG_LEVEL`**. If you set **`LOG_LEVEL`** to `debug`, `info`, `warn`, or `error` and leave `OBSERVABILITY_LOG_LEVEL` unset, the app mirrors `LOG_LEVEL` into `OBSERVABILITY_LOG_LEVEL` before observability starts.

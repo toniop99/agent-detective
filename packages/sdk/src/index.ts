@@ -66,7 +66,10 @@ export { zodToPluginSchema } from './zod-to-plugin-schema.js';
 export {
   REPO_MATCHER_SERVICE,
   PR_WORKFLOW_SERVICE,
+  REPO_CONTEXT_SERVICE,
+  CODE_ANALYSIS_SERVICE,
   StandardEvents,
+  StandardCapabilities,
 } from './constants.js';
 
 /**
@@ -111,6 +114,7 @@ export type {
   LoadedPlugin,
   PluginSchema,
   PluginSchemaProperty,
+  CapabilityName,
   TaskEvent,
   TaskContext,
   ReplyTarget,
@@ -129,6 +133,9 @@ export type {
   MatchedRepo,
   LocalReposService,
   LocalReposContext,
+  RepoContextService,
+  CodeAnalysisService,
+  AnalyzeRepoInput,
   RepoConfig,
   RepoVcsConfig,
   RepoVcsProvider,

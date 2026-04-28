@@ -1,11 +1,18 @@
 import {
   definePlugin,
+  CODE_ANALYSIS_SERVICE,
   REPO_MATCHER_SERVICE,
+  REPO_CONTEXT_SERVICE,
+  StandardCapabilities,
   type BuildRepoContextOptions,
   type AgentRunner,
+  type AgentOutput,
+  type AnalyzeRepoInput,
+  type CodeAnalysisService,
   type PluginContext,
   type Logger,
   type RepoMatcher,
+  type RepoContextService,
 } from '@agent-detective/sdk';
 import type {
   LocalReposPluginOptions,
@@ -152,6 +159,13 @@ const localReposPlugin = definePlugin({
 
     context.registerService<LocalReposService>('@agent-detective/local-repos-plugin', localReposService);
 
+    const repoContextService: RepoContextService = {
+      buildRepoContext: localReposService.buildRepoContext,
+      formatRepoContextForPrompt: localReposService.formatRepoContextForPrompt,
+    };
+    context.registerService<RepoContextService>(REPO_CONTEXT_SERVICE, repoContextService);
+    context.registerCapability(StandardCapabilities.REPO_CONTEXT);
+
     const repoMatcher: RepoMatcher = {
       matchByLabels(labels) {
         const match = matchRepoByLabels(labels, validatedRepos);
@@ -169,7 +183,24 @@ const localReposPlugin = definePlugin({
     };
     context.registerService<RepoMatcher>(REPO_MATCHER_SERVICE, repoMatcher);
 
-    context.registerCapability('code-analysis');
+    const codeAnalysisService: CodeAnalysisService = {
+      analyzeRepo: async (input: AnalyzeRepoInput): Promise<AgentOutput> => {
+        const repoContext = await repoContextService.buildRepoContext(input.repoPath, input.repoContext);
+        const formatted = repoContextService.formatRepoContextForPrompt(repoContext);
+        const fullPrompt = `${formatted}\n\n---\n\n${input.prompt}`;
+        return context.agentRunner.runAgentForChat(input.taskId, fullPrompt, {
+          repoPath: input.repoPath,
+          cwd: input.cwd,
+          agentId: input.agentId,
+          model: input.model,
+          readOnly: input.readOnly,
+          threadId: input.threadId,
+        });
+      },
+    };
+
+    context.registerService<CodeAnalysisService>(CODE_ANALYSIS_SERVICE, codeAnalysisService);
+    context.registerCapability(StandardCapabilities.CODE_ANALYSIS);
 
     const analyzer = createRepoAnalyzer(context, localRepos, localReposService);
     analyzer.start();

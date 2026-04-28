@@ -4,6 +4,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "baseUrl": ".",
     "lib": ["ES2022"],
     "strict": true,
     "esModuleInterop": true,
@@ -19,7 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
     "paths": {
-      "@agent-detective/sdk": ["../../sdk/src/index.ts"]
+      "@agent-detective/sdk": ["../sdk/src/index.ts"]
     }
   },
   "include": ["src/**/*", "test/**/*"]

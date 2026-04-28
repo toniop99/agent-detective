@@ -13,6 +13,7 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
 | `docsApiKey` | string |
 | `docsAuthRequired` | boolean |
 | `observability` | object (string keys; see JSON below) |
+| `pluginSystem` | object (see JSON below) |
 | `plugins` | array |
 | `port` | number |
 
@@ -92,6 +93,21 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
         },
         "additionalProperties": false
       }
+    },
+    "pluginSystem": {
+      "type": "object",
+      "properties": {
+        "failOnContractErrors": {
+          "type": "boolean"
+        },
+        "failOnDependencyErrors": {
+          "type": "boolean"
+        },
+        "failOnPluginLoadErrors": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
     },
     "observability": {
       "type": "object",

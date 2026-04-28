@@ -23,6 +23,8 @@ export const loadConfig = loadAppConfig;
 export interface CreateServerOptions {
   /** Provides the dynamic plugin tag list for `x-tagGroups` on the OpenAPI doc. */
   getPluginTags?: () => string[];
+  /** Provides plugin system status for core API diagnostics. */
+  getPluginStatus?: () => { loaded: string[]; failures: Array<{ plugin: string; stage: string; message: string }> };
 }
 
 export interface CreateServerResult {
@@ -118,6 +120,7 @@ export async function createServer(
     enqueue,
     observability,
     config: { plugins: config.plugins },
+    pluginStatus: options.getPluginStatus,
   });
 
   return { app };

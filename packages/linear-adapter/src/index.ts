@@ -1,4 +1,4 @@
-import { StandardEvents, definePlugin, zodToPluginSchema, type TaskEvent } from '@agent-detective/sdk';
+import { StandardCapabilities, StandardEvents, definePlugin, zodToPluginSchema, type TaskEvent } from '@agent-detective/sdk';
 import * as z from 'zod';
 import { linearAdapterOptionsSchema } from './application/options-schema.js';
 import type { LinearAdapterConfig } from './application/options-schema.js';
@@ -26,7 +26,7 @@ const linearAdapterPlugin = definePlugin({
   schemaVersion: SCHEMA_VERSION,
   schema: pluginSchema,
   dependsOn: ['@agent-detective/local-repos-plugin'],
-  requiresCapabilities: ['code-analysis'],
+  requiresCapabilities: [StandardCapabilities.CODE_ANALYSIS],
 
   async register(scope, context) {
     const extContext = context;

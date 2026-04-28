@@ -63,6 +63,11 @@ const pluginSystem = createPluginSystem({
   agentRunner,
   events: eventBus,
   logger: logger.child('plugin-system'),
+  metrics: observability.metrics,
+  health: observability.health,
+  failOnContractErrors: config.pluginSystem?.failOnContractErrors ?? false,
+  failOnDependencyErrors: config.pluginSystem?.failOnDependencyErrors ?? true,
+  failOnPluginLoadErrors: config.pluginSystem?.failOnPluginLoadErrors ?? true,
 });
 
 const enqueue = pluginSystem.enqueue;
@@ -77,6 +82,10 @@ orchestrator.start();
 
 const { app } = await createServer(config, observability, defaultModels, agentRunner, enqueue, {
   getPluginTags: () => pluginSystem.getPluginTags(),
+  getPluginStatus: () => ({
+    loaded: pluginSystem.getLoadedPlugins().map((p) => `${p.name}@${p.version}`),
+    failures: pluginSystem.getPluginLoadFailures(),
+  }),
 });
 
 await pluginSystem.loadAll(app, config);

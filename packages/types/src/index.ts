@@ -46,13 +46,21 @@ export interface PluginSchema {
   required?: string[];
 }
 
+/**
+ * Standardized capability names used by plugins to declare provided/required
+ * features. Prefer SDK-owned constants (see `@agent-detective/sdk`) for
+ * first-party capabilities; third-party plugins should use stable, namespaced
+ * strings (e.g. `acme.example/repo-matching`) to avoid collisions.
+ */
+export type CapabilityName = string;
+
 export interface Plugin {
   name: string;
   version: string;
   schemaVersion: '1.0';
   schema?: PluginSchema;
   dependsOn?: string[];
-  requiresCapabilities?: string[];
+  requiresCapabilities?: CapabilityName[];
   /**
    * Called once per plugin during boot. Receives an encapsulated Fastify
    * scope (already prefixed under `/plugins/{sanitized-name}`) and the
@@ -165,6 +173,43 @@ export interface LocalReposService {
   getSourceRepoConfig(name: string): RepoConfig | undefined;
 }
 
+/**
+ * Standardized repo-context service contract (capability-backed).
+ *
+ * Providers register this under `REPO_CONTEXT_SERVICE` and also register the
+ * `StandardCapabilities.REPO_CONTEXT` capability.
+ */
+export interface RepoContextService {
+  buildRepoContext: (repoPath: string, options?: BuildRepoContextOptions) => Promise<unknown>;
+  formatRepoContextForPrompt: (context: unknown) => string;
+}
+
+export interface AnalyzeRepoInput {
+  /** A stable task id used for agent-runner sessioning/logging. */
+  taskId: string;
+  repoPath: string;
+  /** User / webhook prompt to run against the repo context. */
+  prompt: string;
+  /** Optional overrides passed through to the agent runner. */
+  agentId?: string;
+  model?: string;
+  readOnly?: boolean;
+  threadId?: string;
+  cwd?: string;
+  /** Options for how repo context is built (git limits, diff base, etc.). */
+  repoContext?: BuildRepoContextOptions;
+}
+
+/**
+ * Standardized code-analysis service contract (capability-backed).
+ *
+ * Providers register this under `CODE_ANALYSIS_SERVICE` and also register the
+ * `StandardCapabilities.CODE_ANALYSIS` capability.
+ */
+export interface CodeAnalysisService {
+  analyzeRepo: (input: AnalyzeRepoInput) => Promise<AgentOutput>;
+}
+
 export interface RepoContext {
   repoName: string;
   repoPath: string;
@@ -208,17 +253,26 @@ export interface PluginContext {
    */
   getService<T>(name: string): T;
   /**
+   * Get a service registered by a specific providing plugin.
+   *
+   * Use this when you both:
+   * - declare `dependsOn: ['provider-plugin']`, and
+   * - want to bind to that provider's implementation (rather than the default
+   *   provider chosen by the host when multiple plugins register the same service key).
+   */
+  getServiceFromPlugin<T>(name: string, providerPluginName: string): T;
+  /**
    * Register an AI agent.
    */
   registerAgent(agent: Agent): void;
   /**
    * Register a capability provided by this plugin (e.g. 'code-analysis').
    */
-  registerCapability(capability: string): void;
+  registerCapability(capability: CapabilityName): void;
   /**
    * Check if a capability has been registered by any loaded plugin.
    */
-  hasCapability(capability: string): boolean;
+  hasCapability(capability: CapabilityName): boolean;
   /**
    * Replace the process-wide task queue. The orchestrator and core API use the same
    * `context.enqueue` delegate, so switching the backend affects all task execution.
