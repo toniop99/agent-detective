@@ -64,12 +64,13 @@ These variables override or extend the merged JSON when set:
 Env is merged **only into an existing** `plugins[]` entry with the matching `package` string (plugins are not auto-added from env alone).
 
 :::danger[Secrets]
-`JIRA_API_TOKEN`, `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_SECRET`, `GITHUB_TOKEN`, `GH_TOKEN`, `BITBUCKET_TOKEN`, and `BITBUCKET_APP_PASSWORD` are **secrets**. Never commit them to version control. Use environment variables or a secrets manager in production; `config/local.json` (gitignored) is acceptable for local dev only.
+`JIRA_API_TOKEN`, `JIRA_OAUTH_CLIENT_SECRET`, `JIRA_OAUTH_REFRESH_TOKEN`, `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_SECRET`, `LINEAR_OAUTH_REFRESH_TOKEN`, `GITHUB_TOKEN`, `GH_TOKEN`, `BITBUCKET_TOKEN`, and `BITBUCKET_APP_PASSWORD` are **secrets**. Never commit them to version control. Use environment variables or a secrets manager in production; `config/local.json` (gitignored) is acceptable for local dev only.
 :::
 
 | Variable | Target |
 |----------|--------|
-| `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL` | Options for `@agent-detective/jira-adapter` (`apiToken`, `email`, `baseUrl`). |
+| `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_BASE_URL` | Options for `@agent-detective/jira-adapter` (Basic auth: `apiToken`, `email`, `baseUrl`). |
+| `JIRA_OAUTH_CLIENT_ID`, `JIRA_OAUTH_CLIENT_SECRET`, `JIRA_OAUTH_REDIRECT_BASE_URL`, `JIRA_OAUTH_REFRESH_TOKEN`, `JIRA_CLOUD_ID` | Options for `@agent-detective/jira-adapter` (OAuth 2.0 3LO: `oauthClientId`, `oauthClientSecret`, `oauthRedirectBaseUrl`, `oauthRefreshToken`, `cloudId`). |
 | `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SIGNING_SECRET`, `LINEAR_OAUTH_CLIENT_ID`, `LINEAR_OAUTH_CLIENT_SECRET`, `LINEAR_OAUTH_REDIRECT_BASE_URL`, `LINEAR_OAUTH_REFRESH_TOKEN`, `LINEAR_OAUTH_ACTOR` (`user` or `app`) | Options for `@agent-detective/linear-adapter` (`apiKey`, `webhookSigningSecret`, OAuth fields, `oauthActor`). See [plugins/linear-adapter.md](../plugins/linear-adapter.md). |
 | `JIRA_AUTO_ANALYSIS_COOLDOWN_MS` | `options.autoAnalysisCooldownMs` on the Jira plugin (default 600000). |
 | `JIRA_MISSING_LABELS_REMINDER_COOLDOWN_MS` | `options.missingLabelsReminderCooldownMs` (default 60000). |

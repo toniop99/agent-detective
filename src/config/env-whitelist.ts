@@ -161,12 +161,31 @@ export function applyPluginEnvWhitelist(config: AppConfig): void {
   const jiraToken = process.env.JIRA_API_TOKEN;
   const jiraEmail = process.env.JIRA_EMAIL;
   const jiraBase = process.env.JIRA_BASE_URL;
-  if (jiraToken || jiraEmail || jiraBase) {
+  const jiraOAuthClientId = process.env.JIRA_OAUTH_CLIENT_ID;
+  const jiraOAuthClientSecret = process.env.JIRA_OAUTH_CLIENT_SECRET;
+  const jiraOAuthRedirectBase = process.env.JIRA_OAUTH_REDIRECT_BASE_URL;
+  const jiraOAuthRefreshToken = process.env.JIRA_OAUTH_REFRESH_TOKEN;
+  const jiraCloudId = process.env.JIRA_CLOUD_ID;
+  if (
+    jiraToken ||
+    jiraEmail ||
+    jiraBase ||
+    jiraOAuthClientId ||
+    jiraOAuthClientSecret ||
+    jiraOAuthRedirectBase ||
+    jiraOAuthRefreshToken ||
+    jiraCloudId
+  ) {
     const opts = getExistingPluginOptions(config, JIRA_PACKAGE);
     if (opts) {
       if (jiraToken) opts.apiToken = jiraToken;
       if (jiraEmail) opts.email = jiraEmail;
       if (jiraBase) opts.baseUrl = jiraBase;
+      if (jiraOAuthClientId) (opts as Record<string, unknown>).oauthClientId = jiraOAuthClientId;
+      if (jiraOAuthClientSecret) (opts as Record<string, unknown>).oauthClientSecret = jiraOAuthClientSecret;
+      if (jiraOAuthRedirectBase) (opts as Record<string, unknown>).oauthRedirectBaseUrl = jiraOAuthRedirectBase;
+      if (jiraOAuthRefreshToken) (opts as Record<string, unknown>).oauthRefreshToken = jiraOAuthRefreshToken;
+      if (jiraCloudId) (opts as Record<string, unknown>).cloudId = jiraCloudId;
     }
   }
 

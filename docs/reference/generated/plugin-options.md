@@ -45,6 +45,21 @@ Anchor: `jira-adapter`
     "apiToken": {
       "type": "string"
     },
+    "oauthClientId": {
+      "type": "string"
+    },
+    "oauthClientSecret": {
+      "type": "string"
+    },
+    "oauthRefreshToken": {
+      "type": "string"
+    },
+    "oauthRedirectBaseUrl": {
+      "type": "string"
+    },
+    "cloudId": {
+      "type": "string"
+    },
     "analysisPrompt": {
       "type": "string"
     },

@@ -65,10 +65,65 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 - **Webhook URL (fixed):** Jira Automation / webhooks must target **`/plugins/agent-detective-jira-adapter/webhook/jira`** (plugin route prefix + controller path). This is not configurable in options.
 - **`webhookBehavior`:** default maps **`jira:issue_created`** → **`analyze`** ([default.json](../../config/default.json)).
 - **`mockMode: true`:** analysis runs; “comments” are logged as **`[MOCK] Added comment...`** ([mock-jira-client.ts](../../packages/jira-adapter/src/infrastructure/mock-jira-client.ts)).
-- **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../../packages/jira-adapter/src/infrastructure/real-jira-client.ts). You must set **`baseUrl`**, **`email`**, and **`apiToken`** (or **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** in the environment — see [env-whitelist.ts](../../src/config/env-whitelist.ts)).
+- **`mockMode: false`:** posts real comments via **Jira REST API v3** using the [`jira.js`](https://www.npmjs.com/package/jira.js) SDK (`Version3Client`) — see [real-jira-client.ts](../../packages/jira-adapter/src/infrastructure/real-jira-client.ts). You must configure auth using either **Basic** (API token) or **OAuth 2.0 (3LO)** (below). Env whitelist: [env-whitelist.ts](../../src/config/env-whitelist.ts).
 - **Comment formatting (Markdown → ADF):** the agent is prompted to return GitHub-flavored Markdown and the adapter converts it to [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/) before posting — see [markdown-to-adf.ts](../../packages/jira-adapter/src/infrastructure/markdown-to-adf.ts). Supported elements: headings, **bold**, *italic*, ~~strike~~, `inline code`, fenced code blocks with language, bullet / ordered / nested lists, blockquotes, links, horizontal rules, and hard breaks. HTML and tables are not supported and are rendered as plain text.
 
 Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the model toward root-cause analysis.
+
+#### Auth option A: Basic (API token) — simplest path
+
+Set **all three**:
+
+- `baseUrl` / `JIRA_BASE_URL` (e.g. `https://your-domain.atlassian.net`)
+- `email` / `JIRA_EMAIL` (the Atlassian account email for the token)
+- `apiToken` / `JIRA_API_TOKEN` (the Atlassian API token)
+
+This is the quickest local-dev setup. For recognizable comment identity, use a dedicated Atlassian bot user (avatar + display name) and create the API token for that user.
+
+#### Auth option B: OAuth 2.0 (3LO) — preferred for a distributable integration
+
+This path keeps the server self-hosted but uses Atlassian’s OAuth authorization code flow + rotating refresh tokens.
+
+**Configure OAuth routes (no tokens yet):**
+
+Set:
+
+- `oauthClientId` / `JIRA_OAUTH_CLIENT_ID`
+- `oauthClientSecret` / `JIRA_OAUTH_CLIENT_SECRET`
+- `oauthRedirectBaseUrl` / `JIRA_OAUTH_REDIRECT_BASE_URL` (public origin, e.g. `https://abc.ngrok-free.app`)
+
+With those set, the plugin mounts:
+
+- `GET /plugins/agent-detective-jira-adapter/oauth/start`
+- `GET /plugins/agent-detective-jira-adapter/oauth/callback`
+
+**Run the install in a browser:**
+
+Open:
+
+`https://<your-public-host>/plugins/agent-detective-jira-adapter/oauth/start`
+
+Approve, then you land on `/oauth/callback?code=…&state=…`. The callback returns **JSON** (`Cache-Control: no-store`) containing:
+
+- `access_token`
+- (usually) `refresh_token`
+- `resources[]` (accessible Atlassian sites). If there is exactly one site, the response also includes `cloud_id`.
+
+**Tokens are not saved automatically:**
+
+Copy values into config/env and restart:
+
+| From callback JSON | Into config/env |
+|--------------------|----------------|
+| `access_token` | `apiToken` / `JIRA_API_TOKEN` (treated as current access token) |
+| `refresh_token` | `oauthRefreshToken` / `JIRA_OAUTH_REFRESH_TOKEN` |
+| `cloud_id` (or pick from `resources[]`) | `cloudId` / `JIRA_CLOUD_ID` |
+
+**Refresh token rotation:**
+
+Atlassian uses rotating refresh tokens. When a refresh returns a new refresh token, logs warn you to update `JIRA_OAUTH_REFRESH_TOKEN` (or `config/local.json`). Nothing auto-persists.
+
+**Troubleshooting tip:** if the callback JSON includes multiple `resources[]` entries and no single `cloud_id`, pick the correct site `id` and set it as `cloudId` / `JIRA_CLOUD_ID` before restarting.
 
 ### Matching a ticket to a repository
 

@@ -22,6 +22,11 @@ export interface JiraAdapterConfig {
   baseUrl?: string;
   email?: string;
   apiToken?: string;
+  oauthClientId?: string;
+  oauthClientSecret?: string;
+  oauthRefreshToken?: string;
+  oauthRedirectBaseUrl?: string;
+  cloudId?: string;
 
   webhookBehavior?: JiraWebhookBehavior;
 
