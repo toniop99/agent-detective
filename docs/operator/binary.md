@@ -122,6 +122,10 @@ This is a dependency inventory that helps with vulnerability scanning and compli
 
 If you maintain this repository and need to publish new binaries, see [releasing.md](releasing.md).
 
+## Maintainers: building a SEA binary locally
+
+CI uses **Node 25** and `node --build-sea` (see `.github/workflows/binary.yml`). Match that locally, or follow the Node 24 flow in the [Single executable applications](https://nodejs.org/api/single-executable-applications.html) docs if you cannot upgrade yet.
+
 ## systemd
 
 Create `/etc/systemd/system/agent-detective.service`:
