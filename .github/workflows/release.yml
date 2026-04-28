@@ -183,6 +183,27 @@ jobs:
             docker pull ${{ env.IMAGE_FULL_NAME }}:stable
             ```
 
+            ## Native binary
+
+            Download the release asset for your platform:
+
+            - `agent-detective-linux-x64`
+            - `agent-detective-linux-arm64`
+            - `agent-detective-darwin-arm64`
+            - `sbom-<target>.cdx.json` (CycloneDX SBOM)
+            - `*.sig` / `*.cert` (cosign signatures + certificates)
+
+            Then run:
+
+            ```bash
+            chmod +x ./agent-detective-*
+            ./agent-detective-linux-x64 --help
+            ./agent-detective-linux-x64 doctor --config-root /opt/agent-detective
+            ./agent-detective-linux-x64 --config-root /opt/agent-detective
+            ```
+
+            To verify signatures, see `docs/operator/binary.md`.
+
             ### Available Tags
 
             | Tag | Description |

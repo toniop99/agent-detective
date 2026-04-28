@@ -41,6 +41,13 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
     docker compose up -d
     ```
   </TabItem>
+  <TabItem label="Native binary" icon="seti:binary">
+    **When to use:** Single executable on a host with no system Node.js or pnpm; best for bare-metal installs and simple upgrades.
+
+    **What you need:** Download the binary release asset, a `config/` directory, and the configured agent CLI(s) on `PATH` (use `doctor` to verify).
+
+    See [binary.md](binary.md) for install layout, `--config-root`, plugins, and systemd.
+  </TabItem>
   <TabItem label="From source" icon="seti:typescript">
     **When to use:** You fork the repo, change `packages/`, or run without a prebuilt image.
 
@@ -87,6 +94,7 @@ Use the **Configuration** section in the sidebar after you pick an install pathâ
 
 <CardGrid>
   <LinkCard title="Docker & Compose" href="/docs/operator/docker/" description="Production image, GHCR, compose files, and environment variables." />
+  <LinkCard title="Native binary" href="/docs/operator/binary/" description="Single executable releases, config root, plugins, and doctor." />
   <LinkCard title="Bare metal deployment" href="/docs/operator/deployment/" description="systemd, nginx, health checks, and troubleshooting." />
   <LinkCard title="Configuration" href="/docs/config/configuration/" description="Config files, env whitelist, and plugin options." />
   <LinkCard title="Upgrading" href="/docs/operator/upgrading/" description="Releases, pinning images, and git upgrade." />

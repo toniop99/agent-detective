@@ -9,6 +9,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "turbo run build",
     "build:app": "tsup --config tsup.config.ts",
+    "build:sea:app": "tsup --config tsup.sea.config.ts",
     "build:types": "pnpm --filter @agent-detective/types build",
     "typecheck": "turbo run typecheck && tsc --noEmit",
     "lint": "turbo run lint && node scripts/check-package-root-imports.mjs && node scripts/check-plugin-cross-imports.mjs && node scripts/check-docs-internal-links.mjs",

@@ -9,6 +9,7 @@ import type {
 } from '@agent-detective/types';
 import type { Observability } from '@agent-detective/observability';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { APP_NAME, APP_VERSION } from '../version.js';
 
 export interface CoreApiControllerDeps {
   agentModels?: {
@@ -142,7 +143,7 @@ export function buildCoreApiRoutes(deps: CoreApiControllerDeps): RouteDefinition
       const plugins = (config.plugins ?? [])
         .map((p) => p.package)
         .filter((p): p is string => Boolean(p));
-      return { name: 'agent-detective', version: '0.1.0', plugins };
+      return { name: APP_NAME, version: APP_VERSION, plugins };
     },
   });
 

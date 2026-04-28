@@ -14,20 +14,25 @@ import type {
 } from './types.js';
 import { createMemoryTaskQueue } from './queue.js';
 import { validatePluginConfig, validatePluginSchema } from './schema-validator.js';
-
-/** Repository root for resolving local plugin paths (packages/...). Uses process.cwd() so bundled dist/index.js matches Docker WORKDIR and local pnpm dev. */
-const ROOT_DIR = process.cwd();
+import { getBuiltInPlugin } from './built-in-plugins.js';
 
 /** Load a plugin package: bare specifier, then monorepo packages (dist for production, src for dev). */
-async function importPluginModuleFromSpecifier(spec: string): Promise<{ default?: Plugin } & Record<string, unknown>> {
+export async function importPluginModuleFromSpecifier(
+  spec: string,
+  resolveRootDir: string,
+): Promise<{ default?: Plugin } & Record<string, unknown>> {
+  const builtIn = getBuiltInPlugin(spec);
+  if (builtIn) {
+    return { default: builtIn };
+  }
   if (spec.startsWith('./') || spec.startsWith('../') || spec.startsWith('/')) {
-    return import(pathToFileURL(resolve(ROOT_DIR, spec)).href);
+    return import(pathToFileURL(resolve(resolveRootDir, spec)).href);
   }
   try {
     return await import(spec);
   } catch {
     const short = spec.replace('@agent-detective/', '');
-    const base = resolve(ROOT_DIR, 'packages', short);
+    const base = resolve(resolveRootDir, 'packages', short);
     const distJs = resolve(base, 'dist/index.js');
     const srcJs = resolve(base, 'src/index.js');
     let filePath: string | null = null;
@@ -60,6 +65,8 @@ export interface CreatePluginSystemOptions {
   events: PluginContext['events'];
   metrics?: Pick<MetricsRegistry, 'pluginsLoaded' | 'pluginLoadDuration'>;
   health?: Pick<HealthChecker, 'registerPluginCheck'>;
+  /** Base directory for resolving local plugin paths (`./`, `../`) and monorepo fallbacks. Defaults to `process.cwd()`. */
+  pathResolutionRoot?: string;
   /** When true, throw from loadAll() if any contract errors are detected. */
   failOnContractErrors?: boolean;
   /** When true, throw from loadAll() if dependency resolution errors are detected. */
@@ -78,6 +85,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     events,
     metrics,
     health,
+    pathResolutionRoot = process.cwd(),
     failOnContractErrors = false,
     failOnDependencyErrors = true,
     failOnPluginLoadErrors = true,
@@ -423,7 +431,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       let plugin: Plugin;
       try {
-        const pluginModule = await importPluginModuleFromSpecifier(packageName);
+        const pluginModule = await importPluginModuleFromSpecifier(packageName, pathResolutionRoot);
         plugin = ((pluginModule as { default?: Plugin }).default ?? pluginModule) as unknown as Plugin;
       } catch (err) {
         pluginLoadFailures.push({

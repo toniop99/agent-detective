@@ -35,6 +35,12 @@ The HTTP API is mounted under **`/api`**. Health is:
 
 Compose and the production image healthcheck use this path (not `/health`).
 
+### API docs
+
+- Interactive docs UI: `GET /docs`
+
+For the native binary (SEA) build, see `docs/operator/binary.md` — the UI is disabled there and you should use `GET /docs/openapi.json` instead.
+
 ## Local development
 
 From the repository root:
