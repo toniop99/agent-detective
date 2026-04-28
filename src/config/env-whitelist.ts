@@ -87,6 +87,27 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
     config.docsApiKey = process.env.DOCS_API_KEY;
   }
 
+  if (process.env.PLUGINS_FAIL_ON_CONTRACT_ERRORS === 'true' || process.env.PLUGINS_FAIL_ON_CONTRACT_ERRORS === 'false') {
+    if (!config.pluginSystem) config.pluginSystem = {};
+    config.pluginSystem.failOnContractErrors = process.env.PLUGINS_FAIL_ON_CONTRACT_ERRORS === 'true';
+  }
+
+  if (
+    process.env.PLUGINS_FAIL_ON_DEPENDENCY_ERRORS === 'true' ||
+    process.env.PLUGINS_FAIL_ON_DEPENDENCY_ERRORS === 'false'
+  ) {
+    if (!config.pluginSystem) config.pluginSystem = {};
+    config.pluginSystem.failOnDependencyErrors = process.env.PLUGINS_FAIL_ON_DEPENDENCY_ERRORS === 'true';
+  }
+
+  if (
+    process.env.PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS === 'true' ||
+    process.env.PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS === 'false'
+  ) {
+    if (!config.pluginSystem) config.pluginSystem = {};
+    config.pluginSystem.failOnPluginLoadErrors = process.env.PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS === 'true';
+  }
+
   const parseMs = (raw: string | undefined): number | undefined => {
     if (raw === undefined || raw === '') return undefined;
     const n = parseInt(raw, 10);

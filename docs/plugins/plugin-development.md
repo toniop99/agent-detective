@@ -177,7 +177,7 @@ export default definePlugin({
 
 #### Capabilities vs services vs dependencies
 
-- Use **services** (`registerService` / `getService`) for concrete APIs shared across plugins.\n- Use **`dependsOn`** when you require a specific plugin’s side-effects (typically a service registration) before your plugin runs.\n- Use **capabilities** (`registerCapability`, `requiresCapabilities`) for broad feature-gating where the specific provider plugin is not important.\n- Prefer SDK constants (`StandardCapabilities.*` from `@agent-detective/sdk`) rather than inventing new strings.\n\nWhen multiple plugins provide the same capability-backed service, `getService(...)` selects a default provider by preferring **first-party** plugins (`@agent-detective/*`), otherwise using **configuration order**. Use `getServiceFromPlugin(...)` if you need a specific provider.\n
+- Use **services** (`registerService` / `getService`) for concrete APIs shared across plugins.\n- Use **`dependsOn`** when you require a specific plugin’s side-effects (typically a service registration) before your plugin runs.\n- Use **capabilities** (`registerCapability`, `requiresCapabilities`) for broad feature-gating where the specific provider plugin is not important.\n- Prefer SDK constants (`StandardCapabilities.*` from `@agent-detective/sdk`) rather than inventing new strings.\n\nWhen multiple plugins provide the same capability-backed service, `getService(...)` selects a default provider by preferring **first-party** plugins (`@agent-detective/*`), otherwise using the **`config.plugins[]` order** as a stable tie-break. Use `getServiceFromPlugin(...)` if you need a specific provider.\n
 ---
 
 ## Building Your Plugin

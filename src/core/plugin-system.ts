@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FastifyInstance } from 'fastify';
-import { CODE_ANALYSIS_SERVICE, REPO_CONTEXT_SERVICE } from '@agent-detective/sdk';
+import { CODE_ANALYSIS_SERVICE, REPO_CONTEXT_SERVICE, StandardCapabilities } from '@agent-detective/sdk';
+import type { MetricsRegistry, HealthChecker } from '@agent-detective/observability';
 import type {
   Agent,
   EnqueueFn,
@@ -29,7 +30,14 @@ async function importPluginModuleFromSpecifier(spec: string): Promise<{ default?
     const base = resolve(ROOT_DIR, 'packages', short);
     const distJs = resolve(base, 'dist/index.js');
     const srcJs = resolve(base, 'src/index.js');
-    const filePath = existsSync(distJs) ? distJs : srcJs;
+    let filePath: string | null = null;
+    if (existsSync(distJs)) filePath = distJs;
+    else if (existsSync(srcJs)) filePath = srcJs;
+    if (!filePath) {
+      throw new Error(
+        `Failed to resolve ${spec} from monorepo fallback. Expected ${distJs} (run workspace build) or ${srcJs} (JS source).`
+      );
+    }
     return import(pathToFileURL(filePath).href);
   }
 }
@@ -50,6 +58,14 @@ export interface CreatePluginSystemOptions {
   taskQueue?: TaskQueue;
   logger?: PluginContext['logger'];
   events: PluginContext['events'];
+  metrics?: Pick<MetricsRegistry, 'pluginsLoaded' | 'pluginLoadDuration'>;
+  health?: Pick<HealthChecker, 'registerPluginCheck'>;
+  /** When true, throw from loadAll() if any contract errors are detected. */
+  failOnContractErrors?: boolean;
+  /** When true, throw from loadAll() if dependency resolution errors are detected. */
+  failOnDependencyErrors?: boolean;
+  /** When true, throw from loadAll() if any plugin fails to import/validate/register. */
+  failOnPluginLoadErrors?: boolean;
 }
 
 type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<string, unknown> }> };
@@ -60,6 +76,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     taskQueue: initialTaskQueue,
     logger = console,
     events,
+    metrics,
+    health,
+    failOnContractErrors = false,
+    failOnDependencyErrors = true,
+    failOnPluginLoadErrors = true,
   } = context;
 
   const defaultQueue: TaskQueue = initialTaskQueue ?? createMemoryTaskQueue(logger);
@@ -84,9 +105,14 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
   }
 
   const loadedPlugins = new Map<string, LoadedPlugin>();
+  const activePlugins = new Set<string>();
   const servicesRegistry = new Map<string, Map<string, unknown>>();
-  const capabilitiesRegistry = new Set<string>();
+  const capabilitiesRegistry = new Map<string, Set<string>>();
   const shutdownHooks: Array<() => void | Promise<void>> = [];
+  let providerPriorityByPluginName: Map<string, number> | null = null;
+  const pluginLoadFailures: Array<{ plugin: string; stage: 'import' | 'validate' | 'register'; message: string }> = [];
+  let healthCheckRegistered = false;
+  let lastConfiguredPluginsCount = 0;
 
   const MULTI_PROVIDER_SERVICE_KEYS = new Set<string>([
     // Capability-backed services
@@ -94,16 +120,31 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     CODE_ANALYSIS_SERVICE,
   ]);
 
+  const CAPABILITY_BACKED_CONTRACTS: Array<{ capability: string; serviceKey: string }> = [
+    { capability: StandardCapabilities.REPO_CONTEXT, serviceKey: REPO_CONTEXT_SERVICE },
+    { capability: StandardCapabilities.CODE_ANALYSIS, serviceKey: CODE_ANALYSIS_SERVICE },
+  ];
+
   function isFirstPartyPlugin(pluginName: string): boolean {
     return pluginName.startsWith('@agent-detective/');
   }
 
-  function registerCapability(capability: string): void {
-    capabilitiesRegistry.add(capability);
+  function registerCapabilityForPlugin(providerPluginName: string, capability: string): void {
+    const existing = capabilitiesRegistry.get(capability);
+    if (!existing) {
+      capabilitiesRegistry.set(capability, new Set([providerPluginName]));
+      return;
+    }
+    existing.add(providerPluginName);
   }
 
   function hasCapability(capability: string): boolean {
-    return capabilitiesRegistry.has(capability);
+    const providers = capabilitiesRegistry.get(capability);
+    if (!providers || providers.size === 0) return false;
+    for (const provider of providers) {
+      if (isPluginActiveOrLoaded(provider)) return true;
+    }
+    return false;
   }
 
   function registerServiceForPlugin<T>(providerPluginName: string, name: string, service: T): void {
@@ -125,9 +166,31 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     existing.set(providerPluginName, service as unknown);
   }
 
-  function getServiceFromPlugin<T>(name: string, providerPluginName: string): T {
+  function isPluginActiveOrLoaded(name: string): boolean {
+    return activePlugins.has(name) || loadedPlugins.has(name);
+  }
+
+  function getActiveProvidersForService(name: string): Map<string, unknown> {
     const providers = servicesRegistry.get(name);
-    const service = providers?.get(providerPluginName);
+    if (!providers) return new Map();
+    const active = new Map<string, unknown>();
+    for (const [providerName, svc] of providers) {
+      if (isPluginActiveOrLoaded(providerName)) {
+        active.set(providerName, svc);
+      }
+    }
+    return active;
+  }
+
+  function getServiceFromPlugin<T>(name: string, providerPluginName: string): T {
+    if (!isPluginActiveOrLoaded(providerPluginName)) {
+      throw new Error(
+        `Service ${name} not found for provider ${providerPluginName}. Ensure the providing plugin is loaded.`,
+      );
+    }
+
+    const providers = getActiveProvidersForService(name);
+    const service = providers.get(providerPluginName);
     if (!service) {
       const knownProviders = providers ? Array.from(providers.keys()) : [];
       const suffix = knownProviders.length ? ` Known providers: ${knownProviders.join(', ')}` : '';
@@ -142,16 +205,36 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     if (providers.size === 1) {
       return providers.values().next().value;
     }
-    // Prefer first-party providers over third-party; otherwise fall back to
-    // registration (config) order (Map preserves insertion order).
-    for (const [providerName, service] of providers) {
-      if (isFirstPartyPlugin(providerName)) return service;
+
+    // Prefer first-party providers over third-party, then use the config.plugins
+    // order (stable) as a tie-break. If we don't have config-derived priority
+    // (e.g. `loadPlugin` path), fall back to registration insertion order.
+    const priority = providerPriorityByPluginName;
+    if (!priority) {
+      for (const [providerName, service] of providers) {
+        if (isFirstPartyPlugin(providerName)) return service;
+      }
+      return providers.values().next().value;
     }
-    return providers.values().next().value;
+
+    type Candidate = { providerName: string; service: unknown; isFirstParty: boolean; rank: number };
+    const candidates: Candidate[] = [];
+    for (const [providerName, service] of providers) {
+      const rank = priority.get(providerName) ?? Number.MAX_SAFE_INTEGER;
+      candidates.push({ providerName, service, isFirstParty: isFirstPartyPlugin(providerName), rank });
+    }
+
+    candidates.sort((a, b) => {
+      if (a.isFirstParty !== b.isFirstParty) return a.isFirstParty ? -1 : 1;
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return 0;
+    });
+
+    return candidates[0]!.service;
   }
 
   function getService<T>(name: string): T {
-    const providers = servicesRegistry.get(name);
+    const providers = getActiveProvidersForService(name);
     if (!providers || providers.size === 0) {
       throw new Error(`Service ${name} not found. Ensure the providing plugin is loaded.`);
     }
@@ -172,7 +255,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       getService,
       getServiceFromPlugin,
       registerAgent: (agent: Agent) => agentRunner.registerAgent(agent),
-      registerCapability,
+      registerCapability: (capability: string) => registerCapabilityForPlugin(plugin.name, capability),
       hasCapability,
       registerTaskQueue,
       onShutdown: (fn) => shutdownHooks.push(fn),
@@ -231,15 +314,22 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     try {
       prepared = preparePlugin(plugin, pluginConfig);
     } catch (err) {
+      pluginLoadFailures.push({ plugin: plugin.name, stage: 'validate', message: (err as Error).message });
       logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
       return null;
     }
 
+    const start = Date.now();
+    activePlugins.add(plugin.name);
     try {
       await plugin.register(app, prepared.ctx);
     } catch (err) {
+      pluginLoadFailures.push({ plugin: plugin.name, stage: 'register', message: (err as Error).message });
       logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
       return null;
+    } finally {
+      activePlugins.delete(plugin.name);
+      metrics?.pluginLoadDuration.observe({ plugin: plugin.name }, Date.now() - start);
     }
 
     const loaded: LoadedPlugin = {
@@ -249,11 +339,16 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       dependsOn: plugin.dependsOn || [],
     };
     loadedPlugins.set(plugin.name, loaded);
+    metrics?.pluginsLoaded.set({ plugin: plugin.name }, 1);
 
+    const contractErrors: string[] = [];
     if (plugin.requiresCapabilities) {
       for (const req of plugin.requiresCapabilities) {
-        if (!capabilitiesRegistry.has(req)) {
-          const available = Array.from(capabilitiesRegistry.values()).sort();
+        if (!hasCapability(req)) {
+          const available = Array.from(capabilitiesRegistry.keys()).sort();
+          contractErrors.push(
+            `Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin.`
+          );
           logger.error(
             `Plugin ${plugin.name} requires capability '${req}' which is not provided by any loaded plugin. Available capabilities: ${
               available.length ? available.join(', ') : '(none)'
@@ -261,6 +356,41 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           );
         }
       }
+    }
+
+    for (const { capability, serviceKey } of CAPABILITY_BACKED_CONTRACTS) {
+      // Provider validation: if this plugin claims to provide a capability, ensure it registered the mapped service.
+      const providersForCapability = capabilitiesRegistry.get(capability);
+      if (providersForCapability?.has(plugin.name)) {
+        const svcProviders = servicesRegistry.get(serviceKey);
+        if (!svcProviders || !svcProviders.has(plugin.name)) {
+          contractErrors.push(
+            `Plugin ${plugin.name} declares capability '${capability}' but did not register required service '${serviceKey}'.`
+          );
+          logger.error(
+            `Plugin ${plugin.name} declares capability '${capability}' but did not register required service '${serviceKey}'.`,
+          );
+        }
+      }
+
+      // Consumer validation: if this plugin requires a capability-backed capability, ensure some provider registered the mapped service.
+      if (plugin.requiresCapabilities?.includes(capability)) {
+        const activeProviders = getActiveProvidersForService(serviceKey);
+        if (activeProviders.size === 0) {
+          contractErrors.push(
+            `Plugin ${plugin.name} requires capability '${capability}' but no provider registered service '${serviceKey}'.`
+          );
+          logger.error(
+            `Plugin ${plugin.name} requires capability '${capability}' but no provider registered service '${serviceKey}'.`,
+          );
+        }
+      }
+    }
+
+    if (failOnContractErrors && contractErrors.length > 0) {
+      throw new Error(
+        `Plugin contract errors detected (failOnContractErrors=true):\n- ${contractErrors.join('\n- ')}`
+      );
     }
 
     logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
@@ -283,6 +413,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       string,
       { plugin: Plugin; packageName: string; options: Record<string, unknown> }
     >();
+    const configOrder: string[] = [];
     const loadOrder: string[] = [];
     const errors: string[] = [];
 
@@ -295,6 +426,11 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         const pluginModule = await importPluginModuleFromSpecifier(packageName);
         plugin = ((pluginModule as { default?: Plugin }).default ?? pluginModule) as unknown as Plugin;
       } catch (err) {
+        pluginLoadFailures.push({
+          plugin: packageName,
+          stage: 'import',
+          message: (err as Error).message,
+        });
         logger.warn(`Failed to load plugin metadata for ${packageName}: ${(err as Error).message}`);
         continue;
       }
@@ -306,7 +442,10 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
         packageName,
         options: typeof p === 'object' ? p.options || {} : {},
       });
+      configOrder.push(plugin.name);
     }
+
+    providerPriorityByPluginName = new Map(configOrder.map((name, idx) => [name, idx]));
 
     const visited = new Set<string>();
     const visiting = new Set<string>();
@@ -352,6 +491,12 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       logger.error(`Plugin dependency error: ${error}`);
     }
 
+    if (failOnDependencyErrors && errors.length > 0) {
+      throw new Error(
+        `Plugin dependency errors detected (failOnDependencyErrors=true):\n- ${errors.join('\n- ')}`
+      );
+    }
+
     logger.info(`Plugin load order: ${loadOrder.join(' -> ')}`);
 
     // Queue every plugin on the app in topo order before driving `ready()`
@@ -372,6 +517,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       try {
         prepared = preparePlugin(plugin, options);
       } catch (err) {
+        pluginLoadFailures.push({ plugin: plugin.name, stage: 'validate', message: (err as Error).message });
         logger.warn(`Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`);
         continue;
       }
@@ -380,6 +526,8 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
       app.register(
         async (childScope) => {
+          activePlugins.add(plugin.name);
+          const start = Date.now();
           try {
             await plugin.register(childScope, prepared.ctx);
             const loaded: LoadedPlugin = {
@@ -389,13 +537,18 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
               dependsOn: plugin.dependsOn || [],
             };
             loadedPlugins.set(plugin.name, loaded);
+            metrics?.pluginsLoaded.set({ plugin: plugin.name }, 1);
             logger.info(`Loaded plugin ${plugin.name}@${plugin.version}`);
           } catch (err) {
             // Swallow per-plugin failures so the rest of the boot continues
             // (mirrors the Express-era plugin system contract).
+            pluginLoadFailures.push({ plugin: plugin.name, stage: 'register', message: (err as Error).message });
             logger.warn(
               `Failed to load plugin ${plugin.name}: ${(err as Error).message}. Continuing...`,
             );
+          } finally {
+            activePlugins.delete(plugin.name);
+            metrics?.pluginLoadDuration.observe({ plugin: plugin.name }, Date.now() - start);
           }
         },
         { prefix },
@@ -404,12 +557,66 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
     await app.ready();
 
+    if (failOnPluginLoadErrors && pluginLoadFailures.length > 0) {
+      const rendered = pluginLoadFailures
+        .map((f) => `${f.plugin} (${f.stage}): ${f.message}`)
+        .join('\n- ');
+      throw new Error(
+        `Plugin load errors detected (failOnPluginLoadErrors=true):\n- ${rendered}`
+      );
+    }
+
+    const contractErrors: string[] = [];
+
+    lastConfiguredPluginsCount = Array.isArray(config.plugins) ? config.plugins.length : 0;
+    if (health && !healthCheckRegistered) {
+      health.registerPluginCheck('plugin-system', async () => {
+        const start = Date.now();
+        const configured = lastConfiguredPluginsCount;
+      const loaded = loadedPlugins.size;
+      const status = configured === loaded ? 'ok' : loaded > 0 ? 'degraded' : 'unhealthy';
+      return {
+        name: 'plugin-system',
+        status,
+        durationMs: Date.now() - start,
+        details: {
+          configured,
+          loaded,
+          failures: pluginLoadFailures.slice(-10),
+        },
+      };
+      });
+      healthCheckRegistered = true;
+    }
+
+    // Validate capability-backed contracts: if a plugin declares a capability
+    // as provided, ensure it also registered the mapped service key; if a plugin
+    // requires the capability, ensure at least one active provider exists.
+    for (const { capability, serviceKey } of CAPABILITY_BACKED_CONTRACTS) {
+      const providersForCapability = capabilitiesRegistry.get(capability) ?? new Set<string>();
+      for (const provider of providersForCapability) {
+        if (!loadedPlugins.has(provider)) continue;
+        const svcProviders = servicesRegistry.get(serviceKey);
+        if (!svcProviders || !svcProviders.has(provider)) {
+          contractErrors.push(
+            `Plugin ${provider} declares capability '${capability}' but did not register required service '${serviceKey}'.`
+          );
+          logger.error(
+            `Plugin ${provider} declares capability '${capability}' but did not register required service '${serviceKey}'.`,
+          );
+        }
+      }
+    }
+
     for (const loaded of loadedPlugins.values()) {
       const plugin = Array.from(pluginData.values()).find((d) => d.plugin.name === loaded.name)?.plugin;
       if (plugin && plugin.requiresCapabilities) {
         for (const req of plugin.requiresCapabilities) {
-          if (!capabilitiesRegistry.has(req)) {
-            const available = Array.from(capabilitiesRegistry.values()).sort();
+          if (!hasCapability(req)) {
+            const available = Array.from(capabilitiesRegistry.keys()).sort();
+            contractErrors.push(
+              `Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin.`
+            );
             logger.error(
               `Plugin ${loaded.name} requires capability '${req}' which is not provided by any loaded plugin. Available capabilities: ${
                 available.length ? available.join(', ') : '(none)'
@@ -418,6 +625,29 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
           }
         }
       }
+    }
+
+    for (const loaded of loadedPlugins.values()) {
+      const plugin = Array.from(pluginData.values()).find((d) => d.plugin.name === loaded.name)?.plugin;
+      if (!plugin?.requiresCapabilities) continue;
+      for (const { capability, serviceKey } of CAPABILITY_BACKED_CONTRACTS) {
+        if (!plugin.requiresCapabilities.includes(capability)) continue;
+        const activeProviders = getActiveProvidersForService(serviceKey);
+        if (activeProviders.size === 0) {
+          contractErrors.push(
+            `Plugin ${loaded.name} requires capability '${capability}' but no provider registered service '${serviceKey}'.`
+          );
+          logger.error(
+            `Plugin ${loaded.name} requires capability '${capability}' but no provider registered service '${serviceKey}'.`,
+          );
+        }
+      }
+    }
+
+    if (failOnContractErrors && contractErrors.length > 0) {
+      throw new Error(
+        `Plugin contract errors detected (failOnContractErrors=true):\n- ${contractErrors.join('\n- ')}`
+      );
     }
   }
 

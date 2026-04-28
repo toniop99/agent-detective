@@ -51,6 +51,7 @@ export function validatePluginConfig(pluginExport: Plugin, config: Record<string
   if (schema.properties && config) {
     for (const [key, value] of Object.entries(config)) {
       if (!schema.properties[key]) {
+        errors.push(`Unrecognized key: "${key}"`);
         continue;
       }
       const propSchema = schema.properties[key];

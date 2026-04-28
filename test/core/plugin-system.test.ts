@@ -158,6 +158,86 @@ describe('Plugin System', () => {
       await pluginSystem.loadAll(app, config as never);
       assert.equal(pluginSystem.getLoadedPlugins().length, 0);
     });
+
+    it('loads plugins in dependsOn topo order so services are available to dependents', async () => {
+      const cfg = {
+        plugins: [
+          { package: './test/fixtures/plugins/provider-plugin.js', options: {} },
+          { package: './test/fixtures/plugins/consumer-plugin.js', options: {} },
+        ],
+      };
+      await pluginSystem.loadAll(app, cfg as never);
+
+      // consumer-plugin sets a header on the provider's route; if it ran before
+      // provider-plugin, it would throw and not be marked loaded.
+      assert.equal(pluginSystem.getLoadedPlugins().some((p) => p.name === 'consumer-plugin'), true);
+    });
+
+    it('mounts plugin routes under /plugins/{sanitized-name}', async () => {
+      const cfg = {
+        plugins: [
+          { package: './test/fixtures/plugins/prefix-plugin.js', options: {} },
+        ],
+      };
+
+      await pluginSystem.loadAll(app, cfg as never);
+
+      const res = await app.inject({ method: 'GET', url: '/plugins/scope-name/ping' });
+      assert.equal(res.statusCode, 200);
+      assert.deepEqual(JSON.parse(res.body), { ok: true });
+    });
+
+    it('keeps Fastify hooks encapsulated per plugin scope', async () => {
+      const cfg = {
+        plugins: [
+          { package: './test/fixtures/plugins/hook-a-plugin.js', options: {} },
+          { package: './test/fixtures/plugins/hook-b-plugin.js', options: {} },
+        ],
+      };
+
+      await pluginSystem.loadAll(app, cfg as never);
+
+      const resA = await app.inject({ method: 'GET', url: '/plugins/hook-a-plugin/ping' });
+      assert.equal(resA.statusCode, 200);
+      assert.equal(resA.headers['x-plugin'], 'a');
+
+      const resB = await app.inject({ method: 'GET', url: '/plugins/hook-b-plugin/ping' });
+      assert.equal(resB.statusCode, 200);
+      assert.equal(resB.headers['x-plugin'], 'b');
+    });
+
+    it('can be configured to fail startup on contract errors', async () => {
+      const strict = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
+        logger: createMockLogger(),
+        failOnContractErrors: true,
+      });
+
+      const cfg = {
+        plugins: [
+          { package: './test/fixtures/plugins/requires-code-analysis-plugin.js', options: {} },
+        ],
+      };
+
+      await assert.rejects(
+        () => strict.loadAll(app, cfg as never),
+        /Plugin contract errors detected/,
+      );
+    });
+
+    it('fails startup on dependency graph errors by default', async () => {
+      const cfg = {
+        plugins: [
+          { package: './test/fixtures/plugins/bad-dep-plugin.js', options: {} },
+        ],
+      };
+
+      await assert.rejects(
+        () => pluginSystem.loadAll(app, cfg as never),
+        /Plugin dependency errors detected/,
+      );
+    });
   });
 
   describe('getLoadedPlugins', () => {

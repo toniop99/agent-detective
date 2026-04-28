@@ -37,6 +37,7 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `agent` | Default agent id (overridable with `AGENT`). |
 | `agents` | Per-agent settings: a map of agent id → `{ "defaultModel": "…" }`, plus a special key **`runner`** for child-process limits (`timeoutMs`, `maxBufferBytes`, `postFinalGraceMs`, `forceKillDelayMs`). |
 | `plugins` | List of `{ "package": "…", "options": { … } }` entries; each plugin validates its own `options` (Zod in the plugin package). |
+| `pluginSystem` | Plugin-system behavior flags (strict boot). |
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
