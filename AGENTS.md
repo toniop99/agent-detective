@@ -23,6 +23,12 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 
 **Starlight:** source prose is **`docs/**/*.md`**; sync → `apps/docs/src/content/docs/` via `pnpm run docs:site:sync`. Published: **https://agent-detective.chapascript.dev/docs/**. **`apps/docs/src/content/docs/index.mdx`** is hand-edited (not synced). **Pages:** `pnpm run docs:site:landing` merges landing into the same artifact — see [`apps/docs/README.md`](apps/docs/README.md).
 
+## Plans
+
+- When in plan mode and the user prompt starts with "Create a plan for" (in any language, e.g. "Crea un plan para", "Create a plan for"), read and follow `docs/development/plan-conventions.md` to structure the plan output. Otherwise, plan normally without those conventions.
+- **Plan-only prompts (no code changes):** If the user asks for a plan in that style (or a similar wording such as "diseña un plan para", "plan para hacer que…"), treat **executing the plan** as **writing the plan document only**: create the file under `.agents/plans/` as described in `docs/development/plan-conventions.md` (not only in Cursor’s default `.cursor/plans/`). Do **not** implement features, run the app, or change application code unless the user **explicitly** asks to implement, execute, or apply the plan.
+- **Implementing after a plan:** Only start coding when the user clearly requests implementation (e.g. "implementa el plan", "Implement the plan", "ejecuta el plan en código").
+
 ## Packages (`packages/*`)
 
 | Package | Role |
@@ -59,7 +65,7 @@ Core: **agent runner**, **queue**, **HTTP server** (**Fastify** + Zod-typed rout
 | `packages/types/src/index.ts` | All shared interfaces |
 | `docs/README.md` | Documentation map |
 
-## Commands
+## Useful Commands
 
 ```bash
 pnpm run build       # workspace packages
