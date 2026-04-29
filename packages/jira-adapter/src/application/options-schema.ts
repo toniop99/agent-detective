@@ -129,6 +129,28 @@ export const jiraAdapterOptionsSchema = z
      * excluded) to pr-pipeline as additional agent context.
      */
     fetchIssueComments: z.boolean().default(false),
+    /**
+     * When true, append a fenced JSON block (`agent-detective/jira-comment-metadata/v1`)
+     * after the analysis Markdown so Jira Automation or scripts can parse task id,
+     * issue key, and matched repo without scraping narrative text.
+     */
+    structuredCommentMetadata: z.boolean().default(false),
+    /**
+     * After analysis completes, optionally create Jira subtasks under the parent issue
+     * (requires host SQLite persistence). Default off.
+     */
+    taskSpawnOnComplete: z.enum(['off', 'subtasks']).default('off'),
+    /** Max subtasks per `TASK_COMPLETED` when spawn is enabled. Default 3. */
+    taskSpawnMaxPerCompletion: z.number().int().min(1).max(10).default(3),
+    /** Default subtask summary template; `{result}` expands to the agent output excerpt. */
+    taskSpawnSubtaskSummaryTemplate: z.string().min(1).default('Agent analysis follow-up'),
+    taskSpawnSubtaskDescriptionTemplate: z.string().optional(),
+    /**
+     * When true, merge optional ```json …``` block from agent output (`{ "subtasks": [{ "summary", "description" }] }`).
+     */
+    taskSpawnMergeAgentJson: z.boolean().default(false),
+    /** If set, spawn is skipped unless the parent issue's project key is listed. */
+    taskSpawnAllowedProjectKeys: z.array(z.string().min(1)).optional(),
   })
   .strict()
   .superRefine((data, ctx) => {

@@ -47,3 +47,14 @@ Use **`config/local.json`** (gitignored) for secrets. Enable the plugin, set **`
 3. Open **`GET …/oauth/start`** in a browser; complete Linear consent.
 4. **Manually** copy JSON from `/oauth/callback`: **`access_token`** → `LINEAR_API_KEY` / `apiKey`, **`refresh_token`** → `LINEAR_OAUTH_REFRESH_TOKEN`; restart.
 5. (Optional) Set **`oauthActor`** / `LINEAR_OAUTH_ACTOR` to **`app`**, run **`/oauth/start` again**, replace tokens, restart—comments should attribute to the app (see [Comment attribution (app vs user)](../plugins/linear-adapter.md#comment-attribution-app-vs-user) in the main doc).
+
+## Failure playbook (quick)
+
+| Symptom | Check |
+|---------|--------|
+| **`Linear adapter registered`** never appears | Plugin not in `plugins[]`, `enabled: false`, or startup failed earlier — run **`agent-detective doctor`**. |
+| Webhook **401** / signature errors | `webhookSigningSecret` must match Linear; do not use `skipWebhookSignatureVerification` in prod. |
+| **Missing API credentials** log then no routes | Set **PAT** (`apiKey` / `LINEAR_API_KEY`) or OAuth refresh + client id/secret per [linear-adapter.md](../plugins/linear-adapter.md). |
+| Issue created but **no task** | **Label** must match `repos[].name` (same as Jira). Check `Webhook payload` / routing logs. |
+| Analysis runs but **no Linear comment** | `mockMode: true` skips real writes — expect logs only. With `mockMode: false`, verify OAuth scopes / PAT and that `TASK_COMPLETED` handler ran (no `workflow: pr` on metadata). |
+| **Duplicate skip** every time | Same `Linear-Delivery` id replayed inside dedup window — normal; use a fresh issue or wait for TTL. |

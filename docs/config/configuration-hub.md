@@ -13,7 +13,7 @@ Prefer environment variables on the **whitelist** for production; see the tables
 
 This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](../reference/generated/plugin-options.md)**.
 
-**Other operator hubs:** [installation.md](../operator/installation.md) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and upgrades).
+**Other operator hubs:** [installation.mdx](../operator/installation.mdx) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and upgrades).
 
 ## Where configuration lives
 
@@ -29,7 +29,7 @@ Files are read from **`config/`** relative to the process **current working dire
 
 1. **`config/default.json`** — baseline.
 2. **`config/local.json`** — deep-merged on top. **Arrays replace**; they are not concatenated.
-3. **Core env whitelist** — overrides or augments the merged JSON (e.g. `PORT`, `AGENT`, `AGENTS_RUNNER_*`). See the tables in [configuration.md](configuration.md#core-env-whitelist).
+3. **Core env whitelist** — overrides or augments the merged JSON (e.g. `PORT`, `AGENT`, `AGENTS_RUNNER_*`, `TASKS_MAX_CONCURRENT`, `TASKS_MAX_WALL_TIME_MS`, `RUN_RECORDS_PATH`). See the tables in [configuration.md](configuration.md#core-env-whitelist).
 4. **Plugin env whitelist (first-party)** — merged **only** into an existing `plugins[]` entry with the same `package` name (plugins are not created from env alone). See [configuration.md](configuration.md#plugin-env-whitelist-first-party).
 
 If the same value is set in both JSON and env, **env wins** for the keys covered by the whitelist (see [configuration.md](configuration.md#pr-pipeline-agent-detectivepr-pipeline) on precedence for some secrets at runtime too).
@@ -46,6 +46,9 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `plugins` | List of `{ "package": "…", "options": { … } }` entries; each plugin validates its own `options` (Zod in the plugin package). |
 | `pluginSystem` | Plugin-system behavior flags (strict boot). |
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
+| `tasks` | Orchestrator guardrails: `maxConcurrent`, `maxWallTimeMs` — also settable via `TASKS_MAX_CONCURRENT` / `TASKS_MAX_WALL_TIME_MS`. |
+| `runRecords` | Optional JSONL path for task lifecycle lines — also settable via `RUN_RECORDS_PATH`. |
+| `persistence` | Optional host SQLite (`node:sqlite`) — `enabled` + required `databasePath`; env `PERSISTENCE_ENABLED` / `PERSISTENCE_DATABASE_PATH`. |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
 :::note
@@ -81,6 +84,6 @@ In CI, `pnpm docs:plugins:check` and `pnpm docs:config:check` fail if the genera
 | Top-level app config table + JSON Schema (from Zod) | [generated/app-config.md](../reference/generated/app-config.md) |
 | Plugin system and `schema` in code | [plugins.md](../plugins/plugins.md) (e.g. schema system) |
 | Custom plugins (npm, path, `plugins/` directory) | [extending-with-plugins.md](../plugins/extending-with-plugins.md) |
-| Install paths and `config` | [installation.md](../operator/installation.md) |
+| Install paths and `config` | [installation.mdx](../operator/installation.mdx) |
 | New releases, git pull, binary refresh | [upgrading.md](../operator/upgrading.md) |
 | Production layout (systemd, nginx) | [deployment.md](../operator/deployment.md) |

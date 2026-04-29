@@ -41,6 +41,9 @@ function createNoopContext(): HandlerContext {
       async downloadAttachment() {
         return Buffer.alloc(0);
       },
+      async createSubtasks() {
+        return { keys: [] };
+      },
       clear() {},
     },
     config: {

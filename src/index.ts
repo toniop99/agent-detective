@@ -2,12 +2,16 @@ import { createEventBus } from './core/event-bus.js';
 import { createOrchestrator } from './core/orchestrator.js';
 import { createServer, loadConfig } from './server.js';
 import { createPluginSystem } from './core/plugin-system.js';
+import { createMemoryTaskQueue, createLimitedConcurrencyTaskQueue } from './core/queue.js';
+import { createRunRecordWriter } from './core/run-records.js';
 import { createAgentRunner } from './core/agent-runner.js';
 import { execLocal, execLocalStreaming, terminateChildProcess } from './core/process.js';
 import { getAgentLabel, listAgents, normalizeAgent } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
 import { applyLogLevelAliasForObservability } from './config/env-whitelist.js';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { HOST_PERSISTENCE_SERVICE } from '@agent-detective/sdk';
+import { createSqliteAppPersistence } from './persistence/index.js';
 import { APP_NAME, APP_VERSION } from './version.js';
 import { homedir } from 'node:os';
 
@@ -151,6 +155,35 @@ async function serve(installRoot: string | undefined): Promise<void> {
 
   const eventBus = createEventBus(logger.child('events'));
 
+  const memoryQueue = createMemoryTaskQueue(logger.child('task-queue'));
+  const taskQueue =
+    config.tasks?.maxConcurrent !== undefined && config.tasks.maxConcurrent > 0
+      ? createLimitedConcurrencyTaskQueue(memoryQueue, config.tasks.maxConcurrent, logger.child('task-queue'))
+      : memoryQueue;
+
+  const runRecordsPath =
+    config.runRecords?.path !== undefined && config.runRecords.path.trim().length > 0
+      ? isAbsolute(config.runRecords.path)
+        ? config.runRecords.path
+        : resolve(configRootUsed, config.runRecords.path)
+      : undefined;
+  const runRecords = runRecordsPath
+    ? createRunRecordWriter(runRecordsPath, logger.child('run-records'))
+    : undefined;
+
+  let persistenceShutdown: (() => void | Promise<void>) | undefined;
+  const hostServices: Record<string, unknown> | undefined = (() => {
+    const p = config.persistence;
+    if (!p?.enabled || !p.databasePath?.trim()) return undefined;
+    const raw = p.databasePath.trim();
+    const dbPath = isAbsolute(raw) ? raw : resolve(configRootUsed, raw);
+    const persistence = createSqliteAppPersistence(dbPath, {
+      logger: logger.child('persistence'),
+    });
+    persistenceShutdown = () => persistence.close();
+    return { [HOST_PERSISTENCE_SERVICE]: persistence };
+  })();
+
   const pluginSystem = createPluginSystem({
     agentRunner,
     events: eventBus,
@@ -161,6 +194,8 @@ async function serve(installRoot: string | undefined): Promise<void> {
     failOnDependencyErrors: config.pluginSystem?.failOnDependencyErrors ?? true,
     failOnPluginLoadErrors: config.pluginSystem?.failOnPluginLoadErrors ?? true,
     pathResolutionRoot: installRoot ?? process.cwd(),
+    taskQueue,
+    hostServices,
   });
 
   const enqueue = pluginSystem.enqueue;
@@ -170,6 +205,8 @@ async function serve(installRoot: string | undefined): Promise<void> {
     agentRunner,
     enqueue,
     logger: logger.child('orchestrator'),
+    maxWallTimeMs: config.tasks?.maxWallTimeMs,
+    runRecords,
   });
   orchestrator.start();
 
@@ -199,6 +236,7 @@ async function serve(installRoot: string | undefined): Promise<void> {
     const timeout = setTimeout(() => process.exit(1), 10_000);
     timeout.unref();
     await pluginSystem.shutdown();
+    await persistenceShutdown?.();
     await app.close();
     agentRunner.shutdown();
     clearTimeout(timeout);

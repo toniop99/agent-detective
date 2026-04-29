@@ -57,6 +57,52 @@ export const appConfigSchema = z
       .optional(),
     /** Merged into `createObservability` / request logger; `requestLogger.excludePaths` is read in `server.ts`. */
     observability: z.record(z.string(), z.unknown()).optional(),
+    /**
+     * Operator guardrails for orchestrated tasks (webhook-driven and similar).
+     * `maxConcurrent` wraps the default in-memory task queue so at most N agent
+     * runs execute at once across all queue keys. `maxWallTimeMs` caps a single
+     * orchestrated `runAgentForChat` call (the subprocess may still shut down
+     * on its own schedule — see agent `agents.runner.timeoutMs`).
+     */
+    tasks: z
+      .object({
+        maxConcurrent: z.number().int().positive().max(1000).optional(),
+        maxWallTimeMs: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+    /**
+     * When set, each task lifecycle line (start / completed / failed) is appended
+     * as one JSON object per line (JSONL) to `path` (absolute or relative to the
+     * config directory).
+     */
+    runRecords: z
+      .object({
+        path: z.string().min(1),
+      })
+      .strict()
+      .optional(),
+    /**
+     * Host SQLite persistence (`node:sqlite`). When `enabled` is true, `databasePath` is required
+     * (absolute or relative to the config directory — same resolution as `runRecords.path`).
+     */
+    persistence: z
+      .object({
+        enabled: z.boolean(),
+        databasePath: z.string().min(1).optional(),
+      })
+      .strict()
+      .optional()
+      .superRefine((p, ctx) => {
+        if (!p) return;
+        if (p.enabled === true && (!p.databasePath || p.databasePath.trim().length === 0)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'persistence.databasePath is required when persistence.enabled is true',
+            path: ['databasePath'],
+          });
+        }
+      }),
     docsAuthRequired: z.boolean().optional(),
     docsApiKey: z.string().optional(),
   })

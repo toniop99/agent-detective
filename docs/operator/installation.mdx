@@ -15,7 +15,9 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 Use the **Configuration** section in the sidebar after you pick an install path—load order and env are documented there.
 :::
 
-**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
+**Typical reading order:** this page (choose how you run) → [golden path](golden-path.md) (first webhook → analysis) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
+
+**Native binary on a single Linux VM:** [binary.md](binary.md) (download, `doctor`, signatures) → [deployment.md](deployment.md) (install layout, systemd, nginx, health checks).
 
 ## Choose a deployment style
 
@@ -40,6 +42,8 @@ Use the **Configuration** section in the sidebar after you pick an install path�
     pnpm run build:app
     pnpm start
     ```
+
+    Replace `toniop99/agent-detective` with your fork’s `owner/name` on GitHub if applicable.
   </TabItem>
   <TabItem label="Bare metal" icon="linux">
     **When to use:** Long-running service on a VM with nginx or similar.
@@ -48,19 +52,25 @@ Use the **Configuration** section in the sidebar after you pick an install path�
   </TabItem>
 </Tabs>
 
-:::note
-**Kubernetes or Helm:** this repository does not ship charts. Run the app with your platform's standard workload and the same `config/` + env model as in [configuration.md](../config/configuration.md) and [deployment.md](deployment.md).
+<a id="kubernetes"></a>
+
+:::note[Kubernetes]
+This repository does not ship Helm charts. Run the app in your platform’s standard workload (container image you build, or a VM with the native binary / Node) using the same `config/` + env model as in [configuration.md](../config/configuration.md) and [deployment.md](deployment.md).
 :::
 
 ## Host capabilities
 
-- **Process:** Node.js 24+ when building from source, or a **native binary** from GitHub Releases.
+- **Process:** Node.js 24+ when building from source, or a published **native binary** (no system Node).
 - **Configuration:** JSON under `config/` ([configuration.md](../config/configuration.md)); optional `config/local.json` (often gitignored) for secrets and overrides.
-- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config.
+- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config (local paths or bind mounts you configure).
 - **Network:** outbound to Jira (if you use the Jira plugin), to git remotes (for [pr-pipeline](../config/configuration.md#pr-pipeline-agent-detectivepr-pipeline)), and to your AI provider as required by the agent CLI (e.g. OpenCode). Inbound: HTTP(S) to the app (webhooks, API).
-- **Agent CLIs:** the host must be able to run the configured agent (e.g. `opencode`). See [cursor-agent.md](../development/cursor-agent.md) for adding other agents.
+- **Agent CLIs:** the host must be able to run the configured agent (e.g. `opencode`). See [cursor-agent.md](../development/cursor-agent.md) for the Cursor CLI, which is not installed via npm.
 
 ## Configuration (all paths)
+
+:::caution
+Use `config/local.json` (gitignored) or environment variables for secrets. Never commit API tokens or credentials to `config/default.json`.
+:::
 
 <Steps>
 1. Read the **[configuration hub](../config/configuration-hub.md)** for load order and top-level `config` shape.
@@ -72,6 +82,7 @@ Use the **Configuration** section in the sidebar after you pick an install path�
 ## Detailed guides
 
 <CardGrid>
+  <LinkCard title="Golden path (~15 min)" href="/docs/operator/golden-path/" description="First webhook → analysis smoke test." />
   <LinkCard title="Native binary" href="/docs/operator/binary/" description="Single executable releases, config root, plugins, and doctor." />
   <LinkCard title="Bare metal deployment" href="/docs/operator/deployment/" description="systemd, nginx, health checks, and troubleshooting." />
   <LinkCard title="Configuration" href="/docs/config/configuration/" description="Config files, env whitelist, and plugin options." />
@@ -87,5 +98,5 @@ Use the **Configuration** section in the sidebar after you pick an install path�
 - [upgrading.md](upgrading.md) — releases and upgrade runbook
 - Root [README.md](../../README.md) — quick start
 - [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` directory for custom plugins
-- [publishing.md](../plugins/publishing.md) — publishing workspace packages (maintainers)
+- [publishing.md](../plugins/publishing.md) — publishing `@agent-detective/*` packages (maintainers)
 - Release notes live in GitHub Releases; see `docs/operator/upgrading.md`.

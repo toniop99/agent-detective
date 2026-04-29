@@ -44,6 +44,11 @@ These variables override or extend the merged JSON when set:
 | `PLUGINS_FAIL_ON_CONTRACT_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnContractErrors` (abort startup on plugin contract validation errors). |
 | `PLUGINS_FAIL_ON_DEPENDENCY_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnDependencyErrors` (abort startup on missing/circular `dependsOn`). |
 | `PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnPluginLoadErrors` (abort startup when any plugin fails import/validate/register). |
+| `TASKS_MAX_CONCURRENT` | Positive integer, max **1000** — sets `tasks.maxConcurrent` (or overrides JSON). Invalid values are ignored. |
+| `TASKS_MAX_WALL_TIME_MS` | Non-negative integer, must be **> 0** to apply — sets `tasks.maxWallTimeMs` (or overrides JSON). |
+| `RUN_RECORDS_PATH` | Non-empty string — sets `runRecords.path` (or overrides JSON). Same path rules as JSON (absolute or relative to the config directory). |
+| `PERSISTENCE_ENABLED` | `true` / `false` — sets `persistence.enabled`. |
+| `PERSISTENCE_DATABASE_PATH` | Non-empty string — sets `persistence.databasePath` (required when persistence is enabled). |
 
 `RunAgentOptions` (orchestrator, Core API) supports **`threadId`**: passed to each agent’s shell command for session resume (opencode, claude, cursor). For HTTP, set `options.threadId` on `POST /api/agent/run` or `context.threadId` on `POST /api/events`.
 
@@ -54,6 +59,36 @@ These variables override or extend the merged JSON when set:
 - `pluginSystem.failOnContractErrors` (default: `true`): abort startup when capability-backed contract validation fails (for example a plugin requires `StandardCapabilities.CODE_ANALYSIS` but no provider registered `CODE_ANALYSIS_SERVICE`).
 - `pluginSystem.failOnDependencyErrors` (default: `true`): abort startup when `dependsOn` resolution reports missing dependencies or circular cycles.
 - `pluginSystem.failOnPluginLoadErrors` (default: `true`): abort startup when any configured plugin fails to import, fails schema/options validation (including unrecognized option keys), or throws during `register()`.
+
+## Task orchestration (`tasks`)
+
+Optional object in the top-level app config; **`TASKS_MAX_CONCURRENT`** and **`TASKS_MAX_WALL_TIME_MS`** may also set these fields (see [core env whitelist](#core-env-whitelist)):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `maxConcurrent` | positive integer (max 1000) | Limits how many orchestrated agent runs execute **at once** across all task queue keys. Wraps the default in-memory queue. |
+| `maxWallTimeMs` | positive integer | Fails the task with an orchestrator error if `runAgentForChat` does not settle within this wall time. The child process may still wind down according to `agents.runner` timeouts — treat this as a **second layer** for runaway jobs. |
+
+## Run records (`runRecords`)
+
+Optional object; **`RUN_RECORDS_PATH`** may set `path` (see [core env whitelist](#core-env-whitelist)):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `path` | string | Append-only **JSONL** file. Each line is schema **`agent-detective.run-record/v1`** with phases `started`, `completed`, or `failed` (`taskId`, optional `source` / `issueKey`, `durationMs`, `error`). Relative paths are resolved from the **config directory** (same root as `default.json`). |
+
+See [threat-model.md](../operator/threat-model.md) for why run records matter in regulated environments.
+
+## Host persistence (`persistence`)
+
+Optional **SQLite** store opened by the host (`node:sqlite`). Used for Jira **task spawn idempotency** and future host-owned state. Plugins access it via `getServiceFromPlugin` (see [plugins.md](../plugins/plugins.md) and [ADR 0003](../architecture/adr/0003-sqlite-persistence-and-host-services.md)).
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `enabled` | boolean | When `true`, **`databasePath` is required** (validated at startup). |
+| `databasePath` | string | SQLite file path — absolute or relative to the **config directory** (same resolution as `runRecords.path`). |
+
+`PERSISTENCE_*` env vars are listed in [core env whitelist](#core-env-whitelist).
 
 ## Observability log level
 

@@ -4,7 +4,12 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { createPluginSystem } from '../../src/core/plugin-system.js';
 import type { AgentRunner, Plugin, TaskQueue } from '../../src/core/types.js';
 import type { EventBus } from '@agent-detective/types';
-import { CODE_ANALYSIS_SERVICE, StandardCapabilities } from '@agent-detective/sdk';
+import {
+  CODE_ANALYSIS_SERVICE,
+  HOST_PERSISTENCE_SERVICE,
+  HOST_PROVIDER_PLUGIN_NAME,
+  StandardCapabilities,
+} from '@agent-detective/sdk';
 
 function createNoopEventBus(): EventBus {
   return {
@@ -605,6 +610,32 @@ describe('Plugin System', () => {
 
       const loaded = await pluginSystem.loadPlugin(consumer, app, {});
       assert.equal(loaded, null);
+    });
+  });
+
+  describe('hostServices (ADR 0003)', () => {
+    it('seeds host provider so getServiceFromPlugin resolves before real plugins', async () => {
+      let saw: string | undefined;
+      const ps = createPluginSystem({
+        agentRunner: createMockAgentRunner(),
+        events: createNoopEventBus(),
+        logger: createMockLogger(),
+        hostServices: { [HOST_PERSISTENCE_SERVICE]: { ping: 'pong' } },
+      });
+      const consumer: Plugin = {
+        name: 'consumer',
+        version: '1.0.0',
+        schemaVersion: '1.0',
+        register: (_scope, ctx) => {
+          const s = ctx.getServiceFromPlugin<{ ping: string }>(
+            HOST_PERSISTENCE_SERVICE,
+            HOST_PROVIDER_PLUGIN_NAME
+          );
+          saw = s.ping;
+        },
+      };
+      await ps.loadPlugin(consumer, app, {});
+      assert.strictEqual(saw, 'pong');
     });
   });
 

@@ -5,7 +5,8 @@
  * - **Runtime helpers** — `defineRoute`, `registerRoutes`, `definePlugin`,
  *   `zodToPluginSchema`.
  * - **Service-registry constants** — `REPO_MATCHER_SERVICE`,
- *   `PR_WORKFLOW_SERVICE`, `StandardEvents`.
+ *   `PR_WORKFLOW_SERVICE`, `HOST_PERSISTENCE_SERVICE`, `HOST_PROVIDER_PLUGIN_NAME`,
+ *   `StandardEvents`.
  * - **Type contract** — every type a plugin needs (`Plugin`, `PluginContext`,
  *   `RepoMatcher`, `LocalReposService`, `PrWorkflowService`, `Logger`,
  *   `TaskEvent`, `AgentRunner`, ...) is re-exported from
@@ -68,6 +69,8 @@ export {
   PR_WORKFLOW_SERVICE,
   REPO_CONTEXT_SERVICE,
   CODE_ANALYSIS_SERVICE,
+  HOST_PROVIDER_PLUGIN_NAME,
+  HOST_PERSISTENCE_SERVICE,
   StandardEvents,
   StandardCapabilities,
 } from './constants.js';
@@ -129,6 +132,10 @@ export type {
  * Cross-plugin service contracts (consumed via `context.getService<T>(...)`).
  */
 export type {
+  AppPersistence,
+  AppPersistenceTxn,
+  JiraSpawnDedupeInsert,
+  JiraSpawnDedupeRow,
   RepoMatcher,
   MatchedRepo,
   LocalReposService,

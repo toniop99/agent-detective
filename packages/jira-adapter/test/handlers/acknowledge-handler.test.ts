@@ -13,6 +13,8 @@ interface MockComment {
 interface MockJiraClientForTest {
   comments: MockComment[];
   addComment(issueKey: string, commentText: string): Promise<{ success: boolean; issueKey: string }>;
+  getIssue?(): Promise<unknown>;
+  createSubtasks?(): Promise<{ keys: string[] }>;
 }
 
 describe('Acknowledge Handler', () => {
@@ -30,6 +32,12 @@ describe('Acknowledge Handler', () => {
           createdAt: new Date().toISOString(),
         });
         return { success: true, issueKey };
+      },
+      async getIssue() {
+        return null;
+      },
+      async createSubtasks() {
+        return { keys: [] };
       },
     };
   });

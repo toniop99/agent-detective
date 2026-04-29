@@ -1,7 +1,15 @@
 import { createJiraWebhookHandler } from './application/webhook-handler.js';
 import { createMockJiraClient } from './infrastructure/mock-jira-client.js';
 import { createRealJiraClient } from './infrastructure/real-jira-client.js';
-import { StandardCapabilities, StandardEvents, definePlugin, type TaskEvent } from '@agent-detective/sdk';
+import {
+  HOST_PERSISTENCE_SERVICE,
+  HOST_PROVIDER_PLUGIN_NAME,
+  StandardCapabilities,
+  StandardEvents,
+  definePlugin,
+  type AppPersistence,
+  type TaskEvent,
+} from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from './domain/types.js';
 import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
 import { registerJiraOAuthRoutes } from './presentation/jira-oauth-controller.js';
@@ -9,6 +17,11 @@ import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/sdk';
 import { stampComment } from './domain/comment-trigger.js';
+import {
+  appendStructuredMetadataBlock,
+  buildJiraCommentMetadata,
+} from './application/structured-comment-metadata.js';
+import { buildSubtaskSpecsForTaskResult } from './application/jira-task-spawn.js';
 
 export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './application/options-schema.js';
 
@@ -73,13 +86,71 @@ const jiraAdapterPlugin = definePlugin({
         return;
       }
       if (event.source === PLUGIN_NAME && event.replyTo.type === 'issue') {
+        if (cfg.taskSpawnOnComplete === 'subtasks') {
+          const allowed = cfg.taskSpawnAllowedProjectKeys;
+          let skipSpawn = false;
+          if (allowed && allowed.length > 0) {
+            const issue = await jiraClient.getIssue(event.replyTo.id);
+            const pk =
+              issue?.fields?.project &&
+              typeof issue.fields.project === 'object' &&
+              issue.fields.project !== null &&
+              'key' in issue.fields.project
+                ? String((issue.fields.project as { key?: unknown }).key ?? '')
+                : '';
+            if (!pk || !allowed.includes(pk)) {
+              extContext.logger?.warn(
+                `taskSpawn: skipped (project ${pk || 'unknown'} not in taskSpawnAllowedProjectKeys)`
+              );
+              skipSpawn = true;
+            }
+          }
+          if (!skipSpawn) {
+            let persistence: AppPersistence | undefined;
+            try {
+              persistence = extContext.getServiceFromPlugin<AppPersistence>(
+                HOST_PERSISTENCE_SERVICE,
+                HOST_PROVIDER_PLUGIN_NAME
+              );
+            } catch {
+              extContext.logger?.warn('taskSpawn: host persistence not registered; skipping subtask creation');
+            }
+            if (persistence) {
+              const parentKey = event.replyTo.id;
+              const dedupeKey = `${parentKey}:${event.id}`;
+              const specs = buildSubtaskSpecsForTaskResult(cfg, result);
+              const claimed = persistence.claimJiraSpawnDedupe({
+                dedupeKey,
+                parentIssueKey: parentKey,
+                taskId: event.id,
+                createdIssueKeys: [],
+              });
+              if (claimed) {
+                try {
+                  const { keys } = await jiraClient.createSubtasks(parentKey, specs);
+                  persistence.setJiraSpawnCreatedKeys(dedupeKey, keys);
+                  extContext.logger?.info(`taskSpawn: created ${keys.length} subtask(s): ${keys.join(', ')}`);
+                } catch (err) {
+                  persistence.deleteJiraSpawnDedupe(dedupeKey);
+                  extContext.logger?.error(`taskSpawn: failed, released dedupe: ${(err as Error).message}`);
+                }
+              } else {
+                extContext.logger?.info(`taskSpawn: dedupe exists for ${dedupeKey}, skipping subtask REST`);
+              }
+            }
+          }
+        }
+
         const matchedRepo =
           typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0
             ? event.metadata.matchedRepo
             : null;
-        const body = stampComment(
-          matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result
-        );
+        const narrative = matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result;
+        const withMeta =
+          cfg.structuredCommentMetadata === true
+            ? appendStructuredMetadataBlock(narrative, buildJiraCommentMetadata(event, matchedRepo))
+            : narrative;
+        const body = stampComment(withMeta);
         const resultLength = typeof result === 'string' ? result.length : 0;
         const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
         const jiraReplyParentId =

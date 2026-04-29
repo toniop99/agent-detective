@@ -191,6 +191,43 @@ Anchor: `jira-adapter`
     "fetchIssueComments": {
       "default": false,
       "type": "boolean"
+    },
+    "structuredCommentMetadata": {
+      "default": false,
+      "type": "boolean"
+    },
+    "taskSpawnOnComplete": {
+      "default": "off",
+      "type": "string",
+      "enum": [
+        "off",
+        "subtasks"
+      ]
+    },
+    "taskSpawnMaxPerCompletion": {
+      "default": 3,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "taskSpawnSubtaskSummaryTemplate": {
+      "default": "Agent analysis follow-up",
+      "type": "string",
+      "minLength": 1
+    },
+    "taskSpawnSubtaskDescriptionTemplate": {
+      "type": "string"
+    },
+    "taskSpawnMergeAgentJson": {
+      "default": false,
+      "type": "boolean"
+    },
+    "taskSpawnAllowedProjectKeys": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   },
   "required": [
@@ -203,7 +240,12 @@ Anchor: `jira-adapter`
     "webhookBehavior",
     "autoAnalysisCooldownMs",
     "missingLabelsReminderCooldownMs",
-    "fetchIssueComments"
+    "fetchIssueComments",
+    "structuredCommentMetadata",
+    "taskSpawnOnComplete",
+    "taskSpawnMaxPerCompletion",
+    "taskSpawnSubtaskSummaryTemplate",
+    "taskSpawnMergeAgentJson"
   ],
   "additionalProperties": false
 }

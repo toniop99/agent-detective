@@ -233,6 +233,57 @@ export interface TaskQueue {
   shutdown?: () => void | Promise<void>;
 }
 
+/** Insert payload for Jira spawn idempotency rows (host persistence). */
+export interface JiraSpawnDedupeInsert {
+  dedupeKey: string;
+  parentIssueKey: string;
+  taskId: string;
+  createdIssueKeys: readonly string[];
+}
+
+/** Stored row for Jira spawn idempotency lookups. */
+export interface JiraSpawnDedupeRow {
+  dedupeKey: string;
+  parentIssueKey: string;
+  taskId: string;
+  createdIssueKeys: readonly string[];
+  /** ISO 8601 timestamp */
+  createdAt: string;
+}
+
+/**
+ * Transactional slice of {@link AppPersistence} exposed to `withTransaction` callbacks.
+ * Host SQLite implementations typically map this to a single SQLite transaction.
+ */
+export interface AppPersistenceTxn {
+  findJiraSpawnByDedupeKey(dedupeKey: string): JiraSpawnDedupeRow | null;
+  recordJiraSpawnDedupe(row: JiraSpawnDedupeInsert): void;
+}
+
+/**
+ * Host-owned persistence port (`node:sqlite` in the root app). Plugins obtain the
+ * implementation via `getServiceFromPlugin(HOST_PERSISTENCE_SERVICE, HOST_PROVIDER_PLUGIN_NAME)`
+ * using constants from `@agent-detective/sdk` (see ADR 0003).
+ */
+export interface AppPersistence {
+  /**
+   * Runs work inside a single database transaction. Implementations may use synchronous
+   * SQLite APIs (`node:sqlite` `DatabaseSync`) so the callback is synchronous.
+   */
+  withTransaction<T>(fn: (tx: AppPersistenceTxn) => T): T;
+  /**
+   * Atomically insert a dedupe row if missing. Returns true when this call inserted the row
+   * (caller may proceed to create Jira artifacts); false when the row already existed.
+   */
+  claimJiraSpawnDedupe(row: JiraSpawnDedupeInsert): boolean;
+  /** Persist created issue keys after successful Jira API calls. */
+  setJiraSpawnCreatedKeys(dedupeKey: string, keys: readonly string[]): void;
+  /** Remove dedupe row so a failed attempt can be retried. */
+  deleteJiraSpawnDedupe(dedupeKey: string): void;
+  /** Release database resources; invoked on host shutdown. */
+  close(): void | Promise<void>;
+}
+
 export interface PluginContext {
   agentRunner: AgentRunner;
   /** Stable delegate; calls the active {@link TaskQueue} (memory by default, or set via `registerTaskQueue`). */

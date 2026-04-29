@@ -33,9 +33,15 @@ interface MockJiraClientForTest {
     commentText: string,
     options?: { parentId?: string }
   ): Promise<{ success: boolean; issueKey: string }>;
+  getIssue(issueKey: string): Promise<{ key: string; fields: Record<string, unknown> } | null>;
+  updateIssue(issueKey: string, updates: Record<string, unknown>): Promise<{ success: boolean }>;
   getComments(issueKey: string): Promise<JiraCommentRecord[]>;
   getAttachments(issueKey: string): Promise<JiraAttachmentRecord[]>;
   downloadAttachment(attachmentId: string): Promise<Buffer>;
+  createSubtasks(parentKey: string, specs: ReadonlyArray<{ summary: string; description?: string }>): Promise<{
+    keys: string[];
+  }>;
+  clear(): void;
 }
 
 function makeTaskInfo(overrides: Partial<JiraTaskInfo> = {}): JiraTaskInfo {
@@ -85,6 +91,18 @@ describe('Handler Registry', () => {
       },
       async downloadAttachment(_id) {
         return Buffer.alloc(0);
+      },
+      async getIssue() {
+        return null;
+      },
+      async updateIssue() {
+        return { success: true };
+      },
+      async createSubtasks() {
+        return { keys: [] };
+      },
+      clear(): void {
+        mockComments.length = 0;
       },
     };
   });

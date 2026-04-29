@@ -124,6 +124,55 @@ describe('loadConfig', () => {
 
     assert.throws(() => loadConfig({ configRoot: dir }), /Invalid application config/);
   });
+
+  test('TASKS_* and RUN_RECORDS_PATH env merge over JSON tasks/runRecords', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(
+      join(dir, 'default.json'),
+      JSON.stringify({
+        tasks: { maxWallTimeMs: 111_111 },
+        runRecords: { path: 'from-file.jsonl' },
+      })
+    );
+    process.env.TASKS_MAX_CONCURRENT = '4';
+    process.env.TASKS_MAX_WALL_TIME_MS = '222222';
+    process.env.RUN_RECORDS_PATH = '/var/log/ad-runs.jsonl';
+
+    const cfg = loadConfig({ configRoot: dir });
+    assert.strictEqual(cfg.tasks?.maxConcurrent, 4);
+    assert.strictEqual(cfg.tasks?.maxWallTimeMs, 222_222);
+    assert.strictEqual(cfg.runRecords?.path, '/var/log/ad-runs.jsonl');
+  });
+
+  test('invalid TASKS_MAX_CONCURRENT is ignored (file value kept if present)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(
+      join(dir, 'default.json'),
+      JSON.stringify({ tasks: { maxConcurrent: 2, maxWallTimeMs: 1000 } })
+    );
+    process.env.TASKS_MAX_CONCURRENT = '5000';
+
+    const cfg = loadConfig({ configRoot: dir });
+    assert.strictEqual(cfg.tasks?.maxConcurrent, 2);
+  });
+
+  test('persistence.enabled requires databasePath', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(join(dir, 'default.json'), JSON.stringify({ persistence: { enabled: true } }));
+
+    assert.throws(() => loadConfig({ configRoot: dir }), /databasePath/);
+  });
+
+  test('PERSISTENCE_* env merges into config', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(join(dir, 'default.json'), JSON.stringify({ port: 3000 }));
+    process.env.PERSISTENCE_ENABLED = 'true';
+    process.env.PERSISTENCE_DATABASE_PATH = './data/app.db';
+
+    const cfg = loadConfig({ configRoot: dir });
+    assert.strictEqual(cfg.persistence?.enabled, true);
+    assert.strictEqual(cfg.persistence?.databasePath, './data/app.db');
+  });
 });
 
 describe('applyLogLevelAliasForObservability', () => {

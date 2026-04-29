@@ -2,7 +2,12 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FastifyInstance } from 'fastify';
-import { CODE_ANALYSIS_SERVICE, REPO_CONTEXT_SERVICE, StandardCapabilities } from '@agent-detective/sdk';
+import {
+  CODE_ANALYSIS_SERVICE,
+  HOST_PROVIDER_PLUGIN_NAME,
+  REPO_CONTEXT_SERVICE,
+  StandardCapabilities,
+} from '@agent-detective/sdk';
 import type { MetricsRegistry, HealthChecker } from '@agent-detective/observability';
 import type {
   Agent,
@@ -73,6 +78,11 @@ export interface CreatePluginSystemOptions {
   failOnDependencyErrors?: boolean;
   /** When true, throw from loadAll() if any plugin fails to import/validate/register. */
   failOnPluginLoadErrors?: boolean;
+  /**
+   * Host-provided services (ADR 0003): registry keys map to implementations registered under
+   * {@link HOST_PROVIDER_PLUGIN_NAME} so `getServiceFromPlugin` can resolve them before real plugins load.
+   */
+  hostServices?: Record<string, unknown>;
 }
 
 type PluginConfig = { plugins?: Array<{ package?: string; options?: Record<string, unknown> }> };
@@ -89,6 +99,7 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
     failOnContractErrors = false,
     failOnDependencyErrors = true,
     failOnPluginLoadErrors = true,
+    hostServices,
   } = context;
 
   const defaultQueue: TaskQueue = initialTaskQueue ?? createMemoryTaskQueue(logger);
@@ -173,6 +184,23 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
 
     existing.set(providerPluginName, service as unknown);
   }
+
+  function seedHostProvidedServices(): void {
+    const entries = hostServices ? Object.entries(hostServices) : [];
+    if (entries.length === 0) return;
+    for (const [serviceName, impl] of entries) {
+      registerServiceForPlugin(HOST_PROVIDER_PLUGIN_NAME, serviceName, impl);
+    }
+    if (!loadedPlugins.has(HOST_PROVIDER_PLUGIN_NAME)) {
+      loadedPlugins.set(HOST_PROVIDER_PLUGIN_NAME, {
+        name: HOST_PROVIDER_PLUGIN_NAME,
+        version: '0.0.0',
+        config: {},
+        dependsOn: [],
+      });
+    }
+  }
+  seedHostProvidedServices();
 
   function isPluginActiveOrLoaded(name: string): boolean {
     return activePlugins.has(name) || loadedPlugins.has(name);
@@ -581,18 +609,19 @@ export function createPluginSystem(context: CreatePluginSystemOptions) {
       health.registerPluginCheck('plugin-system', async () => {
         const start = Date.now();
         const configured = lastConfiguredPluginsCount;
-      const loaded = loadedPlugins.size;
-      const status = configured === loaded ? 'ok' : loaded > 0 ? 'degraded' : 'unhealthy';
-      return {
-        name: 'plugin-system',
-        status,
-        durationMs: Date.now() - start,
-        details: {
-          configured,
-          loaded,
-          failures: pluginLoadFailures.slice(-10),
-        },
-      };
+        const syntheticHost = loadedPlugins.has(HOST_PROVIDER_PLUGIN_NAME) ? 1 : 0;
+        const loaded = loadedPlugins.size - syntheticHost;
+        const status = configured === loaded ? 'ok' : loaded > 0 ? 'degraded' : 'unhealthy';
+        return {
+          name: 'plugin-system',
+          status,
+          durationMs: Date.now() - start,
+          details: {
+            configured,
+            loaded,
+            failures: pluginLoadFailures.slice(-10),
+          },
+        };
       });
       healthCheckRegistered = true;
     }

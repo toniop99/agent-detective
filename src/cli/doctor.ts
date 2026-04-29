@@ -3,8 +3,8 @@ import { importPluginModuleFromSpecifier } from '../core/plugin-system.js';
 import { validatePluginConfig, validatePluginSchema } from '../core/schema-validator.js';
 import type { Plugin } from '../core/types.js';
 import { isAgentInstalled, normalizeAgent } from '../agents/index.js';
-import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { accessSync, constants, existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 
 type DoctorOptions = {
   installRoot?: string;
@@ -120,6 +120,30 @@ export async function runDoctor({ installRoot, argv }: DoctorOptions): Promise<v
         ? `Agent '${agentId}' is installed`
         : `Agent '${agentId}' is not installed or not on PATH`,
     });
+
+    if (config.persistence?.enabled && config.persistence.databasePath?.trim()) {
+      const raw = config.persistence.databasePath.trim();
+      const resolved = isAbsolute(raw) ? raw : resolve(configRootUsed, raw);
+      const parentDir = dirname(resolved);
+      let ok = true;
+      let message = `Persistence database path is writable (${resolved})`;
+      try {
+        mkdirSync(parentDir, { recursive: true });
+        accessSync(parentDir, constants.W_OK);
+        const probe = resolve(parentDir, `.agent-detective-doctor-probe-${Date.now()}`);
+        writeFileSync(probe, 'ok');
+        unlinkSync(probe);
+      } catch (err) {
+        ok = false;
+        message = `Persistence database path not usable: ${resolved} (${(err as Error).message})`;
+      }
+      checks.push({
+        id: 'persistence.database',
+        ok,
+        message,
+        details: verbose ? { resolved, parentDir } : { resolved },
+      });
+    }
 
     const pluginEntries = config.plugins ?? [];
 

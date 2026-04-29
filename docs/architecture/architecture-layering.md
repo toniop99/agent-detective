@@ -52,7 +52,7 @@ Entry point remains [`src/index.ts`](../../packages/local-repos-plugin/src/index
 
 ## Root app (`src/`)
 
-The host process is the **composition root**: Fastify server (presentation), plugin system and orchestrator (application / glue), agent CLI adapters (infrastructure). See [ADR 0001](adr/0001-layering-and-plugin-boundaries.md) and [ADR 0002](adr/0002-http-framework.md).
+The host process is the **composition root**: Fastify server (presentation), plugin system and orchestrator (application / glue), agent CLI adapters (infrastructure). See [ADR 0001](adr/0001-layering-and-plugin-boundaries.md), [ADR 0002](adr/0002-http-framework.md), and [ADR 0003](adr/0003-sqlite-persistence-and-host-services.md).
 
 ## What we avoid
 

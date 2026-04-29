@@ -5,9 +5,16 @@ import type {
   JiraClient,
   JiraCommentRecord,
   JiraIssueRecord,
+  JiraSubtaskCreateSpec,
 } from './jira-client.js';
 
-export type { JiraAttachmentRecord, JiraClient, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+export type {
+  JiraAttachmentRecord,
+  JiraClient,
+  JiraCommentRecord,
+  JiraIssueRecord,
+  JiraSubtaskCreateSpec,
+} from './jira-client.js';
 
 /**
  * Mock Jira client for testing.
@@ -22,6 +29,7 @@ export function createMockJiraClient(options?: { logger?: Pick<Logger, 'warn' | 
   const { logger } = options ?? {};
   const comments = new Map<string, JiraCommentRecord[]>();
   const issues = new Map<string, JiraIssueRecord>();
+  let mockIssueSeq = 1;
   const log = (line: string) => {
     if (logger?.warn) {
       logger.warn(line);
@@ -77,9 +85,36 @@ export function createMockJiraClient(options?: { logger?: Pick<Logger, 'warn' | 
       return Buffer.alloc(0);
     },
 
+    async createSubtasks(
+      parentIssueKey: string,
+      specs: ReadonlyArray<JiraSubtaskCreateSpec>
+    ): Promise<{ keys: string[] }> {
+      const keys: string[] = [];
+      for (const spec of specs) {
+        const key = `MOCK-SUB-${mockIssueSeq++}`;
+        keys.push(key);
+        issues.set(key, {
+          key,
+          fields: {
+            summary: spec.summary,
+            description: spec.description,
+            parent: { key: parentIssueKey },
+          },
+        });
+      }
+      const banner = '─'.repeat(40);
+      log(
+        `[MOCK] createSubtasks under ${parentIssueKey}: ${keys.join(', ')}\n${banner}\n${specs
+          .map((s) => s.summary)
+          .join('\n')}\n${banner}`
+      );
+      return { keys };
+    },
+
     clear(): void {
       comments.clear();
       issues.clear();
+      mockIssueSeq = 1;
     },
   };
 }
