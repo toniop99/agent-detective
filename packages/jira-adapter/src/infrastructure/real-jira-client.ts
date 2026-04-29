@@ -2,7 +2,13 @@ import { Version3Client } from 'jira.js';
 import { HttpException } from 'jira.js';
 import type { Logger } from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from '../domain/types.js';
-import type { JiraClient, JiraAttachmentRecord, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
+import type {
+  JiraClient,
+  JiraAttachmentRecord,
+  JiraCommentRecord,
+  JiraIssueRecord,
+  JiraSubtaskCreateSpec,
+} from './jira-client.js';
 import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';
 import { extractBodyText } from '../domain/comment-trigger.js';
 import { exchangeJiraRefreshToken } from './jira-oauth.js';
@@ -328,6 +334,58 @@ export function createRealJiraClient(
       } catch (err) {
         throw wrapJiraError('downloadAttachment', err);
       }
+    },
+
+    async createSubtasks(
+      parentIssueKey: string,
+      specs: ReadonlyArray<JiraSubtaskCreateSpec>
+    ): Promise<{ keys: string[] }> {
+      if (specs.length === 0) return { keys: [] };
+      let parentFields: Record<string, unknown>;
+      try {
+        const data = await withRetry('getIssueForSubtasks', (c) =>
+          c.issues.getIssue({ issueIdOrKey: parentIssueKey })
+        );
+        parentFields = (data.fields ?? {}) as Record<string, unknown>;
+      } catch (err) {
+        if (isHttpStatus(err, 404)) {
+          throw new Error(`jira-adapter: parent issue ${parentIssueKey} not found for createSubtasks`, {
+            cause: err,
+          });
+        }
+        throw wrapJiraError('getIssue', err);
+      }
+      const project = parentFields.project;
+      const projectKey =
+        typeof project === 'object' &&
+        project !== null &&
+        'key' in project &&
+        typeof (project as { key?: unknown }).key === 'string'
+          ? (project as { key: string }).key
+          : undefined;
+      if (!projectKey) {
+        throw new Error(`jira-adapter: could not resolve project key for parent ${parentIssueKey}`);
+      }
+      const keys: string[] = [];
+      for (const spec of specs) {
+        const created = await withRetry('createSubtask', (c) =>
+          c.issues.createIssue({
+            fields: {
+              project: { key: projectKey },
+              parent: { key: parentIssueKey },
+              summary: spec.summary,
+              ...(spec.description ? { description: markdownToAdfDoc(spec.description) } : {}),
+              issuetype: { name: 'Sub-task' },
+            },
+          })
+        );
+        const key = (created as { key?: string }).key;
+        if (!key) {
+          throw new Error('jira-adapter: createIssue returned no key');
+        }
+        keys.push(key);
+      }
+      return { keys };
     },
 
     clear(): void {

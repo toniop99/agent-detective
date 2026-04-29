@@ -110,6 +110,22 @@ export interface JiraAdapterConfig {
    * analysis Markdown for Jira Automation. Default false.
    */
   structuredCommentMetadata?: boolean;
+
+  /**
+   * After `TASK_COMPLETED`, optionally create Jira subtasks under the parent issue
+   * before posting the analysis comment. Requires host `AppPersistence` when enabled.
+   */
+  taskSpawnOnComplete?: 'off' | 'subtasks';
+  /** Max subtasks per completed task (default 3). */
+  taskSpawnMaxPerCompletion?: number;
+  /** Markdown/plain template for default subtask summary; supports `{result}` placeholder. */
+  taskSpawnSubtaskSummaryTemplate?: string;
+  /** Optional description template; supports `{result}`. */
+  taskSpawnSubtaskDescriptionTemplate?: string;
+  /** When true, parse optional ```json …``` block with `{ "subtasks": [...] }` to override specs (capped by max). */
+  taskSpawnMergeAgentJson?: boolean;
+  /** If non-empty, skip spawn when parent issue project key is not in this list. */
+  taskSpawnAllowedProjectKeys?: string[];
 }
 
 export interface JiraTaskInfo {

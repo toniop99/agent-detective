@@ -28,6 +28,11 @@ export interface JiraAttachmentRecord {
   size: number;
 }
 
+export interface JiraSubtaskCreateSpec {
+  summary: string;
+  description?: string;
+}
+
 export interface JiraClient {
   addComment(issueKey: string, commentText: string, options?: AddCommentOptions): Promise<{ success: boolean; issueKey: string }>;
   getIssue(issueKey: string): Promise<JiraIssueRecord | null>;
@@ -35,5 +40,13 @@ export interface JiraClient {
   getComments(issueKey: string): Promise<JiraCommentRecord[]>;
   getAttachments(issueKey: string): Promise<JiraAttachmentRecord[]>;
   downloadAttachment(attachmentId: string): Promise<Buffer>;
+  /**
+   * Create subtasks under a parent issue (Jira Cloud REST v3). Implementations may
+   * no-op partially on failure; callers should treat thrown errors as total failure.
+   */
+  createSubtasks(
+    parentIssueKey: string,
+    specs: ReadonlyArray<JiraSubtaskCreateSpec>
+  ): Promise<{ keys: string[] }>;
   clear(): void;
 }
