@@ -53,6 +53,9 @@ export type LandingStrings = {
     readDocs: string;
     viewGithub: string;
     pullImage: string;
+    quickStartNoteHtml: string;
+    quickStartDisplay: string;
+    quickStartCopy: string;
     copy: string;
     keyboardHint: string;
     metaLineHtml: string;
@@ -136,7 +139,13 @@ export const strings: Record<Lang, LandingStrings> = {
         'Your agents listen where work happens—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—and answer with <span class="text-evidence-300/90">grounded, repo-level insight</span>, not generic filler. One core; plugins and config define the rest.',
       readDocs: 'Read the docs',
       viewGithub: 'View on GitHub',
-      pullImage: 'Quick start (from source)',
+      pullImage: 'Quick start (release binary)',
+      quickStartNoteHtml:
+        'Download <span class="text-paper-200/70 font-mono text-[0.65rem]">agent-detective-*</span> for your platform from <a class="text-evidence-300/80 hover:underline" href="https://github.com/toniop99/agent-detective/releases/latest">GitHub Releases</a> into <span class="font-mono text-paper-200/70 text-[0.65rem]">/opt/agent-detective/</span> alongside <span class="font-mono text-paper-200/70 text-[0.65rem]">config/</span> — see <a class="text-evidence-300/80 hover:underline" href="/docs/operator/binary/">native binary</a>.',
+      quickStartDisplay:
+        'chmod +x /opt/agent-detective/agent-detective\n/opt/agent-detective/agent-detective doctor --config-root /opt/agent-detective',
+      quickStartCopy:
+        'chmod +x /opt/agent-detective/agent-detective && /opt/agent-detective/agent-detective doctor --config-root /opt/agent-detective',
       copy: 'Copy',
       keyboardHint:
         'Press <kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">1</kbd>–<kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">5</kbd> to jump sections (desktop)',
@@ -169,7 +178,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Operator-ready',
-          body: 'Fastify, health, metrics, structured logs, JSON and env. Run from source or install a release binary when you leave your dev machine.',
+          body: 'Fastify, health, metrics, structured logs, JSON and env. Prefer a signed release binary on the host; build from source when you extend the core.',
         },
       ],
     },
@@ -240,7 +249,13 @@ export const strings: Record<Lang, LandingStrings> = {
         'Tus agentes escuchan donde ocurre el trabajo—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—y responden con <span class="text-evidence-300/90">contexto real del repositorio</span>, no relleno genérico. Un núcleo; plugins y configuración definen el resto.',
       readDocs: 'Leer la documentación',
       viewGithub: 'Ver en GitHub',
-      pullImage: 'Inicio rápido (desde código)',
+      pullImage: 'Inicio rápido (binario de release)',
+      quickStartNoteHtml:
+        'Descarga <span class="text-paper-200/70 font-mono text-[0.65rem]">agent-detective-*</span> para tu plataforma desde <a class="text-evidence-300/80 hover:underline" href="https://github.com/toniop99/agent-detective/releases/latest">GitHub Releases</a> en <span class="font-mono text-paper-200/70 text-[0.65rem]">/opt/agent-detective/</span> junto a <span class="font-mono text-paper-200/70 text-[0.65rem]">config/</span> — ver <a class="text-evidence-300/80 hover:underline" href="/docs/operator/binary/">binario nativo</a>.',
+      quickStartDisplay:
+        'chmod +x /opt/agent-detective/agent-detective\n/opt/agent-detective/agent-detective doctor --config-root /opt/agent-detective',
+      quickStartCopy:
+        'chmod +x /opt/agent-detective/agent-detective && /opt/agent-detective/agent-detective doctor --config-root /opt/agent-detective',
       copy: 'Copiar',
       keyboardHint:
         'Pulsa <kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">1</kbd>–<kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">5</kbd> para saltar de sección (escritorio)',
@@ -273,7 +288,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Listo para operaciones',
-          body: 'Fastify, salud, métricas, logs estructurados, JSON y entorno. Ejecuta desde el código fuente o instala un binario de release al salir de tu máquina de desarrollo.',
+          body: 'Fastify, salud, métricas, logs estructurados, JSON y entorno. En el host, prioriza un binario de release firmado; compila desde el código si amplías el núcleo.',
         },
       ],
     },

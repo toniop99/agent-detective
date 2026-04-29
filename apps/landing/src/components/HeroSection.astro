@@ -86,17 +86,20 @@ const { hero } = Astro.props;
             class="ad-section-label mb-2.5"
           >{hero.pullImage}
           </p>
+          <p
+            class="text-paper-200/55 mb-2.5 font-mono text-[0.65rem] leading-relaxed"
+            set:html={hero.quickStartNoteHtml}
+          />
           <div
-            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
           >
             <code
-              class="text-evidence-300/90 font-mono text-[0.7rem] leading-relaxed break-all sm:text-[0.8rem]"
-            >git clone https://github.com/toniop99/agent-detective.git && cd agent-detective && pnpm install && pnpm dev
-            </code>
+              class="text-evidence-300/90 font-mono text-[0.7rem] leading-relaxed break-all whitespace-pre-wrap sm:text-[0.8rem]"
+            >{hero.quickStartDisplay}</code>
             <button
               type="button"
               class="text-ink-1000 bg-amber-400/90 focus:ring-ink-1000/80 shrink-0 self-start font-mono text-xs font-semibold focus:ring-2 focus:outline-none"
-              data-ad-copy="git clone https://github.com/toniop99/agent-detective.git && cd agent-detective && pnpm install && pnpm dev"
+              data-ad-copy={hero.quickStartCopy}
             >{hero.copy}
             </button>
           </div>
