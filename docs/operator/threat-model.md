@@ -28,6 +28,7 @@ This is not a formal penetration-test report; it is an **operator checklist** al
 | **Secret leakage via logs or comments** | Low–Medium | Credential exposure in Jira/Linear or log sinks | Never log raw tokens; use **`config/local.json`** + env whitelist ([configuration.md](../config/configuration.md)); avoid pasting secrets into issues. | Audit log redaction; restrict log access. |
 | **MITM on outbound Jira/Linear/API** | Low (typical cloud) | Token theft | **HTTPS** only; pin corporate proxy policies if used. | TLS everywhere. |
 | **Compromised plugin package** | Low (first-party) / higher (arbitrary npm) | Code execution at server privilege | Prefer **pinned versions**; review custom plugins ([extending-with-plugins.md](../plugins/extending-with-plugins.md)). | Lockfile discipline; internal registry for forks. |
+| **SQLite file tampering / exfiltration** | Low (local disk) | Forged idempotency rows, leaked spawn metadata | Restrict filesystem permissions on the DB path; mount on encrypted volumes; backup access is operator-controlled. Cap Jira subtask volume via `taskSpawnMaxPerCompletion` ([jira-adapter.md](../plugins/jira-adapter.md)). | Run the app as a dedicated user; limit backup retention; use `taskSpawnAllowedProjectKeys` when projects must be constrained. |
 
 ## Webhook authenticity (detail)
 
@@ -41,7 +42,7 @@ This is not a formal penetration-test report; it is an **operator checklist** al
 
 ## Related docs
 
-- [configuration.md](../config/configuration.md) — env whitelist, secrets, `tasks.*`, `runRecords`
+- [configuration.md](../config/configuration.md) — env whitelist, secrets, `tasks.*`, `runRecords`, `persistence`
 - [golden-path.md](golden-path.md) — safe first install
 - [deployment.md](deployment.md) — nginx, systemd, health checks
 - Run **`agent-detective doctor`** before upgrades — validates tools and plugin contract surfaces.

@@ -31,6 +31,65 @@ Jira Cloud sends **HTTPS POST** requests to a **public URL**. Your local `agent-
 
 No path prefix beyond `/plugins/...` is required unless you put a reverse proxy in front.
 
+## Manual test: subtasks after analysis (`taskSpawnOnComplete`)
+
+Subtasks are created only after a task **finishes successfully** (`TASK_COMPLETED`), and only when **host persistence** is enabled (SQLite dedupe). This is **in addition to** the usual analysis comment — configure and run the [webhook → match → analyze](#matching-a-ticket-to-a-repository) path first, then use the steps below.
+
+### 1. Prerequisites
+
+- **Persistence:** a writable directory for the SQLite file (same rules as the **Host persistence (`persistence`)** section in [configuration.md](../config/configuration.md)).
+- **Jira:** your API user / OAuth scopes must allow **creating subtasks** on the parent issue’s project when **`mockMode` is false**.
+- **Optional allowlist:** if you set **`taskSpawnAllowedProjectKeys`**, the parent issue’s **project key** must be listed or spawn is skipped (check logs).
+
+### 2. Configuration (`config/local.json`)
+
+Merge with your existing Jira + local-repos settings (see [Configuration](#configuration)):
+
+1. **Top-level** `persistence`:
+
+   ```json
+   "persistence": {
+     "enabled": true,
+     "databasePath": "./data/jira-spawn-e2e.db"
+   }
+   ```
+
+   Use a path under your config directory or an absolute path; the parent directory must exist or be creatable.
+
+2. **Inside the Jira plugin `options`** for the same package entry as today:
+
+   ```json
+   "taskSpawnOnComplete": "subtasks",
+   "taskSpawnMaxPerCompletion": 3,
+   "taskSpawnMergeAgentJson": false
+   ```
+
+   Tune **`taskSpawnSubtaskSummaryTemplate`** / **`taskSpawnSubtaskDescriptionTemplate`** and other keys per [Jira adapter — Optional subtasks after analysis](../plugins/jira-adapter.md#optional-subtasks-after-analysis-taskspawnoncomplete).
+
+3. Run **`pnpm dev`** (or your process manager), then **`agent-detective doctor`** — expect **`persistence.database`** **PASS**.
+
+### 3. Trigger analysis (same as the main flow)
+
+1. Ensure the [tunnel and webhook URL](#how-jira-reaches-localhost) point at your server.
+2. Create or use an issue with a **repo label** and body that triggers **one successful** analysis run (see [Matching a ticket to a repository](#matching-a-ticket-to-a-repository)).
+3. Wait until the run completes (you see the usual **analysis comment** or **`[MOCK] Added comment...`** in logs when `mockMode` is true).
+
+### 4. What to verify
+
+| Mode | Subtasks | Logs / UI |
+|------|----------|-----------|
+| **`mockMode`: true** | No real Jira subtasks | Look for **`taskSpawn:`** lines after completion: subtask keys are simulated; dedupe still uses SQLite. |
+| **`mockMode`: false** | Real subtasks | In Jira, open the parent issue — **child issues** of type **Sub-task** should appear under the parent (up to **`taskSpawnMaxPerCompletion`**). |
+
+If nothing spawns, check: **`persistence.enabled`**, **`databasePath`**, **`taskSpawnOnComplete`** is **`"subtasks"`** (not `"off"`), **`taskSpawnAllowedProjectKeys`** (if set), and errors in **`taskSpawn:`** log lines.
+
+### 5. Idempotency (double completion)
+
+The dedupe key is **`${parentIssueKey}:${taskId}`** (see server logs). A **second** successful completion for the **same** task must **not** create another batch of subtasks.
+
+- **Easiest check:** complete one analysis, confirm subtasks (or mock logs), then **repeat the same completion path** only if your setup can emit **`TASK_COMPLETED`** again for the same `taskId` (e.g. re-drive the same integration test harness). The second time, logs should include exactly: **`taskSpawn: dedupe exists for <key>, skipping subtask REST`** (see [`index.ts`](../../packages/jira-adapter/src/index.ts) listener for `TASK_COMPLETED`).
+- **Reset test:** stop the server, **delete** the SQLite file (or only the `jira_spawn_dedupe` rows), restart — the **next** completion may create subtasks again.
+
 ### Which webhook source are you using?
 
 Jira Cloud offers two ways to send HTTP requests when issues change. Both are supported; the only difference is **how the event name reaches us**. The adapter accepts all three signals listed in [`resolveWebhookEvent`](../../packages/jira-adapter/src/presentation/jira-webhook-controller.ts) and normalizes them to the canonical `jira:*` form before routing.

@@ -48,6 +48,7 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
 | `tasks` | Orchestrator guardrails: `maxConcurrent`, `maxWallTimeMs` — also settable via `TASKS_MAX_CONCURRENT` / `TASKS_MAX_WALL_TIME_MS`. |
 | `runRecords` | Optional JSONL path for task lifecycle lines — also settable via `RUN_RECORDS_PATH`. |
+| `persistence` | Optional host SQLite (`node:sqlite`) — `enabled` + required `databasePath`; env `PERSISTENCE_ENABLED` / `PERSISTENCE_DATABASE_PATH`. |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
 :::note

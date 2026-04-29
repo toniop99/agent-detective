@@ -47,6 +47,8 @@ These variables override or extend the merged JSON when set:
 | `TASKS_MAX_CONCURRENT` | Positive integer, max **1000** — sets `tasks.maxConcurrent` (or overrides JSON). Invalid values are ignored. |
 | `TASKS_MAX_WALL_TIME_MS` | Non-negative integer, must be **> 0** to apply — sets `tasks.maxWallTimeMs` (or overrides JSON). |
 | `RUN_RECORDS_PATH` | Non-empty string — sets `runRecords.path` (or overrides JSON). Same path rules as JSON (absolute or relative to the config directory). |
+| `PERSISTENCE_ENABLED` | `true` / `false` — sets `persistence.enabled`. |
+| `PERSISTENCE_DATABASE_PATH` | Non-empty string — sets `persistence.databasePath` (required when persistence is enabled). |
 
 `RunAgentOptions` (orchestrator, Core API) supports **`threadId`**: passed to each agent’s shell command for session resume (opencode, claude, cursor). For HTTP, set `options.threadId` on `POST /api/agent/run` or `context.threadId` on `POST /api/events`.
 
@@ -76,6 +78,17 @@ Optional object; **`RUN_RECORDS_PATH`** may set `path` (see [core env whitelist]
 | `path` | string | Append-only **JSONL** file. Each line is schema **`agent-detective.run-record/v1`** with phases `started`, `completed`, or `failed` (`taskId`, optional `source` / `issueKey`, `durationMs`, `error`). Relative paths are resolved from the **config directory** (same root as `default.json`). |
 
 See [threat-model.md](../operator/threat-model.md) for why run records matter in regulated environments.
+
+## Host persistence (`persistence`)
+
+Optional **SQLite** store opened by the host (`node:sqlite`). Used for Jira **task spawn idempotency** and future host-owned state. Plugins access it via `getServiceFromPlugin` (see [plugins.md](../plugins/plugins.md) and [ADR 0003](../architecture/adr/0003-sqlite-persistence-and-host-services.md)).
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `enabled` | boolean | When `true`, **`databasePath` is required** (validated at startup). |
+| `databasePath` | string | SQLite file path — absolute or relative to the **config directory** (same resolution as `runRecords.path`). |
+
+`PERSISTENCE_*` env vars are listed in [core env whitelist](#core-env-whitelist).
 
 ## Observability log level
 

@@ -113,6 +113,17 @@ Jira attributes comments to the authenticated **user** (Basic API token user or 
 
 Set **`structuredCommentMetadata`: `true`** on the plugin to append a fenced JSON block after the analysis Markdown (still before the adapter footer). The payload uses schema **`agent-detective/jira-comment-metadata/v1`** with **`taskId`**, **`issueKey`**, optional **`matchedRepo`**, and **`completedAt`**. Use it from **Jira Automation** (smart value → JSON parse) or external scripts without scraping free-form analysis text.
 
+## Optional subtasks after analysis (`taskSpawnOnComplete`)
+
+When **`taskSpawnOnComplete`** is **`subtasks`**, the adapter creates Jira **subtasks** under the parent issue after each successful analysis (`TASK_COMPLETED`), **before** posting the usual result comment. This requires **host SQLite persistence** enabled in app config (`persistence.enabled` + `persistence.databasePath`) so idempotency survives restarts.
+
+- **`taskSpawnMaxPerCompletion`** (default **3**) caps how many subtasks are created per task.
+- **`taskSpawnSubtaskSummaryTemplate`** / **`taskSpawnSubtaskDescriptionTemplate`** support **`{result}`** placeholder (default one template-driven subtask when JSON merge is off).
+- **`taskSpawnMergeAgentJson`**: when true, the first fenced JSON code block in the agent output may supply `{ "subtasks": [ { "summary", "description" } ] }` (capped by max).
+- **`taskSpawnAllowedProjectKeys`**: when set, spawn is skipped unless the parent issue’s Jira **project key** is listed.
+
+OAuth / Basic tokens need permission to **create issues** in the project. **`mockMode`** still exercises dedupe + mock subtask keys without calling Jira.
+
 ## See also
 
 - [Application configuration](../config/configuration.md) (env whitelist)

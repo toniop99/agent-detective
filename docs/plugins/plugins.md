@@ -172,6 +172,34 @@ const consumerPlugin: Plugin = {
 };
 ```
 
+### Host-provided services
+
+The **host application** (root `src/`, not a plugin package) may register services that plugins consume — for example **SQLite persistence** for idempotency (`AppPersistence`). This follows [ADR 0003 — SQLite persistence and host services](../architecture/adr/0003-sqlite-persistence-and-host-services.md).
+
+- **Service key:** `HOST_PERSISTENCE_SERVICE` from `@agent-detective/sdk`.
+- **Synthetic provider plugin name:** `HOST_PROVIDER_PLUGIN_NAME` (`'@agent-detective/host'`) — reserved for the host; it is **not** a `config.plugins[]` package.
+
+Plugins should **not** call `getService(HOST_PERSISTENCE_SERVICE)` unless only one provider exists; prefer **`getServiceFromPlugin(HOST_PERSISTENCE_SERVICE, HOST_PROVIDER_PLUGIN_NAME)`** so you always bind to the host implementation. Wrap in **try/catch** (or check host docs) when persistence is **optional** — the service is absent when the operator disables persistence.
+
+```typescript
+import {
+  HOST_PERSISTENCE_SERVICE,
+  HOST_PROVIDER_PLUGIN_NAME,
+  type AppPersistence,
+} from '@agent-detective/sdk';
+
+// Inside register(), when your feature requires host persistence:
+let persistence: AppPersistence | undefined;
+try {
+  persistence = context.getServiceFromPlugin<AppPersistence>(
+    HOST_PERSISTENCE_SERVICE,
+    HOST_PROVIDER_PLUGIN_NAME,
+  );
+} catch {
+  persistence = undefined;
+}
+```
+
 ### LocalReposContext
 
 ```typescript

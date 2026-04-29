@@ -23,6 +23,7 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
 | `docsApiKey` | string |
 | `docsAuthRequired` | boolean |
 | `observability` | object (string keys; see JSON below) |
+| `persistence` | object (see JSON below) |
 | `pluginSystem` | object (see JSON below) |
 | `plugins` | array |
 | `port` | number |
@@ -154,6 +155,22 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
       },
       "required": [
         "path"
+      ],
+      "additionalProperties": false
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "databasePath": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "enabled"
       ],
       "additionalProperties": false
     },
