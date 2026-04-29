@@ -43,6 +43,34 @@ export const jiraAdapterOptionsSchema = z
     baseUrl: z.string().optional(),
     email: z.string().optional(),
     apiToken: z.string().optional(),
+    /**
+     * OAuth 2.0 (3LO) Client ID from the Atlassian developer console.
+     * When set together with `oauthClientSecret` and `oauthRefreshToken`,
+     * the adapter uses OAuth instead of Basic auth.
+     */
+    oauthClientId: z.string().optional(),
+    /**
+     * OAuth 2.0 (3LO) Client Secret from the Atlassian developer console.
+     */
+    oauthClientSecret: z.string().optional(),
+    /**
+     * OAuth 2.0 (3LO) rotating refresh token. The adapter refreshes access
+     * tokens at runtime and will warn operators when Jira rotates this value.
+     * Persist the latest refresh token via env or config/local.json.
+     */
+    oauthRefreshToken: z.string().optional(),
+    /**
+     * Base URL used to build the OAuth callback redirect URI.
+     * Example: `https://agent-detective.example.com` (no trailing slash).
+     */
+    oauthRedirectBaseUrl: z.string().optional(),
+    /**
+     * Jira Cloud ID for the site to operate on. Retrieved from Atlassian's
+     * `accessible-resources` endpoint during OAuth setup.
+     *
+     * OAuth calls are routed via `https://api.atlassian.com/ex/jira/{cloudId}`.
+     */
+    cloudId: z.string().optional(),
     analysisPrompt: z.string().optional(),
     analysisReadOnly: z.boolean().default(true),
     /**
@@ -105,16 +133,35 @@ export const jiraAdapterOptionsSchema = z
   .strict()
   .superRefine((data, ctx) => {
     if (data.mockMode !== false) return;
-    const missing: string[] = [];
-    if (!data.baseUrl?.trim()) missing.push('baseUrl');
-    if (!data.email?.trim()) missing.push('email');
-    if (!data.apiToken?.trim()) missing.push('apiToken');
-    if (missing.length === 0) return;
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `When mockMode is false, Jira Cloud REST requires: ${missing.join(', ')} (set in config or JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN).`,
-      path: ['mockMode'],
-    });
+    const hasOAuthBundle = Boolean(
+      data.oauthClientId?.trim() &&
+        data.oauthClientSecret?.trim() &&
+        data.oauthRefreshToken?.trim()
+    );
+    const hasBasicBundle = Boolean(
+      data.baseUrl?.trim() && data.email?.trim() && data.apiToken?.trim()
+    );
+
+    if (!hasOAuthBundle && !hasBasicBundle) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'When mockMode is false, Jira auth must be configured as either:' +
+          ' (A) Basic auth: baseUrl + email + apiToken (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN), or' +
+          ' (B) OAuth 2.0 (3LO): oauthClientId + oauthClientSecret + oauthRefreshToken + cloudId (JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_CLIENT_SECRET, JIRA_OAUTH_REFRESH_TOKEN, JIRA_CLOUD_ID).',
+        path: ['mockMode'],
+      });
+      return;
+    }
+
+    if (hasOAuthBundle && !data.cloudId?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'When mockMode is false and OAuth is configured, `cloudId` is required (set in config or JIRA_CLOUD_ID).',
+        path: ['cloudId'],
+      });
+    }
   });
 
 export type JiraAdapterOptions = z.infer<typeof jiraAdapterOptionsSchema>;

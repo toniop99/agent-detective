@@ -5,11 +5,11 @@ import type { JiraAdapterConfig } from '../domain/types.js';
 import type { JiraClient, JiraAttachmentRecord, JiraCommentRecord, JiraIssueRecord } from './jira-client.js';
 import { markdownToAdfDoc, type AdfDoc } from './markdown-to-adf.js';
 import { extractBodyText } from '../domain/comment-trigger.js';
+import { exchangeJiraRefreshToken } from './jira-oauth.js';
+import type { JiraStartupAuth } from './resolve-jira-startup-auth.js';
 
 function normalizeBaseUrl(url: string): string {
-  return String(url || '')
-    .trim()
-    .replace(/\/+$/, '');
+  return String(url || '').trim().replace(/\/+$/, '');
 }
 
 /** Minimal jira.js Version3Client surface used by this adapter. Enables test stubs. */
@@ -64,36 +64,146 @@ export function createRealJiraClient(
   config: JiraAdapterConfig,
   overrides?: RealJiraClientOverrides
 ): JiraClient {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || '');
-  const email = config.email?.trim() || '';
-  const apiToken = config.apiToken?.trim() || '';
+  const logger = overrides?.logger;
 
-  if (!overrides?.client && (!baseUrl || !email || !apiToken)) {
-    throw new Error(
-      'Jira adapter: mockMode is false but baseUrl, email, or apiToken is missing. Set them in config or via JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN.'
-    );
-  }
+  const PROACTIVE_REFRESH_BUFFER_MS = 60_000;
+  let auth: JiraStartupAuth | null = null;
+  let oauthRefreshChain: Promise<void> = Promise.resolve();
 
-  const client: Version3ClientSurface =
-    overrides?.client ??
-    new Version3Client({
-      host: baseUrl,
+  const buildClientFromAuth = (a: JiraStartupAuth): Version3ClientSurface => {
+    if (a.mode === 'basic') {
+      return new Version3Client({
+        host: normalizeBaseUrl(a.baseUrl),
+        authentication: {
+          basic: { email: a.email, apiToken: a.apiToken },
+        },
+      });
+    }
+    // OAuth calls must be routed via api.atlassian.com with cloudId in the path.
+    return new Version3Client({
+      host: `https://api.atlassian.com/ex/jira/${a.cloudId}`,
       authentication: {
-        basic: { email, apiToken },
+        oauth2: { accessToken: a.accessToken },
       },
     });
+  };
 
-  const logger = overrides?.logger;
+  const refreshOAuthAccessToken = async (reason: string): Promise<void> => {
+    if (!auth || auth.mode !== 'oauth') return;
+    const o = auth;
+    logger?.info(`jira-adapter: refreshing OAuth access token (${reason})`);
+    const tokens = await exchangeJiraRefreshToken({
+      clientId: o.clientId,
+      clientSecret: o.clientSecret,
+      refreshToken: o.refreshToken,
+    });
+    let refreshToken = o.refreshToken;
+    if (tokens.refresh_token) {
+      refreshToken = tokens.refresh_token;
+      logger?.warn(
+        'jira-adapter: OAuth refresh returned a new refresh_token — update JIRA_OAUTH_REFRESH_TOKEN (or plugin config)'
+      );
+    }
+    let expiresAtMs = o.expiresAtMs;
+    if (typeof tokens.expires_in === 'number') {
+      expiresAtMs = Date.now() + tokens.expires_in * 1000;
+    }
+    auth = {
+      mode: 'oauth',
+      cloudId: o.cloudId,
+      accessToken: tokens.access_token,
+      refreshToken,
+      clientId: o.clientId,
+      clientSecret: o.clientSecret,
+      expiresAtMs,
+    };
+    client = buildClientFromAuth(auth);
+  };
+
+  const scheduleOAuthRefresh = (reason: string): Promise<void> => {
+    oauthRefreshChain = oauthRefreshChain.then(() => refreshOAuthAccessToken(reason));
+    return oauthRefreshChain;
+  };
+
+  const ensureOAuthFresh = async (): Promise<void> => {
+    if (!auth || auth.mode !== 'oauth') return;
+    if (!auth.accessToken) {
+      await scheduleOAuthRefresh('startup (no access token)');
+      return;
+    }
+    const exp = auth.expiresAtMs;
+    if (exp !== undefined && Date.now() > exp - PROACTIVE_REFRESH_BUFFER_MS) {
+      await scheduleOAuthRefresh('proactive (near expiry)');
+    }
+  };
+
+  const isAuthFailure = (err: unknown): boolean => {
+    return err instanceof HttpException && (err.status === 401 || err.status === 403);
+  };
+
+  const withRetry = async <T>(op: string, fn: (c: Version3ClientSurface) => Promise<T>): Promise<T> => {
+    await ensureOAuthFresh();
+    try {
+      return await fn(client);
+    } catch (err) {
+      if (auth?.mode === 'oauth' && isAuthFailure(err)) {
+        logger?.warn(`jira-adapter: Jira auth error during ${op} — attempting token refresh`);
+        await scheduleOAuthRefresh('reactive (401)');
+        return await fn(client);
+      }
+      throw err;
+    }
+  };
+
+  let client: Version3ClientSurface =
+    overrides?.client ??
+    (() => {
+      const hasOAuthBundle = Boolean(
+        config.oauthClientId?.trim() &&
+          config.oauthClientSecret?.trim() &&
+          config.oauthRefreshToken?.trim()
+      );
+      if (hasOAuthBundle) {
+        const cloudId = config.cloudId?.trim() ?? '';
+        if (!cloudId) {
+          throw new Error('jira-adapter: OAuth configured but cloudId is missing (set JIRA_CLOUD_ID).');
+        }
+        auth = {
+          mode: 'oauth',
+          cloudId,
+          clientId: config.oauthClientId!.trim(),
+          clientSecret: config.oauthClientSecret!.trim(),
+          refreshToken: config.oauthRefreshToken!.trim(),
+          accessToken: config.apiToken?.trim() ?? '',
+          expiresAtMs: undefined,
+        };
+        return buildClientFromAuth(auth);
+      }
+
+      const baseUrl = normalizeBaseUrl(config.baseUrl || '');
+      const email = config.email?.trim() || '';
+      const apiToken = config.apiToken?.trim() || '';
+      if (!baseUrl || !email || !apiToken) {
+        throw new Error(
+          'Jira adapter: mockMode is false but baseUrl, email, or apiToken is missing (Basic auth). ' +
+            'Configure Basic auth (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN) or OAuth (JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_CLIENT_SECRET, JIRA_OAUTH_REFRESH_TOKEN, JIRA_CLOUD_ID).'
+        );
+      }
+      auth = { mode: 'basic', baseUrl, email, apiToken };
+      return buildClientFromAuth(auth);
+    })();
 
   return {
     async addComment(issueKey, commentText, options?): Promise<{ success: boolean; issueKey: string }> {
       const adf = markdownToAdfDoc(commentText);
       try {
-        await client.issueComments.addComment({
-          issueIdOrKey: issueKey,
-          comment: adf,
-          ...(options?.parentId ? { parentId: options.parentId } : {}),
-        });
+        await withRetry('addComment', (c) =>
+          c.issueComments.addComment({
+            issueIdOrKey: issueKey,
+            comment: adf,
+            ...(options?.parentId ? { parentId: options.parentId } : {}),
+          })
+        );
         return { success: true, issueKey };
       } catch (err) {
         // Jira's ADF validator returns a generic `INVALID_INPUT` for every
@@ -109,11 +219,13 @@ export function createRealJiraClient(
               `adfSummary=${summarizeAdf(adf)} originalError=${describeHttpError(err)}`
           );
           try {
-            await client.issueComments.addComment({
-              issueIdOrKey: issueKey,
-              comment: plainTextToAdfDoc(commentText),
-              ...(options?.parentId ? { parentId: options.parentId } : {}),
-            });
+            await withRetry('addCommentPlainTextRetry', (c) =>
+              c.issueComments.addComment({
+                issueIdOrKey: issueKey,
+                comment: plainTextToAdfDoc(commentText),
+                ...(options?.parentId ? { parentId: options.parentId } : {}),
+              })
+            );
             logger?.info(
               `Jira plain-text retry succeeded for ${issueKey} (formatting lost but body preserved).`
             );
@@ -131,7 +243,7 @@ export function createRealJiraClient(
 
     async getIssue(issueKey): Promise<JiraIssueRecord | null> {
       try {
-        const data = await client.issues.getIssue({ issueIdOrKey: issueKey });
+        const data = await withRetry('getIssue', (c) => c.issues.getIssue({ issueIdOrKey: issueKey }));
         return {
           key: data.key ?? issueKey,
           fields: (data.fields ?? {}) as unknown as Record<string, unknown>,
@@ -144,10 +256,12 @@ export function createRealJiraClient(
 
     async updateIssue(issueKey, updates): Promise<{ success: boolean }> {
       try {
-        await client.issues.editIssue({
+        await withRetry('updateIssue', (c) =>
+          c.issues.editIssue({
           issueIdOrKey: issueKey,
           fields: updates,
-        });
+          })
+        );
         return { success: true };
       } catch (err) {
         throw wrapJiraError('updateIssue', err);
@@ -156,10 +270,12 @@ export function createRealJiraClient(
 
     async getComments(issueKey): Promise<JiraCommentRecord[]> {
       try {
-        const page = await client.issueComments.getComments({
-          issueIdOrKey: issueKey,
-          expand: 'renderedBody',
-        });
+        const page = await withRetry('getComments', (c) =>
+          c.issueComments.getComments({
+            issueIdOrKey: issueKey,
+            expand: 'renderedBody',
+          })
+        );
         const list = page.comments ?? [];
         return list.map((c) => ({
           text:
@@ -182,10 +298,12 @@ export function createRealJiraClient(
 
     async getAttachments(issueKey): Promise<JiraAttachmentRecord[]> {
       try {
-        const data = await client.issues.getIssue({
-          issueIdOrKey: issueKey,
-          fields: ['attachment'],
-        });
+        const data = await withRetry('getAttachments', (c) =>
+          c.issues.getIssue({
+            issueIdOrKey: issueKey,
+            fields: ['attachment'],
+          })
+        );
         const attachments = (data.fields?.attachment ?? []) as unknown as Array<Record<string, unknown>>;
         return attachments
           .filter((a) => typeof a.mimeType === 'string' && a.mimeType.startsWith('image/'))
@@ -204,7 +322,9 @@ export function createRealJiraClient(
 
     async downloadAttachment(attachmentId): Promise<Buffer> {
       try {
-        return await client.issueAttachments.getAttachmentContent(attachmentId) as Buffer;
+        return (await withRetry('downloadAttachment', (c) =>
+          c.issueAttachments.getAttachmentContent(attachmentId) as Promise<Buffer>
+        )) as Buffer;
       } catch (err) {
         throw wrapJiraError('downloadAttachment', err);
       }

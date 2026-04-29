@@ -106,7 +106,9 @@ Only when **`prDryRun`** is **false** and **credentials** + **`vcs`** are valid 
 ### 5. `mockMode` (Jira API)
 
 - **`mockMode: true`:** pr-pipeline still runs (worktree, agent, commit). Jira “comments” from the PR job are **logged** as `[MOCK] Added comment...` and do not hit Jira. Use to validate git + agent without a Jira token.
-- **`mockMode: false`:** you need **`JIRA_BASE_URL`**, **`JIRA_EMAIL`**, **`JIRA_API_TOKEN`** (or the same in config) so the pipeline can post the dry-run or PR result back to the ticket.
+- **`mockMode: false`:** you need Jira auth so the pipeline can post the dry-run or PR result back to the ticket:
+  - **Basic:** `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, or
+  - **OAuth 2.0 (3LO):** `JIRA_OAUTH_CLIENT_ID`, `JIRA_OAUTH_CLIENT_SECRET`, `JIRA_OAUTH_REFRESH_TOKEN`, `JIRA_CLOUD_ID` (and optionally `JIRA_API_TOKEN` as the current access token).
 
 ## Step-by-step: dry run (recommended first)
 

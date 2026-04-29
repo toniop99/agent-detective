@@ -1049,6 +1049,12 @@ the `RepoMatcher` service exposed by `local-repos-plugin`.
 
 **Can Disable:** Yes (`"enabled": false` in config)
 
+**Operator guide:** [jira-adapter.md](jira-adapter.md) — webhooks vs OAuth vs Basic, trigger phrases, OAuth install (start/callback), token copy + rotation, and identity notes.
+
+**Webhook URL (fixed):** `POST …/plugins/agent-detective-jira-adapter/webhook/jira`.
+
+**OAuth routes (optional):** `GET …/oauth/start` and `GET …/oauth/callback` when `oauthClientId`, `oauthClientSecret`, and `oauthRedirectBaseUrl` are set.
+
 #### Webhook Behavior Configuration
 
 The `webhookBehavior` option lets you define what action to take for each Jira webhook event type:

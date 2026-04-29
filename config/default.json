@@ -80,6 +80,11 @@
       "options": {
         "enabled": true,
         "mockMode": true,
+        "oauthClientId": "",
+        "oauthClientSecret": "",
+        "oauthRedirectBaseUrl": "",
+        "oauthRefreshToken": "",
+        "cloudId": "",
         "webhookBehavior": {
           "defaults": {
             "action": "ignore",

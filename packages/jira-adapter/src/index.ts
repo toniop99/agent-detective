@@ -4,6 +4,7 @@ import { createRealJiraClient } from './infrastructure/real-jira-client.js';
 import { StandardCapabilities, StandardEvents, definePlugin, type TaskEvent } from '@agent-detective/sdk';
 import type { JiraAdapterConfig } from './domain/types.js';
 import { registerJiraWebhookRoutes } from './presentation/jira-webhook-controller.js';
+import { registerJiraOAuthRoutes } from './presentation/jira-oauth-controller.js';
 import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/sdk';
@@ -106,6 +107,17 @@ const jiraAdapterPlugin = definePlugin({
     });
 
     registerJiraWebhookRoutes(scope, { webhookHandler, logger: extContext.logger });
+    registerJiraOAuthRoutes(scope, { config: parsed.data, logger: extContext.logger });
+
+    const oauthEnabled = Boolean(
+      cfg.oauthClientId?.trim() && cfg.oauthClientSecret?.trim() && cfg.oauthRedirectBaseUrl?.trim()
+    );
+    if (oauthEnabled) {
+      const base = cfg.oauthRedirectBaseUrl!.trim().replace(/\/$/, '');
+      extContext.logger?.info(
+        `Jira OAuth enabled: GET ${base}/plugins/agent-detective-jira-adapter/oauth/start (callback: /plugins/agent-detective-jira-adapter/oauth/callback)`
+      );
+    }
 
     const webhookUrlPath = `/plugins/${PLUGIN_NAME.replace(/^@/, '').replace(/\//g, '-')}/webhook/jira`;
     extContext.logger?.info(`Jira adapter registered at POST ${webhookUrlPath} (mockMode: ${mockMode})`);
