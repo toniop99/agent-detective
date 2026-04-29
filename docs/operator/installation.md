@@ -13,7 +13,7 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 Use the **Configuration** section in the sidebar after you pick an install path—load order and env are documented there.
 :::
 
-**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
+**Typical reading order:** this page (choose how you run) → [golden path](golden-path.md) (first webhook → analysis) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
 
 **Native binary on a single Linux VM:** [binary.md](binary.md) (download, `doctor`, signatures) → [deployment.md](deployment.md) (install layout, systemd, nginx, health checks).
 

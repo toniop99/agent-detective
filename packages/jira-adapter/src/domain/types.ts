@@ -104,6 +104,12 @@ export interface JiraAdapterConfig {
    * Default: false.
    */
   fetchIssueComments?: boolean;
+
+  /**
+   * Append fenced JSON (`agent-detective/jira-comment-metadata/v1`) after
+   * analysis Markdown for Jira Automation. Default false.
+   */
+  structuredCommentMetadata?: boolean;
 }
 
 export interface JiraTaskInfo {

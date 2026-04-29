@@ -2,6 +2,61 @@ import type { Logger } from '@agent-detective/types';
 import type { EnqueueFn, TaskQueue } from './types.js';
 
 /**
+ * Wraps a {@link TaskQueue} so that across **all** `queueKey` values at most
+ * `maxConcurrent` jobs run `fn` at the same time. Per-key serialization of the
+ * inner queue is preserved.
+ */
+export function createLimitedConcurrencyTaskQueue(
+  inner: TaskQueue,
+  maxConcurrent: number,
+  logger: Logger
+): TaskQueue {
+  if (maxConcurrent < 1) {
+    throw new Error('maxConcurrent must be at least 1');
+  }
+
+  let active = 0;
+  const waiters: Array<() => void> = [];
+
+  async function acquire(): Promise<void> {
+    if (active < maxConcurrent) {
+      active += 1;
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      waiters.push(() => {
+        active += 1;
+        resolve();
+      });
+    });
+  }
+
+  function release(): void {
+    active -= 1;
+    const next = waiters.shift();
+    if (next) next();
+  }
+
+  return {
+    enqueue(queueKey: string, fn: () => Promise<void>): Promise<void> {
+      return inner.enqueue(queueKey, async () => {
+        await acquire();
+        const waitersDepth = waiters.length;
+        if (waitersDepth > 0 && waitersDepth % 10 === 0) {
+          logger.info(`task_concurrency_queue depth=${waitersDepth} max=${maxConcurrent}`);
+        }
+        try {
+          await fn();
+        } finally {
+          release();
+        }
+      });
+    },
+    shutdown: inner.shutdown,
+  };
+}
+
+/**
  * Task queue that ensures tasks with the same key are executed serially.
  * Tasks for different keys run in parallel.
  *

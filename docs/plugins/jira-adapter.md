@@ -109,6 +109,10 @@ Atlassian uses rotating refresh tokens. When a refresh returns a new refresh tok
 
 Jira attributes comments to the authenticated **user** (Basic API token user or the user who completed OAuth). To make comments recognizable, use a dedicated bot Atlassian user with a clear display name and avatar, and run OAuth consent as that user.
 
+## Structured comment metadata (Jira Automation)
+
+Set **`structuredCommentMetadata`: `true`** on the plugin to append a fenced JSON block after the analysis Markdown (still before the adapter footer). The payload uses schema **`agent-detective/jira-comment-metadata/v1`** with **`taskId`**, **`issueKey`**, optional **`matchedRepo`**, and **`completedAt`**. Use it from **Jira Automation** (smart value → JSON parse) or external scripts without scraping free-form analysis text.
+
 ## See also
 
 - [Application configuration](../config/configuration.md) (env whitelist)

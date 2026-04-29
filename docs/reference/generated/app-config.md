@@ -26,6 +26,8 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
 | `pluginSystem` | object (see JSON below) |
 | `plugins` | array |
 | `port` | number |
+| `runRecords` | object (see JSON below) |
+| `tasks` | object (see JSON below) |
 
 ## JSON Schema (draft-7)
 
@@ -125,6 +127,35 @@ Source: `src/config/schema.ts` (`appConfigSchema` — unknown top-level keys are
         "type": "string"
       },
       "additionalProperties": {}
+    },
+    "tasks": {
+      "type": "object",
+      "properties": {
+        "maxConcurrent": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "maxWallTimeMs": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": false
+    },
+    "runRecords": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
     },
     "docsAuthRequired": {
       "type": "boolean"

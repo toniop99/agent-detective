@@ -1,7 +1,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import type { Logger } from '@agent-detective/types';
-import { createEnqueue, createMemoryTaskQueue } from '../../src/core/queue.js';
+import {
+  createEnqueue,
+  createMemoryTaskQueue,
+  createLimitedConcurrencyTaskQueue,
+} from '../../src/core/queue.js';
 
 const testLogger: Logger = {
   info: () => {},
@@ -84,6 +88,30 @@ describe('Queue', () => {
       executed = true;
     });
     assert.ok(executed);
+  });
+
+  it('createLimitedConcurrencyTaskQueue caps parallel work across keys', async () => {
+    const inner = createMemoryTaskQueue(testLogger);
+    const { enqueue } = createLimitedConcurrencyTaskQueue(inner, 2, testLogger);
+    let concurrent = 0;
+    let maxConcurrentObserved = 0;
+
+    const run = (key: string, ms: number) =>
+      enqueue(key, async () => {
+        concurrent += 1;
+        maxConcurrentObserved = Math.max(maxConcurrentObserved, concurrent);
+        await delay(ms);
+        concurrent -= 1;
+      });
+
+    await Promise.all([
+      run('a', 40),
+      run('b', 40),
+      run('c', 40),
+      run('d', 40),
+    ]);
+
+    assert.ok(maxConcurrentObserved <= 2, `expected at most 2 concurrent, saw ${maxConcurrentObserved}`);
   });
 
 });

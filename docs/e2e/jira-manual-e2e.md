@@ -70,6 +70,8 @@ Use **`config/local.json`** (merged over `default.json`, typically gitignored) s
 
 Optional: override **`analysisPrompt`** on `jira:issue_created` to steer the model toward root-cause analysis.
 
+Optional: set **`structuredCommentMetadata`: `true`** on the Jira plugin to append a machine-readable JSON block for Automation — see [Jira adapter — structured metadata](../plugins/jira-adapter.md#structured-comment-metadata-jira-automation).
+
 #### Auth option A: Basic (API token) — simplest path
 
 Set **all three**:
