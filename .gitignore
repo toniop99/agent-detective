@@ -60,4 +60,9 @@ deploy/
 # Local config (overrides default.json)
 config/local.json
 
-.agents
+# Agent plans (local); shared prompts live in .agents/agents and .agents/skills
+.agents/plans/
+
+# Generated from .agents/ for Cursor (symlinks or dirs; trailing slash alone can miss symlinks)
+.cursor/agents
+.cursor/skills

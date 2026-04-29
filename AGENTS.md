@@ -10,9 +10,10 @@ TypeScript **pnpm 10** monorepo: **`packages/*`**, optional **`apps/*`** (Starli
 
 | Topic | Location |
 |--------|-----------|
-| **Boot, test, lint, smoke, logs** | [`docs/development/agent-harness.md`](docs/development/agent-harness.md) |
+| **Boot, test, lint, smoke, logs** | [`docs/development/agent-harness.mdx`](docs/development/agent-harness.mdx) |
+| **Subagents / skills (canonical)** | [`.agents/agents/`](.agents/agents/) · [`.agents/skills/`](.agents/skills/) · [`.agents/README.md`](.agents/README.md) · Cursor mirror: `pnpm run agents:sync-cursor` → `.cursor/` · [`docs/development/cursor-delegation.md`](docs/development/cursor-delegation.md) |
 | **Suggested PR / agent loop** | [`docs/development/agent-workflow.md`](docs/development/agent-workflow.md) |
-| **Execution plans, tech-debt notes** | [`docs/exec-plans/README.md`](docs/exec-plans/README.md) |
+| **Execution plans, tech-debt notes** | `docs/exec-plans/` (optional tree; add `README.md` / `active/` when the team uses it) |
 | **Short tool refs (pnpm, Turbo, ESM)** | [`docs/references/README.md`](docs/references/README.md) |
 | **Do / don’t, plugins, common failures** | [`docs/development/agent-golden-rules.md`](docs/development/agent-golden-rules.md) |
 | **pnpm, Turbo, layout, debugging** | [`docs/development/development.md`](docs/development/development.md) |
@@ -73,5 +74,6 @@ pnpm run build:app   # root dist/ for pnpm start
 pnpm test
 pnpm run lint        # turbo lint + import guards + docs link check
 pnpm run docs:site:sync
+pnpm run agents:sync-cursor # symlink .cursor/{agents,skills} → .agents/… (also postinstall)
 ```
 

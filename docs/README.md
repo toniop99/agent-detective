@@ -10,7 +10,7 @@ AI-powered code analysis (Jira, webhooks, PR pipeline, local repos, and more). T
 | **Contribute to the repo** | [development/](development/) | pnpm, Turbo, agents (Cursor), migration notes |
 | **Agent harness (boot, verify, logs)** | [development/agent-harness.md](development/agent-harness.md) | Runbook for humans + coding agents |
 | **Agent workflow (PR loop)** | [development/agent-workflow.md](development/agent-workflow.md) | Suggested steps before/during/after changes |
-| **Execution plans & tech debt** | [exec-plans/](exec-plans/) | Versioned multi-step intent; rolling debt notes |
+| **Execution plans & tech debt** | `docs/exec-plans/` (create when needed) | Versioned multi-step intent; see `docs/exec-plans/README.md` in repos that maintain this tree |
 | **Short tool references** | [references/](references/) | pnpm, Turbo, ESM — low-token entry |
 | **Agent golden rules** | [development/agent-golden-rules.md](development/agent-golden-rules.md) | Do / don’t, plugins, common failures |
 | **Design** | [architecture/](architecture/) | System view, layering, [ADR](architecture/adr/) |
