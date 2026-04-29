@@ -1,4 +1,4 @@
-name: Release Docker Image
+name: GitHub Release
 
 on:
   push:
@@ -10,9 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  IMAGE_FULL_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -47,13 +44,12 @@ jobs:
       - id: ci-result
         run: echo "pass=true" >> $GITHUB_OUTPUT
 
-  build:
+  release:
     runs-on: ubuntu-latest
-    needs: ci
+    needs: [ci]
     if: needs.ci.outputs.pass == 'true'
     permissions:
-      contents: read
-      packages: write
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -69,127 +65,19 @@ jobs:
           fi
           echo "Releasing version: $VERSION"
 
-      - name: Extract version components
-        run: |
-          VERSION=${{ env.VERSION }}
-          MAJOR=${VERSION%%.*}
-          MINOR=${VERSION#*.}
-          MINOR=${MINOR%.*}
-
-          echo "MAJOR_VERSION=$MAJOR" >> $GITHUB_ENV
-          echo "MINOR_VERSION=$MINOR" >> $GITHUB_ENV
-          echo "FULL_VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.IMAGE_FULL_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=stable
-            type=raw,value=${{ env.MAJOR_VERSION }}
-            type=raw,value=${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}
-            type=raw,value=${{ env.FULL_VERSION }}
-            type=semver,pattern={{version}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          target: production
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            AGENTS=opencode,claude
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Verify multi-arch manifest
-        run: |
-          IMAGE="${{ env.IMAGE_FULL_NAME }}:latest"
-          echo "Inspecting multi-arch manifest for $IMAGE"
-          docker buildx imagetools inspect "$IMAGE"
-          echo "Checking for linux/amd64..."
-          docker buildx imagetools inspect "$IMAGE" | grep -q "linux/amd64" || { echo "ERROR: linux/amd64 not found"; exit 1; }
-          echo "Checking for linux/arm64..."
-          docker buildx imagetools inspect "$IMAGE" | grep -q "linux/arm64" || { echo "ERROR: linux/arm64 not found"; exit 1; }
-          echo "Multi-arch manifest verified successfully"
-
-  scan:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Pull image
-        run: docker pull ${{ env.IMAGE_FULL_NAME }}:latest
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_FULL_NAME }}:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  release:
-    runs-on: ubuntu-latest
-    needs: [ci, build, scan]
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
           body: |
-            ## Docker Image
+            ## Native binaries
 
-            Pull the image:
-
-            ```bash
-            docker pull ${{ env.IMAGE_FULL_NAME }}:${{ env.FULL_VERSION }}
-            docker pull ${{ env.IMAGE_FULL_NAME }}:latest
-            docker pull ${{ env.IMAGE_FULL_NAME }}:stable
-            ```
-
-            ## Native binary
-
-            Download the release asset for your platform:
+            Download the release asset for your platform (uploaded by the **Release Native Binaries** workflow):
 
             - `agent-detective-linux-x64`
             - `agent-detective-linux-arm64`
             - `agent-detective-darwin-arm64`
+            - `checksums-<target>.txt`
             - `sbom-<target>.cdx.json` (CycloneDX SBOM)
             - `*.sigstore.json` (Cosign v3 Sigstore bundles for signatures)
 
@@ -202,33 +90,12 @@ jobs:
             ./agent-detective-linux-x64 --config-root /opt/agent-detective
             ```
 
-            To verify signatures, see `docs/operator/binary.md`.
-
-            ### Available Tags
-
-            | Tag | Description |
-            |-----|-------------|
-            | `latest` | Most recent build |
-            | `stable` | Most recent release |
-            | `${{ env.MAJOR_VERSION }}` | Latest v${{ env.MAJOR_VERSION }}.x.x |
-            | `${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}` | Latest v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.x |
-            | `${{ env.FULL_VERSION }}` | This specific version |
+            To verify signatures and install layout, see `docs/operator/binary.md`.
 
             ### Security
 
-            Vulnerability scan results are available in the Security tab under "Code Scanning".
-
+            Release assets include SBOMs and Sigstore bundles for supply-chain verification.
           draft: false
           prerelease: ${{ contains(env.VERSION, 'alpha') || contains(env.VERSION, 'beta') || contains(env.VERSION, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Display image tags
-        run: |
-          echo "Image pushed to: ${{ env.IMAGE_FULL_NAME }}"
-          echo "Tags pushed:"
-          echo "  - latest"
-          echo "  - stable"
-          echo "  - ${{ env.MAJOR_VERSION }}"
-          echo "  - ${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
-          echo "  - ${{ env.FULL_VERSION }}"

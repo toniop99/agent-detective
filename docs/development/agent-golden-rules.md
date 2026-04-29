@@ -16,7 +16,7 @@ These rules keep the monorepo buildable, type-safe, and easy for agents to navig
 - **Plugin authors:** import everything from **`@agent-detective/sdk`** (types, runtime helpers, service constants — single dependency). **Host code only:** `@agent-detective/types` is the type-only contract, used inside `src/` and the host-facing workspace packages.
 - Use **`.ts`** for source and **`.test.ts`** for tests.
 - Use **ESM** with **`.js` extensions** in import specifiers (e.g. `from './foo.js'`) so emitted JS resolves.
-- Run **`pnpm run build`** before publishing packages; run **`pnpm run build:app`** for the root **`dist/index.js`** used by **`pnpm start`** and Docker.
+- Run **`pnpm run build`** before publishing packages; run **`pnpm run build:app`** for the root **`dist/index.js`** used by **`pnpm start`**.
 
 :::
 

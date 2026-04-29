@@ -37,26 +37,25 @@ echo "secrets/*" >> ../.gitignore
 echo "!secrets/.gitkeep" >> ../.gitignore
 ```
 
-## Usage with Docker Compose
+## Wiring secrets into the process
+
+Point the app at this directory or copy values into **`config/local.json`** / env vars the app reads (see [configuration.md](../docs/config/configuration.md)). With **systemd**, you can use **`EnvironmentFile=`** pointing at a root-only file, or **`Environment=`** for individual keys.
 
 ```bash
-# Create secrets
+# Create secret files (example: Jira)
 echo -n "your-api-token" > secrets/jira_api_token.txt
 echo -n "bot@example.com" > secrets/jira_email.txt
-
-# Start production stack
-docker-compose -f docker-compose.prod.yml up -d
+chmod 600 secrets/*.txt
 ```
 
-## Alternative: Environment Variables
+## Environment variables
 
-Instead of Docker secrets, you can use environment variables:
+You can skip files and export variables instead (same names the Jira adapter expects, e.g. `JIRA_API_TOKEN`, `JIRA_EMAIL`):
 
 ```bash
 export JIRA_API_TOKEN=your-api-token
 export JIRA_EMAIL=bot@example.com
-
-docker-compose -f docker-compose.prod.yml up -d
+pnpm start
 ```
 
-Environment variables take precedence over secrets if both are set.
+Environment variables take precedence over overlapping JSON config when covered by the whitelist in [configuration.md](../docs/config/configuration.md).

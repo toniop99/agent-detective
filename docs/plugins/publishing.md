@@ -1,6 +1,6 @@
 ---
 title: "Publishing Guide"
-description: Publish workspace packages to npm and Docker images to GitHub Container Registry.
+description: Publish workspace packages to npm from the agent-detective monorepo.
 sidebar:
   order: 5
 ---
@@ -121,7 +121,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ## For External Plugin Developers
 
-Wiring a published or private package into a **running** app (`plugins` in `config`, Docker volume paths, pnpm in the app root) is covered in **[extending-with-plugins.md](extending-with-plugins.md)**. Below: **`@agent-detective/sdk`** and publish mechanics.
+Wiring a published or private package into a **running** app (`plugins` in `config`, path specifiers, pnpm in the app root) is covered in **[extending-with-plugins.md](extending-with-plugins.md)**. Below: **`@agent-detective/sdk`** and publish mechanics.
 
 ### Installing the SDK
 
@@ -252,110 +252,6 @@ npm unpublish @agent-detective/sdk --force
 
 Note: You cannot unpublish a version if another package depends on it.
 
----
+## Application releases (operators)
 
-## Docker Image Publishing (ghcr.io)
-
-The agent-detective Docker image is published to GitHub Container Registry (ghcr.io).
-
-### Image Information
-
-| Item | Value |
-|------|-------|
-| Registry | ghcr.io |
-| Organization | toniop99 |
-| Repository | agent-detective |
-| Visibility | Public |
-
-### Image Tags
-
-| Tag | Description | Updated |
-|-----|-------------|---------|
-| `latest` | Latest build from main branch | Every push to main |
-| `stable` | Latest release | On version tag |
-| `1`, `1.0`, `1.0.0` | Version-specific tags | On version tag |
-
-### GitHub Actions Workflows
-
-The repository includes two workflows:
-
-#### docker.yml (Build on Push)
-
-- **Trigger:** Push to `main` branch
-- **Action:** Builds and pushes Docker image with `latest` tag
-- **Platforms:** linux/amd64, linux/arm64
-
-#### release.yml (Build on Version Tag)
-
-- **Trigger:** Push of tag `v*.*.*`
-- **Action:** Builds and pushes Docker image with all version tags
-- **Platforms:** linux/amd64, linux/arm64
-
-### Manual Image Build
-
-```bash
-# Build locally
-docker build --target production \
-  --build-arg AGENTS="opencode,claude" \
-  -t ghcr.io/toniop99/agent-detective:latest .
-
-# Login to ghcr.io
-echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-
-# Push
-docker push ghcr.io/toniop99/agent-detective:latest
-```
-
-### Version Tagging
-
-```bash
-# Create a version tag
-git tag v1.0.0
-git push origin v1.0.0
-
-# This triggers release.yml which:
-# 1. Builds the image
-# 2. Pushes with tags: latest, stable, 1, 1.0, 1.0.0
-# 3. Creates a GitHub Release
-```
-
-### Agent Selection at Build Time
-
-Build arguments control which agents are installed:
-
-```bash
-# Build with default agents (opencode only)
-docker build --target production -t agent-detective .
-
-# Build with multiple agents
-docker build --target production \
-  --build-arg AGENTS="opencode,claude" \
-  -t agent-detective:multi .
-
-# Available agents for AGENTS build-arg: opencode, claude (npm global).
-# Cursor Agent CLI (in-app id: cursor) is not installed via npm; see ../development/cursor-agent.md.
-```
-
-### Docker Image Structure
-
-```
-ghcr.io/toniop99/agent-detective:latest
-├── dist/              # Built application
-├── config/            # Default config
-├── plugins/           # Third-party plugins (volume mount)
-│   └── .gitkeep
-└── node_modules/     # Dependencies + bundled plugins
-```
-
-### Pulling the Image
-
-```bash
-# Latest
-docker pull ghcr.io/toniop99/agent-detective:latest
-
-# Specific version
-docker pull ghcr.io/toniop99/agent-detective:1.0.0
-
-# Stable
-docker pull ghcr.io/toniop99/agent-detective:stable
-```
+The **root app** is not published to npm. Operators install from **GitHub Releases** (native binaries) or **from source**; see [installation.md](../operator/installation.md) and [releasing.md](../operator/releasing.md).

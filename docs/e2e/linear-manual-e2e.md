@@ -33,7 +33,7 @@ Use **`config/local.json`** (gitignored) for secrets. Enable the plugin, set **`
 
 ## Smoke steps
 
-1. Start the app (`pnpm dev` or your Docker compose) and confirm logs show **`Linear adapter registered`** with the webhook path.
+1. Start the app (`pnpm dev` or `pnpm start` after a build) and confirm logs show **`Linear adapter registered`** with the webhook path.
 2. Create a Linear **issue** with a label matching a configured repo **`name`**.
 3. Confirm an analysis task is enqueued (or, with **`mockMode: true`**, that the adapter logs mock comment / processing without calling Linear for writes).
 4. Add a comment containing **`#agent-detective analyze`** (or your `retryTriggerPhrase`) and confirm a retry / analyze path runs.

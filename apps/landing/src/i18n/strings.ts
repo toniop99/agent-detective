@@ -136,12 +136,12 @@ export const strings: Record<Lang, LandingStrings> = {
         'Your agents listen where work happens—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—and answer with <span class="text-evidence-300/90">grounded, repo-level insight</span>, not generic filler. One core; plugins and config define the rest.',
       readDocs: 'Read the docs',
       viewGithub: 'View on GitHub',
-      pullImage: 'Pull image',
+      pullImage: 'Quick start (from source)',
       copy: 'Copy',
       keyboardHint:
         'Press <kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">1</kbd>–<kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">5</kbd> to jump sections (desktop)',
       metaLineHtml:
-        'Container-ready (GHCR), JSON + env configuration, Zod-typed options. <a class="text-evidence-300/80 hover:underline" href="/docs/config/configuration-hub">Configuration hub</a> · <a class="text-evidence-300/80 hover:underline" href="/docs/operator/docker/">Docker</a>',
+        'Self-hosted Fastify app, JSON + env configuration, Zod-typed options. <a class="text-evidence-300/80 hover:underline" href="/docs/config/configuration-hub">Configuration hub</a> · <a class="text-evidence-300/80 hover:underline" href="/docs/operator/installation/">Installation</a>',
       exhibitLabel: 'Exhibit A — case visualization',
       heroImageAlt:
         'Risograph-style artwork: magnifier, case tab, and code marks—triage, not stock tech art',
@@ -169,7 +169,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Operator-ready',
-          body: 'Fastify, health, metrics, structured logs, JSON and env. Ship with Docker from GHCR when you are done iterating locally.',
+          body: 'Fastify, health, metrics, structured logs, JSON and env. Run from source or install a release binary when you leave your dev machine.',
         },
       ],
     },
@@ -187,7 +187,7 @@ export const strings: Record<Lang, LandingStrings> = {
     cta: {
       title: 'Ready to wire your first incident?',
       bodyHtml:
-        'The docs walk through plugins, <span class="text-paper-200/90 font-mono text-sm">config/default.json</span>, Docker, and production checks—no guesswork.',
+        'The docs walk through plugins, <span class="text-paper-200/90 font-mono text-sm">config/default.json</span>, deployment paths, and production checks—no guesswork.',
       getStarted: 'Get started',
       openGithub: 'Open GitHub',
     },
@@ -240,12 +240,12 @@ export const strings: Record<Lang, LandingStrings> = {
         'Tus agentes escuchan donde ocurre el trabajo—<strong class="text-paper-50 font-medium">Jira, Linear, Telegram, Slack</strong>—y responden con <span class="text-evidence-300/90">contexto real del repositorio</span>, no relleno genérico. Un núcleo; plugins y configuración definen el resto.',
       readDocs: 'Leer la documentación',
       viewGithub: 'Ver en GitHub',
-      pullImage: 'Imagen Docker',
+      pullImage: 'Inicio rápido (desde código)',
       copy: 'Copiar',
       keyboardHint:
         'Pulsa <kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">1</kbd>–<kbd class="text-paper-200/60 border-paper-200/20 rounded border px-1 py-0.5">5</kbd> para saltar de sección (escritorio)',
       metaLineHtml:
-        'Listo para contenedores (GHCR), JSON + variables de entorno, opciones tipadas con Zod. <a class="text-evidence-300/80 hover:underline" href="/docs/config/configuration-hub">Centro de configuración</a> · <a class="text-evidence-300/80 hover:underline" href="/docs/operator/docker/">Docker</a>',
+        'Aplicación Fastify autoalojada, JSON + variables de entorno, opciones tipadas con Zod. <a class="text-evidence-300/80 hover:underline" href="/docs/config/configuration-hub">Centro de configuración</a> · <a class="text-evidence-300/80 hover:underline" href="/docs/operator/installation/">Instalación</a>',
       exhibitLabel: 'Exhibit A — visualización del caso',
       heroImageAlt:
         'Ilustración estilo risografía: lupa, pestaña de caso y marcas en el código—triaje, no arte genérico',
@@ -273,7 +273,7 @@ export const strings: Record<Lang, LandingStrings> = {
         },
         {
           title: 'Listo para operaciones',
-          body: 'Fastify, salud, métricas, logs estructurados, JSON y entorno. Despliega con Docker desde GHCR cuando termines de iterar en local.',
+          body: 'Fastify, salud, métricas, logs estructurados, JSON y entorno. Ejecuta desde el código fuente o instala un binario de release al salir de tu máquina de desarrollo.',
         },
       ],
     },
@@ -291,7 +291,7 @@ export const strings: Record<Lang, LandingStrings> = {
     cta: {
       title: '¿Listo para conectar tu primer incidente?',
       bodyHtml:
-        'La documentación recorre plugins, <span class="text-paper-200/90 font-mono text-sm">config/default.json</span>, Docker y comprobaciones de producción—sin adivinar.',
+        'La documentación recorre plugins, <span class="text-paper-200/90 font-mono text-sm">config/default.json</span>, rutas de despliegue y comprobaciones de producción—sin adivinar.',
       getStarted: 'Empezar',
       openGithub: 'Abrir GitHub',
     },

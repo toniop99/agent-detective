@@ -91,12 +91,12 @@ const { hero } = Astro.props;
           >
             <code
               class="text-evidence-300/90 font-mono text-[0.7rem] leading-relaxed break-all sm:text-[0.8rem]"
-            >docker pull ghcr.io/toniop99/agent-detective:latest
+            >git clone https://github.com/toniop99/agent-detective.git && cd agent-detective && pnpm install && pnpm dev
             </code>
             <button
               type="button"
               class="text-ink-1000 bg-amber-400/90 focus:ring-ink-1000/80 shrink-0 self-start font-mono text-xs font-semibold focus:ring-2 focus:outline-none"
-              data-ad-copy="docker pull ghcr.io/toniop99/agent-detective:latest"
+              data-ad-copy="git clone https://github.com/toniop99/agent-detective.git && cd agent-detective && pnpm install && pnpm dev"
             >{hero.copy}
             </button>
           </div>

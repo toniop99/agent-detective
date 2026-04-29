@@ -1,6 +1,6 @@
 ---
 title: "Maintainer: releasing binaries"
-description: How to create a new GitHub Release with Docker images and native binaries.
+description: How to create a new GitHub Release with native binaries and release notes.
 sidebar:
   order: 5
 ---
@@ -9,8 +9,8 @@ sidebar:
 
 This page documents how maintainers cut a new release so GitHub Actions publishes:
 
-- Docker images (GHCR) via `.github/workflows/release.yml`
-- Native binaries + checksums + SBOM + signatures via `.github/workflows/binary.yml`
+- Release notes via [.github/workflows/release.yml](../../.github/workflows/release.yml) (quality gate + GitHub Release body)
+- Native binaries + checksums + SBOM + signatures via [.github/workflows/binary.yml](../../.github/workflows/binary.yml)
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ Re-running a failed workflow in the Actions UI **only re-runs the same commit** 
 
 After the tag is pushed:
 
-- `release.yml` publishes multi-arch Docker images and creates the GitHub Release
+- `release.yml` runs lint, typecheck, test, build, then creates/updates the GitHub Release description (native binaries only).
 - `binary.yml` (pinned **Node 25.9.x** in Actions for integrated `node --build-sea`; bump the pin in the workflow when you adopt a newer 25 release) uploads:
   - `agent-detective-linux-x64`
   - `agent-detective-linux-arm64`
@@ -91,4 +91,3 @@ If you must build on Node 24, use the [Node SEA guide](https://nodejs.org/api/si
 
 - `docs/operator/binary.md` — operator install and verification steps
 - `docs/operator/upgrading.md` — how operators consume releases
-

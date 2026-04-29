@@ -18,7 +18,6 @@ import { FileTree, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 - pnpm 10.33+ (see `packageManager` in the repo root `package.json`; Corepack / `pnpm/action-setup` use this pin)
 - Access to repositories on local filesystem
 - (Optional) Jira Cloud account for real integration
-- (Optional) Docker — see [Docker & CI images](../operator/docker.md) for compose-based local dev
 :::
 
 ## Installation
@@ -93,7 +92,7 @@ End-to-end Jira webhook testing (tunnel, labels, smoke script): [e2e/jira-manual
 - **Workspace packages** live under [`packages/*`](../../packages/) and an optional app package under [`apps/*`](../../apps/) (the documentation site is in [`apps/docs`](../../apps/docs/)). All are listed in [`pnpm-workspace.yaml`](../../pnpm-workspace.yaml). Shared dependency versions use the **`catalog:`** protocol defined in that file.
 - **Dependency upgrades:** Bump shared tools and runtime libraries in the **`catalog:`** section of [`pnpm-workspace.yaml`](../../pnpm-workspace.yaml), then `pnpm install`, so every package that references `"catalog:"` for that name updates together. Dependencies that are not in the catalog (for example Astro or Tailwind under [`apps/`](../../apps/), or `pino` under [`packages/observability`](../../packages/observability)) are upgraded in that package's own `package.json`. After any bump, run `pnpm run build`, `pnpm test`, and `pnpm run lint`. Use `pnpm outdated -r` to see newer versions across the workspace.
 - **`pnpm run build`** runs **Turborepo** (`turbo run build`) and builds every workspace package's `dist/`. It does **not** bundle the root server by itself.
-- **`pnpm run build:app`** runs **tsup** on the root entrypoint and writes **`dist/index.js`** for `pnpm start` / production images (the Dockerfile runs both workspace build and `build:app`).
+- **`pnpm run build:app`** runs **tsup** on the root entrypoint and writes **`dist/index.js`** for `pnpm start` (run **`pnpm run build`** first so workspace packages are built).
 - **`pnpm run typecheck`** runs `turbo run typecheck` for packages **and** `tsc --noEmit` at the repo root for `src/` + `test/`.
 - **`pnpm test`** runs **`turbo run test`** (package tests, e.g. `@agent-detective/jira-adapter`, with `^build` deps) then **root** tests with **tsx** on `test/**/*.test.ts`.
 - **`pnpm run publish`** runs **Changesets** (`changeset publish`), not Turborepo.

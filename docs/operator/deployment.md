@@ -7,7 +7,7 @@ sidebar:
 
 # Deployment guide
 
-Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (container vs from source). For **Docker, Compose, and the GHCR image**, see [docker.md](docker.md), [configuration-hub.md](../config/configuration-hub.md), and [configuration.md](../config/configuration.md). When you’ve deployed before and need **new tags or git pulls**, see [upgrading.md](upgrading.md).
+Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (binary vs from source). For **config and env**, see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). When you’ve deployed before and need **new releases or git pulls**, see [upgrading.md](upgrading.md).
 
 ## Prerequisites
 
@@ -125,7 +125,7 @@ View logs: `sudo journalctl -u agent-detective -f`.
 
 ## Reverse proxy (nginx)
 
-**Canonical** HTTPS example in this repo (use this; do not maintain a second copy in other docs). If you run **Docker** and put nginx on the host, `proxy_pass` to the **published** port; timing and headers below still apply. Compose and ports: [docker.md](docker.md#production-style-run-single-host).
+**Canonical** HTTPS example in this repo (use this; do not maintain a second copy in other docs). Point `proxy_pass` at the port the app listens on (default **3001** unless overridden by `PORT` / config).
 
 ```nginx title="nginx reverse proxy"
 server {
@@ -173,7 +173,7 @@ curl -sS http://localhost:3001/api/agent/list
 
 ## API docs
 
-- Interactive docs UI: `GET /docs` (Docker / from-source)
+- Interactive docs UI: `GET /docs` (from-source / `pnpm start` on built `dist/`)
 - Native binary (SEA): UI is disabled; use `GET /docs/openapi.json` (see [binary.md](binary.md))
 
 ## Log management
@@ -190,11 +190,8 @@ Structured logs go to **stdout/stderr** (captured by journald under systemd). Se
 | Agent unavailable | `which opencode` (or your agent) in the same environment as the process; `GET /api/agent/list` |
 | High memory | Lower `repoContext.gitLogMaxCommits` in local-repos options |
 
-For Docker-specific issues, see [docker.md](docker.md#troubleshooting).
-
 ## See also
 
-- [installation.md](installation.md) — choose bare metal vs container first
+- [installation.md](installation.md) — choose binary vs from source first
 - [configuration-hub.md](../config/configuration-hub.md) — config load order
-- [upgrading.md](upgrading.md) — pin image tags and upgrade runbooks
-- [docker.md](docker.md) — containers and GHCR
+- [upgrading.md](upgrading.md) — releases and upgrade runbooks
