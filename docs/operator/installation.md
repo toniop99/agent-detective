@@ -15,13 +15,15 @@ Use the **Configuration** section in the sidebar after you pick an install path�
 
 **Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
 
+**Native binary on a single Linux VM:** [binary.md](binary.md) (download, `doctor`, signatures) → [deployment.md](deployment.md) (install layout, systemd, nginx, health checks).
+
 ## Choose a deployment style
 
 | Path | When to use | What you need |
 |------|-------------|---------------|
 | **Native binary (GitHub Releases)** | Single executable on a host (no system Node.js/pnpm); best for bare-metal installs | Download the binary, a `config/` directory, and agent CLIs on `PATH` (use `doctor` to verify) |
 | **From source (git + pnpm)** | You fork the repo, change `packages/`, or run from a clone | Node.js 24+, pnpm 10+ (see root [package.json](../../package.json) `packageManager`), git |
-| **Bare metal: systemd + reverse proxy** | Long-running service on a VM with nginx or similar | [deployment.md](deployment.md) (systemd, nginx, sizing) |
+| **Bare metal: systemd + reverse proxy** | Production VM: native binary under `/opt`, systemd, then nginx TLS | [deployment.md](deployment.md) (end-to-end binary path, from-source systemd, nginx, sizing) |
 
 :::note[Kubernetes]
 This repository does not ship Helm charts. Run the app in your platform’s standard workload (container image you build, or a VM with the native binary / Node) using the same `config/` + env model as in [configuration.md](../config/configuration.md) and [deployment.md](deployment.md).
@@ -51,7 +53,7 @@ Use `config/local.json` (gitignored) or environment variables for secrets. Never
 | Topic | Document |
 |-------|----------|
 | Native binary (GitHub Releases) | [binary.md](binary.md) |
-| systemd, nginx, health checks, troubleshooting | [deployment.md](deployment.md) |
+| Bare metal: binary → systemd → nginx, health checks, troubleshooting | [deployment.md](deployment.md) |
 | Config files, env, plugins | [configuration.md](../config/configuration.md) |
 | Releases, git upgrade, binary refresh | [upgrading.md](upgrading.md) |
 | Maintainer: tag and release | [releasing.md](releasing.md) |

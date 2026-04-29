@@ -7,13 +7,29 @@ sidebar:
 
 # Deployment guide
 
-Single-server **bare‑metal** deployment: systemd, reverse proxy, and sizing. Unsure which path to use? Start with **[installation.md](installation.md)** (binary vs from source). For **config and env**, see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). When you’ve deployed before and need **new releases or git pulls**, see [upgrading.md](upgrading.md).
+Single-server **bare‑metal** deployment: **native binary** (recommended for a production VM), **from-source** install, systemd, reverse proxy, and sizing.
+
+**Reading order**
+
+- **Release binary on one host** — follow **[Native binary (end-to-end)](#native-binary-end-to-end)** below, then **Reverse proxy (nginx)**. Download, checksums, Cosign, `doctor`, and `validate-config`: [binary.md](binary.md).
+- **Fork or monorepo build** — follow **[Installation (from source)](#installation-from-source)** and **[systemd with from-source tree](#systemd-with-from-source-tree)**.
+- **Config and env** — [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). **Upgrades** — [upgrading.md](upgrading.md). **Choosing a path** — [installation.md](installation.md).
 
 ## Prerequisites
 
 :::note[System requirements]
 All versions below are **minimum** requirements. Using older versions may work but is not tested or supported.
 :::
+
+### Native binary (runtime)
+
+| Requirement | Notes |
+|-------------|--------|
+| OS | Ubuntu 22.04+ / Debian 12+ (or another Linux with **systemd** for the units below). macOS is supported for the binary itself; use launchd or another supervisor instead of systemd. |
+| System Node.js / pnpm | **Not required** for the application process. |
+| git | Required on the host if **local-repos** uses paths or operations that need git (see [installation.md](installation.md) host capabilities). |
+
+### From source (build and run)
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
@@ -28,26 +44,6 @@ All versions below are **minimum** requirements. Using older versions may work b
 |------|-----|-----|------|----------|
 | Minimal | 1 core | 1 GB | 10 GB | Development / testing |
 | Recommended | 2 cores | 4 GB | 20 GB | Production workloads |
-
-## Installation (from source)
-
-```bash title="Clone, install, and build"
-git clone https://github.com/toniop99/agent-detective.git
-cd agent-detective
-pnpm install
-pnpm run build
-pnpm run build:app
-```
-
-Use your own fork’s `https://github.com/<owner>/<repo>.git` URL if you are not building from the upstream repository.
-
-Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](../config/configuration.md).
-
-```bash title="Start the server"
-pnpm start
-```
-
-For development with hot reload: `pnpm run dev`. See [development.md](../development/development.md).
 
 ## Configuration reference (summary)
 
@@ -84,7 +80,42 @@ For development with hot reload: `pnpm run dev`. See [development.md](../develop
 
 Full options: [generated/plugin-options.md](../reference/generated/plugin-options.md), [plugins.md](../plugins/plugins.md#14-official-bundled-plugins).
 
-## Process management (systemd)
+Edit under `/opt/agent-detective/config/` (`default.json` and optional `local.json`). See [configuration.md](../config/configuration.md).
+
+## Native binary (end-to-end)
+
+Use a **fixed install root** (this guide uses `/opt/agent-detective`):
+
+- `/opt/agent-detective/agent-detective` — executable from [GitHub Releases](https://github.com/toniop99/agent-detective/releases/latest) (asset name matches your CPU/OS, e.g. `agent-detective-linux-x64`). Download, `chmod +x`, optional signature verification: [binary.md](binary.md).
+- `/opt/agent-detective/config/default.json` (and optional `config/local.json`)
+- `/opt/agent-detective/plugins/` — optional path-based third-party plugins
+
+Create a dedicated user and layout (no git clone of the monorepo on the server):
+
+```bash title="Layout and ownership"
+sudo useradd -r -s /usr/sbin/nologin -d /opt/agent-detective agent-detective
+sudo mkdir -p /opt/agent-detective/config
+sudo mv /path/to/downloaded/agent-detective-linux-x64 /opt/agent-detective/agent-detective
+sudo chmod 750 /opt/agent-detective
+sudo chmod 755 /opt/agent-detective/agent-detective
+sudo chown -R agent-detective:agent-detective /opt/agent-detective
+```
+
+Place your JSON config files under `config/` as in the [configuration reference](#configuration-reference-summary) above.
+
+Smoke-check the tree **before** enabling systemd:
+
+```bash title="Validate install"
+sudo -u agent-detective /opt/agent-detective/agent-detective doctor --config-root /opt/agent-detective
+sudo -u agent-detective /opt/agent-detective/agent-detective validate-config --config-root /opt/agent-detective
+```
+
+Optional: load secrets from a root-owned env file (paths on the [configuration.md](../config/configuration.md) env whitelist), for example:
+
+```ini title="/etc/systemd/system/agent-detective.service.d/override.conf"
+[Service]
+EnvironmentFile=-/etc/agent-detective.env
+```
 
 Create `/etc/systemd/system/agent-detective.service`:
 
@@ -96,8 +127,9 @@ After=network.target
 [Service]
 Type=simple
 User=agent-detective
+Group=agent-detective
 WorkingDirectory=/opt/agent-detective
-ExecStart=/usr/bin/pnpm start
+ExecStart=/opt/agent-detective/agent-detective --config-root /opt/agent-detective
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
@@ -107,23 +139,20 @@ Environment=PORT=3001
 WantedBy=multi-user.target
 ```
 
-```bash title="Set up systemd service"
-sudo useradd -r -s /usr/sbin/nologin agent-detective
-sudo mkdir -p /opt/agent-detective
-sudo cp -r . /opt/agent-detective
-sudo chown -R agent-detective:agent-detective /opt/agent-detective
-cd /opt/agent-detective
-sudo -u agent-detective pnpm install
-sudo -u agent-detective pnpm run build
-sudo -u agent-detective pnpm run build:app
+The HTTP server listens on **all interfaces** (`0.0.0.0`) for the port you set (`port` in config or `PORT`). In production, use a **host firewall** so only **nginx** (same host) or your mesh can reach that port, while **443** is the public entry (see **Security** below).
+
+```bash title="Enable and start (native binary)"
 sudo systemctl daemon-reload
 sudo systemctl enable agent-detective
 sudo systemctl start agent-detective
+sudo journalctl -u agent-detective -f
 ```
 
-View logs: `sudo journalctl -u agent-detective -f`.
+When the service is healthy on localhost, continue with **Reverse proxy (nginx)** below so public webhooks and HTTPS hit nginx, not the Node listener directly.
 
 ## Reverse proxy (nginx)
+
+Put **nginx** (or your edge) in front of the app: forward to the process on **127.0.0.1:3001** (or your `PORT` / `port`). Terminate TLS at nginx. Ensure the app port is **not** exposed publicly except via the proxy (firewall `PORT` from the internet, allow `443`).
 
 **Canonical** HTTPS example in this repo (use this; do not maintain a second copy in other docs). Point `proxy_pass` at the port the app listens on (default **3001** unless overridden by `PORT` / config).
 
@@ -150,6 +179,73 @@ server {
 }
 ```
 
+## Installation (from source)
+
+Alternate path when you maintain a **git clone** on the server (fork, custom packages, or you prefer `pnpm start`).
+
+```bash title="Clone, install, and build"
+git clone https://github.com/toniop99/agent-detective.git
+cd agent-detective
+pnpm install
+pnpm run build
+pnpm run build:app
+```
+
+Use your own fork’s `https://github.com/<owner>/<repo>.git` URL if you are not building from the upstream repository.
+
+Edit `config/default.json` (and optional `config/local.json`). See [configuration.md](../config/configuration.md).
+
+```bash title="Start the server"
+pnpm start
+```
+
+For development with hot reload: `pnpm run dev`. See [development.md](../development/development.md).
+
+## Process management (systemd)
+
+### systemd with native binary
+
+The unit file, `EnvironmentFile`, and `systemctl` commands are documented in **[Native binary (end-to-end)](#native-binary-end-to-end)** above. TLS and nginx follow in **Reverse proxy (nginx)**.
+
+### systemd with from-source tree
+
+Create `/etc/systemd/system/agent-detective.service`:
+
+```ini title="/etc/systemd/system/agent-detective.service"
+[Unit]
+Description=Agent Detective
+After=network.target
+
+[Service]
+Type=simple
+User=agent-detective
+WorkingDirectory=/opt/agent-detective
+ExecStart=/usr/bin/pnpm start
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3001
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash title="Set up systemd service (from-source tree)"
+sudo useradd -r -s /usr/sbin/nologin agent-detective
+sudo mkdir -p /opt/agent-detective
+sudo cp -r . /opt/agent-detective
+sudo chown -R agent-detective:agent-detective /opt/agent-detective
+cd /opt/agent-detective
+sudo -u agent-detective pnpm install
+sudo -u agent-detective pnpm run build
+sudo -u agent-detective pnpm run build:app
+sudo systemctl daemon-reload
+sudo systemctl enable agent-detective
+sudo systemctl start agent-detective
+```
+
+View logs: `sudo journalctl -u agent-detective -f`.
+
 ## Security
 
 :::caution[Production hardening]
@@ -171,6 +267,8 @@ curl -sS http://localhost:3001/api/health
 curl -sS http://localhost:3001/api/agent/list
 ```
 
+With the **native binary**, interactive Scalar UI at `/docs` is disabled; use **`GET /docs/openapi.json`** behind nginx or locally (see [binary.md](binary.md)).
+
 ## API docs
 
 - Interactive docs UI: `GET /docs` (from-source / `pnpm start` on built `dist/`)
@@ -185,7 +283,9 @@ Structured logs go to **stdout/stderr** (captured by journald under systemd). Se
 | Symptom | What to check |
 |--------|----------------|
 | Server won't start | Valid JSON in `config/*.json`, port free: `sudo lsof -i :3001` |
-| Plugin load failure | `node_modules/@agent-detective/*/dist/`, `pnpm run lint` |
+| Native binary fails immediately | Correct arch asset (`linux-x64` vs `linux-arm64` vs `darwin-arm64`), `chmod +x`, `doctor` / `validate-config` output ([binary.md](binary.md)) |
+| Plugin load failure (from source) | `node_modules/@agent-detective/*/dist/`, `pnpm run lint` |
+| Plugin load failure (native binary) | Path-based plugins under `/opt/agent-detective/plugins/`; `--config-root` so relative `package` paths resolve |
 | Jira webhooks | `mockMode: false`, env `JIRA_*`, webhook URL reachable from Atlassian |
 | Agent unavailable | `which opencode` (or your agent) in the same environment as the process; `GET /api/agent/list` |
 | High memory | Lower `repoContext.gitLogMaxCommits` in local-repos options |

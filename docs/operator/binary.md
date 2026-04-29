@@ -157,3 +157,5 @@ sudo systemctl start agent-detective
 sudo journalctl -u agent-detective -f
 ```
 
+For TLS, nginx, firewall notes, and a **full VM checklist** (native binary layout through reverse proxy), see [deployment.md](deployment.md).
+
