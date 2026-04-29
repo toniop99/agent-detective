@@ -14,7 +14,7 @@ This repo is **human-steered**; automation and docs exist so agents can ship saf
 :::note[Before you start]
 
 1. Read the task and [Agent golden rules](./agent-golden-rules.md).
-2. For large work, add or update a file under [exec-plans/active/](../exec-plans/active/) (see [exec-plans README](../exec-plans/README.md)).
+2. For large work, add or update a file under **`docs/exec-plans/active/`** (see **`docs/exec-plans/README.md`** when that folder exists in the repo).
 
 :::
 

@@ -6,6 +6,8 @@
   "description": "AI-powered code analysis agent that responds to events from Jira, Telegram, Slack and more",
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/sync-cursor-from-agents.mjs",
+    "agents:sync-cursor": "node scripts/sync-cursor-from-agents.mjs",
     "dev": "tsx watch src/index.ts",
     "build": "turbo run build",
     "build:app": "tsup --config tsup.config.ts",
