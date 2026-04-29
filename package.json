@@ -38,6 +38,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "jira.js": "catalog:",
     "@agent-detective/observability": "workspace:*",
     "@agent-detective/process-utils": "workspace:*",
     "@agent-detective/sdk": "workspace:*",
