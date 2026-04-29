@@ -17,37 +17,41 @@ hero:
 
 import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
+export const docsBase = import.meta.env.BASE_URL.endsWith('/')
+	? import.meta.env.BASE_URL
+	: `${import.meta.env.BASE_URL}/`;
+
 ## Choose a path
 
 <CardGrid stagger>
 	<LinkCard
 		title="Run the server"
-		href={import.meta.env.BASE_URL + 'operator/installation/'}
+		href={docsBase + 'operator/installation/'}
 		description="Install with Docker, Compose, or bare metal; configure, upgrade, and operate."
 	/>
 	<LinkCard
 		title="Configuration"
-		href={import.meta.env.BASE_URL + 'config/configuration-hub/'}
+		href={docsBase + 'config/configuration-hub/'}
 		description="How settings load, env whitelist, and the full config reference."
 	/>
 	<LinkCard
 		title="Build plugins"
-		href={import.meta.env.BASE_URL + 'plugins/extending-with-plugins/'}
+		href={docsBase + 'plugins/extending-with-plugins/'}
 		description="Install and author plugins; use the main API guide when you need depth."
 	/>
 	<LinkCard
 		title="Develop the monorepo"
-		href={import.meta.env.BASE_URL + 'development/development/'}
+		href={docsBase + 'development/development/'}
 		description="pnpm, Turbo, build/test workflow, and optional Cursor agent."
 	/>
 	<LinkCard
 		title="Architecture"
-		href={import.meta.env.BASE_URL + 'architecture/architecture/'}
+		href={docsBase + 'architecture/architecture/'}
 		description="System shape, layering, and ADRs."
 	/>
 	<LinkCard
 		title="Reference (generated)"
-		href={import.meta.env.BASE_URL + 'reference/generated/plugin-options/'}
+		href={docsBase + 'reference/generated/plugin-options/'}
 		description="Zod-generated JSON for bundled plugin options and top-level app config."
 	/>
 </CardGrid>
@@ -57,27 +61,27 @@ import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 <CardGrid stagger>
 	<LinkCard
 		title="Agent harness"
-		href={import.meta.env.BASE_URL + 'development/agent-harness/'}
+		href={docsBase + 'development/agent-harness/'}
 		description="Boot, verify, lint, smoke, logs — for humans steering coding agents."
 	/>
 	<LinkCard
 		title="Agent workflow"
-		href={import.meta.env.BASE_URL + 'development/agent-workflow/'}
+		href={docsBase + 'development/agent-workflow/'}
 		description="Suggested loop before opening a PR; human review expectations."
 	/>
 	<LinkCard
 		title="Golden rules"
-		href={import.meta.env.BASE_URL + 'development/agent-golden-rules/'}
+		href={docsBase + 'development/agent-golden-rules/'}
 		description="Do / don't for the monorepo; common failures and fixes."
 	/>
 	<LinkCard
 		title="Execution plans"
-		href={import.meta.env.BASE_URL + 'exec-plans/readme/'}
+		href={docsBase + 'exec-plans/readme/'}
 		description="Versioned multi-step intent and tech-debt notes in git."
 	/>
 	<LinkCard
 		title="Tool references"
-		href={import.meta.env.BASE_URL + 'references/readme/'}
+		href={docsBase + 'references/readme/'}
 		description="Short pnpm, Turbo, and ESM pages — low-token entry for agents."
 	/>
 </CardGrid>
@@ -87,14 +91,14 @@ import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 <Steps>
 	1. Install **Node 24+** and **pnpm 10+** (see root `package.json` `packageManager` via Corepack).
 	2. `pnpm install` and `pnpm run build` at the repository root.
-	3. Copy `config/local.example.json` to `config/local.json` and adjust; read the <a href={import.meta.env.BASE_URL + 'config/configuration-hub/'}>Configuration hub</a>.
+	3. Copy `config/local.example.json` to `config/local.json` and adjust; read the <a href={docsBase + 'config/configuration-hub/'}>Configuration hub</a>.
 	4. `pnpm run dev` and open the URL printed in the terminal.
 </Steps>
 
 <p>
-	<a href={import.meta.env.BASE_URL + 'overview/'}>Full documentation index in git</a>
+	<a href={docsBase + 'overview/'}>Full documentation index in git</a>
 	{' · '}
-	<a href={import.meta.env.BASE_URL + 'e2e/readme/'}>Jira E2E walkthroughs</a>
+	<a href={docsBase + 'e2e/readme/'}>Jira E2E walkthroughs</a>
 	{' · '}
-	<a href={import.meta.env.BASE_URL + 'reference/changelog/'}>CHANGELOG</a>
+	<a href={docsBase + 'reference/changelog/'}>CHANGELOG</a>
 </p>
