@@ -35,6 +35,18 @@ export const REPO_CONTEXT_SERVICE = 'repo-context-service' as const;
 export const CODE_ANALYSIS_SERVICE = 'code-analysis-service' as const;
 
 /**
+ * Synthetic plugin name under which the **host** registers services (not a real npm plugin).
+ * Use with `PluginContext.getServiceFromPlugin` together with `HOST_PERSISTENCE_SERVICE`.
+ */
+export const HOST_PROVIDER_PLUGIN_NAME = '@agent-detective/host' as const;
+
+/**
+ * Service-registry key for host `AppPersistence` (SQLite idempotency / future host state).
+ * Resolve with `getServiceFromPlugin(HOST_PERSISTENCE_SERVICE, HOST_PROVIDER_PLUGIN_NAME)`.
+ */
+export const HOST_PERSISTENCE_SERVICE = 'host-persistence' as const;
+
+/**
  * Standard event names emitted on `context.events`. Plugins listen with
  * `context.events.on(StandardEvents.TASK_CREATED, handler)` and emit with
  * `context.events.emit(StandardEvents.TASK_GATHER_CONTEXT, ...)`.

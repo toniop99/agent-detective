@@ -82,6 +82,27 @@ export const appConfigSchema = z
       })
       .strict()
       .optional(),
+    /**
+     * Host SQLite persistence (`node:sqlite`). When `enabled` is true, `databasePath` is required
+     * (absolute or relative to the config directory — same resolution as `runRecords.path`).
+     */
+    persistence: z
+      .object({
+        enabled: z.boolean(),
+        databasePath: z.string().min(1).optional(),
+      })
+      .strict()
+      .optional()
+      .superRefine((p, ctx) => {
+        if (!p) return;
+        if (p.enabled === true && (!p.databasePath || p.databasePath.trim().length === 0)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'persistence.databasePath is required when persistence.enabled is true',
+            path: ['databasePath'],
+          });
+        }
+      }),
     docsAuthRequired: z.boolean().optional(),
     docsApiKey: z.string().optional(),
   })

@@ -10,6 +10,8 @@ import { getAgentLabel, listAgents, normalizeAgent } from './agents/index.js';
 import { createObservability } from '@agent-detective/observability';
 import { applyLogLevelAliasForObservability } from './config/env-whitelist.js';
 import { dirname, isAbsolute, resolve } from 'node:path';
+import { HOST_PERSISTENCE_SERVICE } from '@agent-detective/sdk';
+import { createSqliteAppPersistence } from './persistence/index.js';
 import { APP_NAME, APP_VERSION } from './version.js';
 import { homedir } from 'node:os';
 
@@ -169,6 +171,19 @@ async function serve(installRoot: string | undefined): Promise<void> {
     ? createRunRecordWriter(runRecordsPath, logger.child('run-records'))
     : undefined;
 
+  let persistenceShutdown: (() => void | Promise<void>) | undefined;
+  const hostServices: Record<string, unknown> | undefined = (() => {
+    const p = config.persistence;
+    if (!p?.enabled || !p.databasePath?.trim()) return undefined;
+    const raw = p.databasePath.trim();
+    const dbPath = isAbsolute(raw) ? raw : resolve(configRootUsed, raw);
+    const persistence = createSqliteAppPersistence(dbPath, {
+      logger: logger.child('persistence'),
+    });
+    persistenceShutdown = () => persistence.close();
+    return { [HOST_PERSISTENCE_SERVICE]: persistence };
+  })();
+
   const pluginSystem = createPluginSystem({
     agentRunner,
     events: eventBus,
@@ -180,6 +195,7 @@ async function serve(installRoot: string | undefined): Promise<void> {
     failOnPluginLoadErrors: config.pluginSystem?.failOnPluginLoadErrors ?? true,
     pathResolutionRoot: installRoot ?? process.cwd(),
     taskQueue,
+    hostServices,
   });
 
   const enqueue = pluginSystem.enqueue;
@@ -220,6 +236,7 @@ async function serve(installRoot: string | undefined): Promise<void> {
     const timeout = setTimeout(() => process.exit(1), 10_000);
     timeout.unref();
     await pluginSystem.shutdown();
+    await persistenceShutdown?.();
     await app.close();
     agentRunner.shutdown();
     clearTimeout(timeout);

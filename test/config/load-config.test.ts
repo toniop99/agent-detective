@@ -155,6 +155,24 @@ describe('loadConfig', () => {
     const cfg = loadConfig({ configRoot: dir });
     assert.strictEqual(cfg.tasks?.maxConcurrent, 2);
   });
+
+  test('persistence.enabled requires databasePath', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(join(dir, 'default.json'), JSON.stringify({ persistence: { enabled: true } }));
+
+    assert.throws(() => loadConfig({ configRoot: dir }), /databasePath/);
+  });
+
+  test('PERSISTENCE_* env merges into config', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
+    writeFileSync(join(dir, 'default.json'), JSON.stringify({ port: 3000 }));
+    process.env.PERSISTENCE_ENABLED = 'true';
+    process.env.PERSISTENCE_DATABASE_PATH = './data/app.db';
+
+    const cfg = loadConfig({ configRoot: dir });
+    assert.strictEqual(cfg.persistence?.enabled, true);
+    assert.strictEqual(cfg.persistence?.databasePath, './data/app.db');
+  });
 });
 
 describe('applyLogLevelAliasForObservability', () => {

@@ -171,6 +171,22 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
   if (runRecordsPath) {
     config.runRecords = { path: runRecordsPath };
   }
+
+  if (process.env.PERSISTENCE_ENABLED === 'true' || process.env.PERSISTENCE_ENABLED === 'false') {
+    if (!config.persistence) {
+      config.persistence = { enabled: process.env.PERSISTENCE_ENABLED === 'true' };
+    } else {
+      config.persistence.enabled = process.env.PERSISTENCE_ENABLED === 'true';
+    }
+  }
+  const persistenceDb = process.env.PERSISTENCE_DATABASE_PATH?.trim();
+  if (persistenceDb) {
+    if (!config.persistence) {
+      config.persistence = { enabled: false, databasePath: persistenceDb };
+    } else {
+      config.persistence.databasePath = persistenceDb;
+    }
+  }
 }
 
 /**
