@@ -29,7 +29,7 @@ Files are read from **`config/`** relative to the process **current working dire
 
 1. **`config/default.json`** — baseline.
 2. **`config/local.json`** — deep-merged on top. **Arrays replace**; they are not concatenated.
-3. **Core env whitelist** — overrides or augments the merged JSON (e.g. `PORT`, `AGENT`, `AGENTS_RUNNER_*`). See the tables in [configuration.md](configuration.md#core-env-whitelist).
+3. **Core env whitelist** — overrides or augments the merged JSON (e.g. `PORT`, `AGENT`, `AGENTS_RUNNER_*`, `TASKS_MAX_CONCURRENT`, `TASKS_MAX_WALL_TIME_MS`, `RUN_RECORDS_PATH`). See the tables in [configuration.md](configuration.md#core-env-whitelist).
 4. **Plugin env whitelist (first-party)** — merged **only** into an existing `plugins[]` entry with the same `package` name (plugins are not created from env alone). See [configuration.md](configuration.md#plugin-env-whitelist-first-party).
 
 If the same value is set in both JSON and env, **env wins** for the keys covered by the whitelist (see [configuration.md](configuration.md#pr-pipeline-agent-detectivepr-pipeline) on precedence for some secrets at runtime too).
@@ -46,6 +46,8 @@ The server validates the merged result with [`src/config/schema.ts`](../../src/c
 | `plugins` | List of `{ "package": "…", "options": { … } }` entries; each plugin validates its own `options` (Zod in the plugin package). |
 | `pluginSystem` | Plugin-system behavior flags (strict boot). |
 | `observability` | Passed into `@agent-detective/observability` (e.g. `requestLogger.excludePaths`). |
+| `tasks` | Orchestrator guardrails: `maxConcurrent`, `maxWallTimeMs` — also settable via `TASKS_MAX_CONCURRENT` / `TASKS_MAX_WALL_TIME_MS`. |
+| `runRecords` | Optional JSONL path for task lifecycle lines — also settable via `RUN_RECORDS_PATH`. |
 | `docsAuthRequired` / `docsApiKey` | Protect `/docs` with an API key; overridable via `DOCS_AUTH_REQUIRED` / `DOCS_API_KEY`. |
 
 :::note
