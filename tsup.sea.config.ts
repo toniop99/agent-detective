@@ -28,6 +28,7 @@ export default defineConfig({
     '@agent-detective/jira-adapter',
     '@agent-detective/linear-adapter',
     '@agent-detective/pr-pipeline',
+    'jira.js', // SEA has no node_modules; must not emit bare require("jira.js").
     'fastify',
     'fastify-type-provider-zod',
     '@fastify/swagger',
