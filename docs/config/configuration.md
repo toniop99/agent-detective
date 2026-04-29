@@ -44,6 +44,9 @@ These variables override or extend the merged JSON when set:
 | `PLUGINS_FAIL_ON_CONTRACT_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnContractErrors` (abort startup on plugin contract validation errors). |
 | `PLUGINS_FAIL_ON_DEPENDENCY_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnDependencyErrors` (abort startup on missing/circular `dependsOn`). |
 | `PLUGINS_FAIL_ON_PLUGIN_LOAD_ERRORS` | `true` / `false` — when set, overrides `pluginSystem.failOnPluginLoadErrors` (abort startup when any plugin fails import/validate/register). |
+| `TASKS_MAX_CONCURRENT` | Positive integer, max **1000** — sets `tasks.maxConcurrent` (or overrides JSON). Invalid values are ignored. |
+| `TASKS_MAX_WALL_TIME_MS` | Non-negative integer, must be **> 0** to apply — sets `tasks.maxWallTimeMs` (or overrides JSON). |
+| `RUN_RECORDS_PATH` | Non-empty string — sets `runRecords.path` (or overrides JSON). Same path rules as JSON (absolute or relative to the config directory). |
 
 `RunAgentOptions` (orchestrator, Core API) supports **`threadId`**: passed to each agent’s shell command for session resume (opencode, claude, cursor). For HTTP, set `options.threadId` on `POST /api/agent/run` or `context.threadId` on `POST /api/events`.
 
@@ -57,7 +60,7 @@ These variables override or extend the merged JSON when set:
 
 ## Task orchestration (`tasks`)
 
-Optional object in the top-level app config (not env-whitelisted yet — use JSON):
+Optional object in the top-level app config; **`TASKS_MAX_CONCURRENT`** and **`TASKS_MAX_WALL_TIME_MS`** may also set these fields (see [core env whitelist](#core-env-whitelist)):
 
 | Key | Type | Description |
 |-----|------|-------------|
@@ -66,7 +69,7 @@ Optional object in the top-level app config (not env-whitelisted yet — use JSO
 
 ## Run records (`runRecords`)
 
-Optional object:
+Optional object; **`RUN_RECORDS_PATH`** may set `path` (see [core env whitelist](#core-env-whitelist)):
 
 | Key | Type | Description |
 |-----|------|-------------|
