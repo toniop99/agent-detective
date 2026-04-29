@@ -9,7 +9,7 @@ sidebar:
 
 Use this page when you deploy from a **GitHub Release binary**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together GitHub Releases and [migration.md](../development/migration.md).
 
-**Other operator hubs:** [installation.md](installation.md) (deploy paths) · [configuration-hub.md](../config/configuration-hub.md) (config load order and keys).
+**Other operator hubs:** [installation.mdx](installation.mdx) (deploy paths) · [configuration-hub.md](../config/configuration-hub.md) (config load order and keys).
 
 ## How to learn about changes
 
@@ -68,6 +68,6 @@ Workspace packages may be published per [publishing.md](../plugins/publishing.md
 ## See also
 
 - [configuration-hub.md](../config/configuration-hub.md) — where settings live
-- [installation.md](installation.md) — deployment paths
+- [installation.mdx](installation.mdx) — deployment paths
 - [releasing.md](releasing.md) — maintainers: create a new tag/release
 - [publishing.md](../plugins/publishing.md) — npm publish mechanics (maintainers)

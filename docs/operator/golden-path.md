@@ -39,7 +39,7 @@ If you need **real** Jira comments, add Jira API credentials and set **`mockMode
    pnpm install
    ```
 
-   Or install the **native binary** per [installation.md](installation.md).
+   Or install the **native binary** per [installation.mdx](installation.mdx).
 
 2. **Config**
 
