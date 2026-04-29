@@ -13,7 +13,7 @@ Prefer environment variables on the **whitelist** for production; see the tables
 
 This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](../reference/generated/plugin-options.md)**.
 
-**Other operator hubs:** [installation.md](../operator/installation.md) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and image tags).
+**Other operator hubs:** [installation.md](../operator/installation.md) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and upgrades).
 
 ## Where configuration lives
 
@@ -23,7 +23,7 @@ This page is the **index**: how settings are loaded, in what order they win, and
 | Overrides | `config/local.json` (optional; often gitignored) |
 | Process env | Small **whitelist** only — see [configuration.md](configuration.md) (not generic `FOO__bar__baz` mapping) |
 
-Files are read from **`config/`** relative to the process **current working directory** (e.g. app root, or `/app` in the Docker image).
+Files are read from **`config/`** relative to the process **current working directory** (e.g. app root, or your `--config-root` install directory).
 
 ## Precedence (highest last)
 
@@ -80,7 +80,7 @@ In CI, `pnpm docs:plugins:check` and `pnpm docs:config:check` fail if the genera
 | Field-by-field plugin options (bundled plugins) | [generated/plugin-options.md](../reference/generated/plugin-options.md) |
 | Top-level app config table + JSON Schema (from Zod) | [generated/app-config.md](../reference/generated/app-config.md) |
 | Plugin system and `schema` in code | [plugins.md](../plugins/plugins.md) (e.g. schema system) |
-| Custom plugins (npm, path, `plugins/` mount) | [extending-with-plugins.md](../plugins/extending-with-plugins.md) |
-| Install paths and `config` mounts | [installation.md](../operator/installation.md) |
-| New releases, GHCR tags, git pull | [upgrading.md](../operator/upgrading.md) |
-| Docker-specific env | [docker.md](../operator/docker.md#production-style-run-single-host) |
+| Custom plugins (npm, path, `plugins/` directory) | [extending-with-plugins.md](../plugins/extending-with-plugins.md) |
+| Install paths and `config` | [installation.md](../operator/installation.md) |
+| New releases, git pull, binary refresh | [upgrading.md](../operator/upgrading.md) |
+| Production layout (systemd, nginx) | [deployment.md](../operator/deployment.md) |

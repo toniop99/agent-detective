@@ -342,5 +342,4 @@ JIRA_WEBHOOK_URL=https://your-tunnel.example/plugins/agent-detective-jira-adapte
 
 - [configuration.md](../config/configuration.md) — config merge and env whitelist  
 - [jira-pr-pipeline-manual-e2e.md](jira-pr-pipeline-manual-e2e.md) — manual test of Jira comment → PR pipeline (worktree, push, GitHub/Bitbucket)  
-- [docker.md](../operator/docker.md) — running in containers  
 - [development.md](../development/development.md) — local dev and `mockMode` overview  

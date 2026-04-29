@@ -1,6 +1,6 @@
 ---
 title: "Extending with plugins"
-description: Install custom plugins from npm, local paths, or Docker volumes.
+description: Install custom plugins from npm, local paths, or read-only directories.
 sidebar:
   order: 1
 ---
@@ -16,10 +16,10 @@ The core resolves each `plugins[]` entry’s `package` string at startup (see [`
 | Specifier | Resolution |
 |-----------|------------|
 | **npm-style name** (e.g. `@myorg/adapter`) | `import()` from **`node_modules`** at the app root (add the dependency to the **root** `package.json` with pnpm or npm, then run install). |
-| **Relative or absolute file path** (starts with `./`, `../`, or `/`) | ES module import from a path on disk, resolved from **`process.cwd()`** (in the official image, **`/app`**). |
+| **Relative or absolute file path** (starts with `./`, `../`, or `/`) | ES module import from a path on disk, resolved from **`process.cwd()`** (use **`--config-root`** so relative plugin paths resolve predictably). |
 | **`@agent-detective/<short>` from this monorepo** | If a bare `import` fails, the loader tries **`packages/<short>/dist/index.js`**. If that does not exist, it only falls back to **`packages/<short>/src/index.js`** when that file exists (plain JS sources). In a TypeScript workspace you typically need to run **`pnpm run build`** (or a watch build) so `dist/` exists. |
 
-A failed import logs a warning and the plugin is skipped (other plugins still load). Fix paths, add dependencies, or ensure `cwd` is the app root (important in Docker: **`WORKDIR /app`**, mount paths under that tree when using absolute paths).
+A failed import logs a warning and the plugin is skipped (other plugins still load). Fix paths, add dependencies, or ensure `cwd` / **`--config-root`** matches where you placed plugin files.
 
 ## `config` entry
 
@@ -45,7 +45,11 @@ If your plugin’s `name` is `@myorg/b` and it calls `getService` from another p
 
 ## `requiresCapabilities`
 
-Use `requiresCapabilities` when you don’t care *which* plugin provides a feature, only that the feature exists.\n\n- Prefer SDK constants from `@agent-detective/sdk` (`StandardCapabilities.*`).\n- If you define a custom capability in a third-party plugin, use a stable **namespaced** string like `acme.example/my-feature`.\n+
+Use `requiresCapabilities` when you don’t care *which* plugin provides a feature, only that the feature exists.
+
+- Prefer SDK constants from `@agent-detective/sdk` (`StandardCapabilities.*`).
+- If you define a custom capability in a third-party plugin, use a stable **namespaced** string like `acme.example/my-feature`.
+
 ## Public npm (or GitHub Packages)
 
 1. Build your package so **`dist/index.js`** is the ESM default export and **`default` exports the `Plugin` object.  
@@ -56,7 +60,7 @@ Use `requiresCapabilities` when you don’t care *which* plugin provides a featu
    ```
 4. Add the package name to `plugins` in `config` as above.
 
-**Private registry:** use `.npmrc` in the app root (e.g. `@myorg:registry=…`, `//…:_authToken=…`) and the same `pnpm add` in CI or your image build; do not commit tokens — use env / CI secrets. **GitHub Packages** (and similar) use a scoped registry URL in `.npmrc` — follow your host’s docs; the app only needs the package installed into `node_modules` like any other dependency.
+**Private registry:** use `.npmrc` in the app root (e.g. `@myorg:registry=…`, `//…:_authToken=…`) and the same `pnpm add` in CI or your deploy host; do not commit tokens — use env / CI secrets. **GitHub Packages** (and similar) use a scoped registry URL in `.npmrc` — follow your host’s docs; the app only needs the package installed into `node_modules` like any other dependency.
 
 ## Path-based install (no registry)
 
@@ -64,15 +68,15 @@ Use `requiresCapabilities` when you don’t care *which* plugin provides a featu
 2. **Copy** the built tree to a directory on the server or image context.  
 3. Set **`"package": "/opt/plugins/my-adapter"`** (or `./plugins/my-adapter` relative to `cwd`).
 
-Use **absolute** paths in Docker so they do not depend on `docker compose` context:
+Use **absolute** paths when the process `cwd` might differ from where plugins live (typical for systemd **`WorkingDirectory=`** plus a separate read-only tree):
 
-- Mount the directory into the container (compose files in this repo use **`./plugins:/app/plugins:ro`**) and set **`"package": "/app/plugins/my-adapter"`** (see [docker.md](../operator/docker.md), [docker-compose.prod.yml](../../docker-compose.prod.yml)).
+- Example: install tree `/opt/agent-detective/plugins/my-adapter` and set **`"package": "/opt/agent-detective/plugins/my-adapter"`** in `config`.
 
-The mounted folder must be importable as an ES module (e.g. `index.js` at the entry the path resolves to — match how you `import` a package root).
+The directory must be importable as an ES module (e.g. `index.js` at the entry the path resolves to — match how you `import` a package root).
 
-## Docker image without editing `package.json`
+## Plugins without editing root `package.json`
 
-The volume approach above — mount **`plugins/`** and reference **`/app/plugins/...`** in config — is the usual way to ship a **proprietary** plugin without republishing a base image. Rebuild the image if you need the dependency inside **`node_modules`** instead.
+The path approach above — ship a built plugin directory next to `config/` and reference it by **absolute path** — is the usual way to add a **proprietary** plugin without publishing it to npm. If you need the dependency only as a package name, add it to the root **`package.json`** and run **`pnpm install`** instead.
 
 ## After changing code in this monorepo
 
@@ -83,4 +87,4 @@ If you add a new workspace package under `packages/*`, add it to the root `confi
 - [plugin-development.md](plugin-development.md) — build, `package.json`, `defineRoute` examples  
 - [plugins.md](plugins.md#9-publishing-a-plugin-as-an-npm-package) — publishing a plugin as an npm package (in-guide)  
 - [configuration.md](../config/configuration.md) — env merging into `plugins`  
-- [installation.md](../operator/installation.md) — Docker mounts and deploy paths
+- [installation.md](../operator/installation.md) — deploy paths and install layout

@@ -1,6 +1,6 @@
 ---
 title: "Installation and deployment paths"
-description: Choose how to run agent-detective — container, compose, source, or bare metal.
+description: Choose how to run agent-detective — native binary, from source, or bare metal.
 sidebar:
   order: 1
 ---
@@ -15,41 +15,20 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 Use the **Configuration** section in the sidebar after you pick an install path—load order and env are documented there.
 :::
 
-**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and image tags).
+**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
 
 ## Choose a deployment style
 
 <Tabs syncKey="deploy">
-  <TabItem label="Container (GHCR)" icon="seti:docker">
-    **When to use:** Production on a single host or small team; minimal build steps.
-
-    **What you need:** Docker (or compatible runtime), a `config/` directory to mount, secrets via env (see [configuration.md](../config/configuration.md)).
-
-    ```bash title="Pull and run"
-    docker pull ghcr.io/toniop99/agent-detective:latest
-    docker run -p 3000:3000 -v ./config:/app/config ghcr.io/toniop99/agent-detective:latest
-    ```
-
-    See [docker.md](docker.md) for compose files and production configuration.
-  </TabItem>
-  <TabItem label="Docker Compose" icon="seti:docker">
-    **When to use:** Same as container, but you want `compose` and optional bind mounts for `config/` and `plugins/`.
-
-    **What you need:** Docker Compose, plus a compose file — [docker.md](docker.md) includes `docker-compose.ghcr.yml` for pull-only mode.
-
-    ```bash title="Start with Compose"
-    docker compose up -d
-    ```
-  </TabItem>
   <TabItem label="Native binary" icon="seti:binary">
     **When to use:** Single executable on a host with no system Node.js or pnpm; best for bare-metal installs and simple upgrades.
 
-    **What you need:** Download the binary release asset, a `config/` directory, and the configured agent CLI(s) on `PATH` (use `doctor` to verify).
+    **What you need:** Download the binary release asset from GitHub Releases, a `config/` directory, and the configured agent CLI(s) on `PATH` (use `doctor` to verify).
 
     See [binary.md](binary.md) for install layout, `--config-root`, plugins, and systemd.
   </TabItem>
   <TabItem label="From source" icon="seti:typescript">
-    **When to use:** You fork the repo, change `packages/`, or run without a prebuilt image.
+    **When to use:** You fork the repo, change `packages/`, or run without a prebuilt binary.
 
     **What you need:** Node.js 24+, pnpm 10+ (see root `package.json` `packageManager`), git.
 
@@ -63,23 +42,23 @@ Use the **Configuration** section in the sidebar after you pick an install path�
     ```
   </TabItem>
   <TabItem label="Bare metal" icon="linux">
-    **When to use:** No Docker; long-running service on a VM with nginx or similar.
+    **When to use:** Long-running service on a VM with nginx or similar.
 
     **What you need:** See [deployment.md](deployment.md) for systemd unit, nginx reverse proxy, sizing, and health checks.
   </TabItem>
 </Tabs>
 
 :::note
-**Kubernetes or Helm:** this repository does not ship charts. Run the [GHCR image](docker.md#published-image-ghcr) with your platform's standard workload manifest and the same `config` + env model as in [docker.md](docker.md).
+**Kubernetes or Helm:** this repository does not ship charts. Run the app with your platform's standard workload and the same `config/` + env model as in [configuration.md](../config/configuration.md) and [deployment.md](deployment.md).
 :::
 
 ## Host capabilities
 
-- **Process:** either the container image (includes a bundled `node` + built app) or Node.js 24+ when building from source.
+- **Process:** Node.js 24+ when building from source, or a **native binary** from GitHub Releases.
 - **Configuration:** JSON under `config/` ([configuration.md](../config/configuration.md)); optional `config/local.json` (often gitignored) for secrets and overrides.
-- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config (bind mounts in Docker, or local paths on bare metal).
+- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config.
 - **Network:** outbound to Jira (if you use the Jira plugin), to git remotes (for [pr-pipeline](../config/configuration.md#pr-pipeline-agent-detectivepr-pipeline)), and to your AI provider as required by the agent CLI (e.g. OpenCode). Inbound: HTTP(S) to the app (webhooks, API).
-- **Agent CLIs:** the image or host must be able to run the configured agent (e.g. `opencode` in the default image). See [docker.md](docker.md#image-targets-dockerfile) and [cursor-agent.md](../development/cursor-agent.md) for adding other agents.
+- **Agent CLIs:** the host must be able to run the configured agent (e.g. `opencode`). See [cursor-agent.md](../development/cursor-agent.md) for adding other agents.
 
 ## Configuration (all paths)
 
@@ -93,11 +72,11 @@ Use the **Configuration** section in the sidebar after you pick an install path�
 ## Detailed guides
 
 <CardGrid>
-  <LinkCard title="Docker & Compose" href="/docs/operator/docker/" description="Production image, GHCR, compose files, and environment variables." />
   <LinkCard title="Native binary" href="/docs/operator/binary/" description="Single executable releases, config root, plugins, and doctor." />
   <LinkCard title="Bare metal deployment" href="/docs/operator/deployment/" description="systemd, nginx, health checks, and troubleshooting." />
   <LinkCard title="Configuration" href="/docs/config/configuration/" description="Config files, env whitelist, and plugin options." />
-  <LinkCard title="Upgrading" href="/docs/operator/upgrading/" description="Releases, pinning images, and git upgrade." />
+  <LinkCard title="Upgrading" href="/docs/operator/upgrading/" description="Releases, binaries, and git upgrade." />
+  <LinkCard title="Maintainer: releasing" href="/docs/operator/releasing/" description="Tags, GitHub Actions, and native binary assets." />
   <LinkCard title="Jira E2E" href="/docs/e2e/readme/" description="Tunnel, webhooks, and pr-pipeline walkthroughs." />
   <LinkCard title="Development" href="/docs/development/development/" description="Day-to-day monorepo development." />
 </CardGrid>
@@ -105,8 +84,8 @@ Use the **Configuration** section in the sidebar after you pick an install path�
 ## See also
 
 - [configuration-hub.md](../config/configuration-hub.md) — config load order and top-level keys
-- [upgrading.md](upgrading.md) — image tags, releases, and upgrade runbook
-- Root [README.md](../../README.md) — quick start and GHCR one-liner
-- [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` volume for custom plugins
-- [publishing.md](../plugins/publishing.md) — building and publishing the image (maintainers)
+- [upgrading.md](upgrading.md) — releases and upgrade runbook
+- Root [README.md](../../README.md) — quick start
+- [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` directory for custom plugins
+- [publishing.md](../plugins/publishing.md) — publishing workspace packages (maintainers)
 - Release notes live in GitHub Releases; see `docs/operator/upgrading.md`.

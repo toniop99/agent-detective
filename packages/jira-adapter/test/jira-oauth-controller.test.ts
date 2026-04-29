@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { jiraAdapterOptionsSchema } from '../src/application/options-schema.js';
 import { buildJiraOAuthRoutes } from '../src/presentation/jira-oauth-controller.js';
+
+function baseOpts(overrides: Record<string, unknown> = {}) {
+  return jiraAdapterOptionsSchema.parse({ enabled: true, mockMode: true, ...overrides });
+}
 
 function mkReply() {
   const state: {
@@ -33,12 +38,12 @@ function mkReply() {
 
 describe('jira-oauth-controller', () => {
   it('still registers routes when oauth is not configured (for API docs)', () => {
-    const routes = buildJiraOAuthRoutes({ config: { enabled: true, mockMode: true } });
+    const routes = buildJiraOAuthRoutes({ config: baseOpts() });
     assert.equal(routes.length, 2);
   });
 
   it('oauth/start returns 501 when oauth is not configured', async () => {
-    const routes = buildJiraOAuthRoutes({ config: { enabled: true, mockMode: true } });
+    const routes = buildJiraOAuthRoutes({ config: baseOpts() });
     const start = routes.find((r) => r.url === '/oauth/start');
     assert.ok(start, 'start route missing');
     const reply = mkReply();
@@ -54,13 +59,11 @@ describe('jira-oauth-controller', () => {
 
   it('oauth/start redirects to auth.atlassian.com when configured', async () => {
     const routes = buildJiraOAuthRoutes({
-      config: {
-        enabled: true,
-        mockMode: true,
+      config: baseOpts({
         oauthClientId: 'cid',
         oauthClientSecret: 'secret',
         oauthRedirectBaseUrl: 'https://example.com',
-      },
+      }),
     });
     const start = routes.find((r) => r.url === '/oauth/start');
     assert.ok(start, 'start route missing');

@@ -54,7 +54,7 @@ The interactive `/docs` UI is **disabled** in the native binary build (SEA) beca
 - `GET /docs` returns a small JSON response pointing you to the OpenAPI endpoint.
 - Use `GET /docs/openapi.json` with your preferred OpenAPI viewer (or import it into Postman/Insomnia/etc).
 
-In non-binary deployments (Docker / from-source), the interactive docs UI is available at `/docs`.
+In non-binary deployments (from-source or `pnpm start` on a built tree), the interactive docs UI is available at `/docs`.
 
 ## Custom plugins
 

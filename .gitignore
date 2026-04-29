@@ -47,7 +47,7 @@ coverage/
 
 # Lock files
 package-lock.json
-# pnpm-lock.yaml is needed for Docker reproducible builds
+# pnpm-lock.yaml is required for reproducible installs (CI and production builds)
 !pnpm-lock.yaml
 
 # Temporary

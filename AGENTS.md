@@ -63,12 +63,9 @@ Core: **agent runner**, **queue**, **HTTP server** (**Fastify** + Zod-typed rout
 
 ```bash
 pnpm run build       # workspace packages
-pnpm run build:app   # root dist/ for start / Docker
+pnpm run build:app   # root dist/ for pnpm start
 pnpm test
 pnpm run lint        # turbo lint + import guards + docs link check
 pnpm run docs:site:sync
 ```
 
-## Docker
-
-[`docs/operator/docker.md`](docs/operator/docker.md) — compose for dev, production compose / GHCR workflows.

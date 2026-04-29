@@ -1,13 +1,13 @@
 ---
 title: "Staying up to date"
-description: Upgrade runbooks for container images, git clones, and published npm packages.
+description: Upgrade runbooks for native binaries, git clones, and published npm packages.
 sidebar:
   order: 4
 ---
 
 # Staying up to date
 
-Use this page when you deploy from a **released image**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together GitHub Releases, [migration.md](../development/migration.md), and the container registry.
+Use this page when you deploy from a **GitHub Release binary**, track **main** in git, or consume **published npm packages** from this monorepo. It ties together GitHub Releases and [migration.md](../development/migration.md).
 
 **Other operator hubs:** [installation.md](installation.md) (deploy paths) · [configuration-hub.md](../config/configuration-hub.md) (config load order and keys).
 
@@ -17,39 +17,22 @@ Use this page when you deploy from a **released image**, track **main** in git, 
 |---------|---------|
 | **GitHub Releases** | Breaking or notable config and API changes in the repo |
 | **[migration.md](../development/migration.md)** | Short archive of config moves and conventions (not a full version history) |
-| **GitHub Releases** | Created when a **`v*.*.*`** tag is pushed; includes image pull commands (see [.github/workflows/release.yml](../../.github/workflows/release.yml)) |
+| **GitHub Releases** | Created when a **`v*.*.*`** tag is pushed; native binary assets are uploaded by [.github/workflows/binary.yml](../../.github/workflows/binary.yml); release notes are created by [.github/workflows/release.yml](../../.github/workflows/release.yml) |
 | **Watching the repository** | Notifications for releases, discussions, or commits (your choice in GitHub **Watch**) |
 
 There is no separate mailing list; subscribe via GitHub.
 
-## Container image (GHCR)
+## Upgrading the native binary
 
-The image name follows **`ghcr.io/<owner>/<repo>`** (for this upstream: **`ghcr.io/toniop99/agent-detective`** — adjust if you use a fork that publishes its own image).
+1. Read GitHub Release notes since the version you run (and [migration.md](../development/migration.md) if linked).
+2. Update `config` if new or changed keys are required — see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md).
+3. Replace the executable with the new release asset for your platform; keep `config/` and optional `plugins/` in place.
+4. Restart the process (systemd, or your supervisor).
+5. Verify **`GET /api/health`** and a smoke check (e.g. plugin routes, Jira webhook URL unchanged if only the binary changed).
 
-### How tags move
+Keep **secrets in env** ([configuration.md](../config/configuration.md)); do not bake tokens into world-readable install trees.
 
-| Tag | When it updates | Good for |
-|-----|-----------------|----------|
-| **`latest`** | **Push to `main`** ([docker.yml](../../.github/workflows/docker.yml)) (and also written by [release.yml](../../.github/workflows/release.yml) for tag builds) | **Moving target** — usually the newest `main` build; not ideal as an immutable production pin |
-| **`stable`**, **`X`**, **`X.Y`**, **`X.Y.Z`** | **Version tags** `vX.Y.Z` ([release.yml](../../.github/workflows/release.yml)) | **Production-friendly** — pin **`X.Y.Z`** (or a digest) for reproducible deploys |
-
-:::caution[Breaking changes]
-Because **`main` keeps advancing**, the next push to `main` overwrites **`latest`** even after a release. Use **`X.Y.Z`** or **`stable`** (updated per release) when you want a deliberate upgrade, not the tip of `main`. Pinning `latest` in production can pull in breaking changes without warning.
-:::
-
-### Upgrade runbook (Docker / Compose)
-
-:::tip[Before you upgrade]
-Always read the release notes and migration guide **before** pulling a new image. Test the upgrade in a staging environment if possible.
-:::
-
-1. Read GitHub Release notes since the tag you currently run (and [migration.md](../development/migration.md) if linked).
-2. Update `config` if new or changed keys are required — see [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). Regenerate local reference if you maintain a fork: `pnpm docs:plugins`.
-3. **Pull** the new image tag (or bump the digest in your manifest).
-4. Redeploy (compose, orchestrator, or `docker run` as you do today).
-5. Verify **`GET /api/health`** and a smoke check (e.g. plugin routes, Jira webhook URL unchanged if only the image changed).
-
-Keep **secrets in env** ([configuration.md](../config/configuration.md)); do not bake tokens into images.
+Verification and layout: [binary.md](binary.md).
 
 ## Upgrading from a git clone
 
@@ -77,7 +60,7 @@ Workspace packages may be published per [publishing.md](../plugins/publishing.md
 ## Summary
 
 :::tip[Key takeaways]
-- **Containers:** pin **`ghcr.io/…:X.Y.Z`** or digest; avoid treating **`latest`** as immutable in production.
+- **Binaries:** download the matching platform asset for each release; use checksums and Sigstore bundles from the same release when verifying.
 - **Config:** merge [configuration-hub.md](../config/configuration-hub.md) rules; watch **CHANGELOG** for breaking keys.
 - **Source:** pull, install, build, then deploy; keep `config/local.json` and env out of git.
 :::
@@ -85,7 +68,6 @@ Workspace packages may be published per [publishing.md](../plugins/publishing.md
 ## See also
 
 - [configuration-hub.md](../config/configuration-hub.md) — where settings live
-- [docker.md](docker.md#published-image-ghcr) — pull, compose, env
 - [installation.md](installation.md) — deployment paths
 - [releasing.md](releasing.md) — maintainers: create a new tag/release
-- [publishing.md](../plugins/publishing.md) — image tags and release automation (maintainers)
+- [publishing.md](../plugins/publishing.md) — npm publish mechanics (maintainers)

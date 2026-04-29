@@ -21,7 +21,7 @@ curl https://cursor.com/install -fsS | bash
 irm 'https://cursor.com/install?win32=true' | iex
 ```
 
-See [CLI installation](https://cursor.com/docs/cli/installation) for details. The CLI is **not** published on npm; the production Docker image only pre-installs **opencode** and **claude** via `npm install -g`. For containers, install the Cursor CLI in a custom image layer or on the host.
+See [CLI installation](https://cursor.com/docs/cli/installation) for details. The CLI is **not** published on npm; install it on the host (or your VM image) alongside any other agent CLIs you configure (e.g. **opencode**, **claude**).
 
 ## Configure agent-detective
 

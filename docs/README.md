@@ -4,7 +4,7 @@ AI-powered code analysis (Jira, webhooks, PR pipeline, local repos, and more). T
 
 | Area | Path | For |
 |------|------|-----|
-| **Run the server** | [operator/](operator/) | Install, Docker, deployment, upgrade, observability |
+| **Run the server** | [operator/](operator/) | Install, deployment, upgrade, observability |
 | **Configuration** | [config/](config/) | Load order, env whitelist, long reference |
 | **Plugins** | [plugins/](plugins/) | API guide, custom plugins, development template, publishing |
 | **Contribute to the repo** | [development/](development/) | pnpm, Turbo, agents (Cursor), migration notes |

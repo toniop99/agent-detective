@@ -84,3 +84,23 @@ jobs:
 
       - name: Build
         run: pnpm run build && pnpm run build:app
+
+      - name: Smoke test built app (HTTP)
+        env:
+          NODE_ENV: production
+        run: |
+          node dist/index.js &
+          PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3001/api/health | grep -q '"status"'; then
+              echo "Health OK"
+              kill "$PID" 2>/dev/null || true
+              wait "$PID" 2>/dev/null || true
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Smoke: server did not become healthy in time"
+          kill "$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          exit 1

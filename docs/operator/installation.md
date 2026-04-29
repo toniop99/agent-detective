@@ -1,6 +1,6 @@
 ---
 title: "Installation and deployment paths"
-description: Choose how to run agent-detective — container, compose, source, or bare metal.
+description: Choose how to run agent-detective — native binary, from source, or bare metal.
 sidebar:
   order: 1
 ---
@@ -13,29 +13,27 @@ Choose how you run agent-detective on a host or in your cluster. This page is th
 Use the **Configuration** section in the sidebar after you pick an install path—load order and env are documented there.
 :::
 
-**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and image tags).
+**Typical reading order:** this page (choose how you run) → [configuration hub](../config/configuration-hub.md) (how settings load) → [upgrading](upgrading.md) (releases and upgrades).
 
 ## Choose a deployment style
 
 | Path | When to use | What you need |
 |------|-------------|---------------|
-| **Container image (GHCR)** | Production on a single host or small team; minimal build steps | Docker (or compatible runtime), a `config/` directory to mount, secrets via env (see [configuration.md](../config/configuration.md)) |
-| **Docker Compose (build or pull)** | Same as above, but you want `compose` and optional bind mounts for `config/` and `plugins/` | [docker.md](docker.md) (includes [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) for pull-only) |
 | **Native binary (GitHub Releases)** | Single executable on a host (no system Node.js/pnpm); best for bare-metal installs | Download the binary, a `config/` directory, and agent CLIs on `PATH` (use `doctor` to verify) |
-| **From source (git + pnpm)** | You fork the repo, change `packages/`, or run without a prebuilt image | Node.js 24+, pnpm 10+ (see root [package.json](../../package.json) `packageManager`), git |
-| **Bare metal: systemd + reverse proxy** | No Docker; long-running service on a VM with nginx or similar | [deployment.md](deployment.md) (systemd, nginx, sizing) |
+| **From source (git + pnpm)** | You fork the repo, change `packages/`, or run from a clone | Node.js 24+, pnpm 10+ (see root [package.json](../../package.json) `packageManager`), git |
+| **Bare metal: systemd + reverse proxy** | Long-running service on a VM with nginx or similar | [deployment.md](deployment.md) (systemd, nginx, sizing) |
 
 :::note[Kubernetes]
-This repository does not ship Helm charts. Run the [GHCR image](docker.md#published-image-ghcr) with your platform’s standard workload manifest and the same `config` + env model as in [docker.md](docker.md).
+This repository does not ship Helm charts. Run the app in your platform’s standard workload (container image you build, or a VM with the native binary / Node) using the same `config/` + env model as in [configuration.md](../config/configuration.md) and [deployment.md](deployment.md).
 :::
 
 ## Host capabilities
 
-- **Process:** either the container image (includes a bundled `node` + built app) or Node.js 24+ when building from source.
+- **Process:** Node.js 24+ when building from source, or a published **native binary** (no system Node).
 - **Configuration:** JSON under `config/` ([configuration.md](../config/configuration.md)); optional `config/local.json` (often gitignored) for secrets and overrides.
-- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config (bind mounts in Docker, or local paths on bare metal).
+- **Repositories:** the **local-repos** plugin needs **git** and filesystem access to the repos you list in config (local paths or bind mounts you configure).
 - **Network:** outbound to Jira (if you use the Jira plugin), to git remotes (for [pr-pipeline](../config/configuration.md#pr-pipeline-agent-detectivepr-pipeline)), and to your AI provider as required by the agent CLI (e.g. OpenCode). Inbound: HTTP(S) to the app (webhooks, API).
-- **Agent CLIs:** the image or host must be able to run the configured agent (e.g. `opencode` in the default image). See [docker.md](docker.md#image-targets-dockerfile) and [cursor-agent.md](../development/cursor-agent.md) for adding other agents.
+- **Agent CLIs:** the host must be able to run the configured agent (e.g. `opencode`). See [cursor-agent.md](../development/cursor-agent.md) for the Cursor CLI, which is not installed via npm.
 
 ## Configuration (all paths)
 
@@ -52,11 +50,11 @@ Use `config/local.json` (gitignored) or environment variables for secrets. Never
 
 | Topic | Document |
 |-------|----------|
-| Docker, Compose, production image, GHCR | [docker.md](docker.md) |
 | Native binary (GitHub Releases) | [binary.md](binary.md) |
-| systemd, nginx, health checks, troubleshooting (no Docker) | [deployment.md](deployment.md) |
+| systemd, nginx, health checks, troubleshooting | [deployment.md](deployment.md) |
 | Config files, env, plugins | [configuration.md](../config/configuration.md) |
-| Releases, pinning images, git upgrade | [upgrading.md](upgrading.md) |
+| Releases, git upgrade, binary refresh | [upgrading.md](upgrading.md) |
+| Maintainer: tag and release | [releasing.md](releasing.md) |
 | Jira E2E (tunnel, webhooks, pr-pipeline) | [e2e/README.md](../e2e/README.md) |
 | Day-to-day monorepo development | [development.md](../development/development.md) |
 
@@ -74,8 +72,8 @@ Replace `toniop99/agent-detective` with your fork’s `owner/name` on GitHub if 
 ## See also
 
 - [configuration-hub.md](../config/configuration-hub.md) — config load order and top-level keys
-- [upgrading.md](upgrading.md) — image tags, releases, and upgrade runbook
-- Root [README.md](../../README.md) — quick start and GHCR one-liner
-- [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` volume for custom plugins
-- [publishing.md](../plugins/publishing.md) — building and publishing the image (maintainers)
+- [upgrading.md](upgrading.md) — releases and upgrade runbook
+- Root [README.md](../../README.md) — quick start
+- [extending-with-plugins.md](../plugins/extending-with-plugins.md) — npm, path, or `plugins/` directory for custom plugins
+- [publishing.md](../plugins/publishing.md) — publishing `@agent-detective/*` packages (maintainers)
 - Release notes live in GitHub Releases; see `docs/operator/upgrading.md`.

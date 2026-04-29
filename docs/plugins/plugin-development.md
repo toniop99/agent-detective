@@ -265,7 +265,7 @@ See **[extending-with-plugins.md](extending-with-plugins.md)** for:
 - `package` specifiers (npm, path, monorepo `packages/*`)
 - `dependsOn` and load order
 - private registry / `.npmrc`
-- Docker **`plugins/`** volume and `/app/plugins/...` config
+- Path-based **`plugins/`** directory and absolute `package` paths in config
 
 The sections above (**Distributing**) describe how to **publish or copy artifacts**; the extending guide ties that to a running server.
 

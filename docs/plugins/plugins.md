@@ -7,7 +7,7 @@ sidebar:
 
 # Plugin Development Guide
 
-Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers the plugin **APIs** and **patterns** for authors. For **where to point `config.plugins[].package` and how to use Docker / npm** for custom plugins, see [extending-with-plugins.md](extending-with-plugins.md) first.
+Plugins extend agent-detective to connect any event source (Jira, Telegram, Slack, etc.). This guide covers the plugin **APIs** and **patterns** for authors. For **where to point `config.plugins[].package` and how to use npm or filesystem paths** for custom plugins, see [extending-with-plugins.md](extending-with-plugins.md) first.
 
 **Bundled plugin options (Zod → JSON Schema):** after changing the Zod options schema in `@agent-detective/jira-adapter`, `@agent-detective/linear-adapter`, `@agent-detective/local-repos-plugin`, or `@agent-detective/pr-pipeline` (`packages/*/src/application/options-schema.ts`), run `pnpm docs:plugins` and commit [generated/plugin-options.md](../reference/generated/plugin-options.md). See [configuration.md](../config/configuration.md).
 
@@ -1007,13 +1007,13 @@ test('mock client stores comments', () => {
 
 ## 13. Third-Party Plugins
 
-Installing and wiring **custom** plugins (npm, private registry, path / Docker volume) is covered in one place: **[extending-with-plugins.md](extending-with-plugins.md)**. The rest of this document describes APIs, patterns, and the official bundles. For a step-by-step TypeScript template and long examples, see [plugin-development.md](plugin-development.md).
+Installing and wiring **custom** plugins (npm, private registry, path or bind-mounted directory) is covered in one place: **[extending-with-plugins.md](extending-with-plugins.md)**. The rest of this document describes APIs, patterns, and the official bundles. For a step-by-step TypeScript template and long examples, see [plugin-development.md](plugin-development.md).
 
 ---
 
 ## 14. Official Bundled Plugins
 
-The official Docker image includes these plugins:
+The default distribution includes these first-party plugins (enable/disable via `config.plugins`):
 
 ### local-repos-plugin
 
