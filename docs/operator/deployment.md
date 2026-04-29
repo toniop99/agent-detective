@@ -13,7 +13,7 @@ Single-server **bare‑metal** deployment: **native binary** (recommended for a 
 
 - **Release binary on one host** — follow **[Native binary (end-to-end)](#native-binary-end-to-end)** below, then **Reverse proxy (nginx)**. Download, checksums, Cosign, `doctor`, and `validate-config`: [binary.md](binary.md).
 - **Fork or monorepo build** — follow **[Installation (from source)](#installation-from-source)** and **[systemd with from-source tree](#systemd-with-from-source-tree)**.
-- **Config and env** — [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). **Upgrades** — [upgrading.md](upgrading.md). **Choosing a path** — [installation.md](installation.md).
+- **Config and env** — [configuration-hub.md](../config/configuration-hub.md) and [configuration.md](../config/configuration.md). **Upgrades** — [upgrading.md](upgrading.md). **Choosing a path** — [installation.mdx](installation.mdx).
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ All versions below are **minimum** requirements. Using older versions may work b
 |-------------|--------|
 | OS | Ubuntu 22.04+ / Debian 12+ (or another Linux with **systemd** for the units below). macOS is supported for the binary itself; use launchd or another supervisor instead of systemd. |
 | System Node.js / pnpm | **Not required** for the application process. |
-| git | Required on the host if **local-repos** uses paths or operations that need git (see [installation.md](installation.md) host capabilities). |
+| git | Required on the host if **local-repos** uses paths or operations that need git (see [installation.mdx](installation.mdx) host capabilities). |
 
 ### From source (build and run)
 
@@ -292,6 +292,6 @@ Structured logs go to **stdout/stderr** (captured by journald under systemd). Se
 
 ## See also
 
-- [installation.md](installation.md) — choose binary vs from source first
+- [installation.mdx](installation.mdx) — choose binary vs from source first
 - [configuration-hub.md](../config/configuration-hub.md) — config load order
 - [upgrading.md](upgrading.md) — releases and upgrade runbooks

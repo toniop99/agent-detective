@@ -87,4 +87,4 @@ If you add a new workspace package under `packages/*`, add it to the root `confi
 - [plugin-development.md](plugin-development.md) — build, `package.json`, `defineRoute` examples  
 - [plugins.md](plugins.md#9-publishing-a-plugin-as-an-npm-package) — publishing a plugin as an npm package (in-guide)  
 - [configuration.md](../config/configuration.md) — env merging into `plugins`  
-- [installation.md](../operator/installation.md) — deploy paths and install layout
+- [installation.mdx](../operator/installation.mdx) — deploy paths and install layout

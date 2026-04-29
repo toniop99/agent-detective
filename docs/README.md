@@ -19,5 +19,5 @@ AI-powered code analysis (Jira, webhooks, PR pipeline, local repos, and more). T
 
 ## Pointers
 
-- **Operator hubs (start here):** [configuration hub](config/configuration-hub.md) · [installation](operator/installation.md) · [golden path](operator/golden-path.md) · [threat model](operator/threat-model.md) · [upgrading](operator/upgrading.md)
+- **Operator hubs (start here):** [configuration hub](config/configuration-hub.md) · [installation](operator/installation.mdx) · [golden path](operator/golden-path.md) · [threat model](operator/threat-model.md) · [upgrading](operator/upgrading.md)
 - **Published doc site (Starlight):** built from this folder; see [apps/docs/README.md](../apps/docs/README.md) and `pnpm run docs:site` at the repo root

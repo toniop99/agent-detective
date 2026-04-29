@@ -30,7 +30,7 @@ function setMap(sourceRel, publicPath) {
 }
 
 /**
- * @param {string} fromSourceRel posix e.g. docs/operator/installation.md
+ * @param {string} fromSourceRel posix e.g. docs/operator/installation.mdx
  * @param {string} href
  */
 function rewriteLink(fromSourceRel, href) {

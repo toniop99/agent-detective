@@ -13,7 +13,7 @@ Prefer environment variables on the **whitelist** for production; see the tables
 
 This page is the **index**: how settings are loaded, in what order they win, and where the full reference lives. For every switch and table, use **[configuration.md](configuration.md)**; for fields on bundled plugins only, use the **[generated plugin options](../reference/generated/plugin-options.md)**.
 
-**Other operator hubs:** [installation.md](../operator/installation.md) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and upgrades).
+**Other operator hubs:** [installation.mdx](../operator/installation.mdx) (where to run the app) · [upgrading.md](../operator/upgrading.md) (releases and upgrades).
 
 ## Where configuration lives
 
@@ -81,6 +81,6 @@ In CI, `pnpm docs:plugins:check` and `pnpm docs:config:check` fail if the genera
 | Top-level app config table + JSON Schema (from Zod) | [generated/app-config.md](../reference/generated/app-config.md) |
 | Plugin system and `schema` in code | [plugins.md](../plugins/plugins.md) (e.g. schema system) |
 | Custom plugins (npm, path, `plugins/` directory) | [extending-with-plugins.md](../plugins/extending-with-plugins.md) |
-| Install paths and `config` | [installation.md](../operator/installation.md) |
+| Install paths and `config` | [installation.mdx](../operator/installation.mdx) |
 | New releases, git pull, binary refresh | [upgrading.md](../operator/upgrading.md) |
 | Production layout (systemd, nginx) | [deployment.md](../operator/deployment.md) |
