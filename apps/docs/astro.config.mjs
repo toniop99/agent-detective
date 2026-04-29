@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 
 // https://starlight.astro.build/reference/configuration/
 // Published at https://agent-detective.chapascript.dev/docs/ (custom domain in GitHub Settings → Pages; DNS e.g. Cloudflare CNAME → toniop99.github.io).
@@ -10,6 +11,8 @@ export default defineConfig({
   site: 'https://agent-detective.chapascript.dev',
   base: '/docs',
   integrations: [
+    // Must run before Starlight so ```mermaid``` blocks in synced Markdown become client-rendered SVG.
+    mermaid({ autoTheme: true }),
     starlight({
       title: 'Agent Detective',
       description: 'AI-powered code analysis; plugins for Jira and more.',

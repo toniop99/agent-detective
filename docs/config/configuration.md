@@ -55,6 +55,25 @@ These variables override or extend the merged JSON when set:
 - `pluginSystem.failOnDependencyErrors` (default: `true`): abort startup when `dependsOn` resolution reports missing dependencies or circular cycles.
 - `pluginSystem.failOnPluginLoadErrors` (default: `true`): abort startup when any configured plugin fails to import, fails schema/options validation (including unrecognized option keys), or throws during `register()`.
 
+## Task orchestration (`tasks`)
+
+Optional object in the top-level app config (not env-whitelisted yet — use JSON):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `maxConcurrent` | positive integer (max 1000) | Limits how many orchestrated agent runs execute **at once** across all task queue keys. Wraps the default in-memory queue. |
+| `maxWallTimeMs` | positive integer | Fails the task with an orchestrator error if `runAgentForChat` does not settle within this wall time. The child process may still wind down according to `agents.runner` timeouts — treat this as a **second layer** for runaway jobs. |
+
+## Run records (`runRecords`)
+
+Optional object:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `path` | string | Append-only **JSONL** file. Each line is schema **`agent-detective.run-record/v1`** with phases `started`, `completed`, or `failed` (`taskId`, optional `source` / `issueKey`, `durationMs`, `error`). Relative paths are resolved from the **config directory** (same root as `default.json`). |
+
+See [threat-model.md](../operator/threat-model.md) for why run records matter in regulated environments.
+
 ## Observability log level
 
 `@agent-detective/observability` reads **`OBSERVABILITY_LOG_LEVEL`**. If you set **`LOG_LEVEL`** to `debug`, `info`, `warn`, or `error` and leave `OBSERVABILITY_LOG_LEVEL` unset, the app mirrors `LOG_LEVEL` into `OBSERVABILITY_LOG_LEVEL` before observability starts.

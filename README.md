@@ -38,7 +38,7 @@ For day-to-day development you usually only need `pnpm dev`. CI runs `pnpm build
 | `@agent-detective/process-utils` | Process / shell helpers |
 | `@agent-detective/local-repos-plugin` | Local repositories + `RepoMatcher` |
 | `@agent-detective/jira-adapter` | Jira webhook adapter |
-| `@agent-detective/linear-adapter` | Linear webhook adapter (OAuth + signed webhooks; task routing in progress) |
+| `@agent-detective/linear-adapter` | Linear webhooks + OAuth, signature verification, deduplication; posts analysis back on task completion ([E2E](docs/e2e/linear-manual-e2e.md)) |
 
 ## Configuration
 
@@ -57,6 +57,20 @@ Configure via `config/default.json` (and optional `config/local.json`):
 ## Run in production
 
 Use a **native binary** from GitHub Releases, **build from source** (`pnpm start`), or follow the **bare-metal** guide (systemd + nginx). See [docs/operator/installation.md](docs/operator/installation.md). Install the agent CLI you configure (for example **OpenCode** per [OpenCode’s install guide](https://opencode.ai/docs)) on the host so `PATH` matches `config` (`agent` / `opencode` / etc.).
+
+**First-time path:** [Golden path (≈15 min)](docs/operator/golden-path.md) · [Threat model (operators)](docs/operator/threat-model.md)
+
+## Support matrix
+
+| Dimension | Supported / tested in CI (typical) | Notes |
+|-----------|--------------------------------------|--------|
+| **Runtime** | Node.js **24+** (from source); **native binary** (Linux x64 in releases) | See [package.json](package.json) `engines` / `packageManager`. |
+| **Host OS** | **Linux** for production guides (systemd + nginx) | macOS/Windows OK for dev; WSL acceptable for local smoke. |
+| **HTTP server** | **Fastify** on configurable `port` (default **3001**) | `/api/health`, `/api/metrics`, Scalar `/docs`. |
+| **Agent CLIs** | **OpenCode** documented; **Claude** / **Cursor** agent ids registered in-repo | Match `config.agent` to an installed CLI; see [cursor-agent.md](docs/development/cursor-agent.md) for Cursor. |
+| **Jira** | **Jira Cloud** webhooks + REST (Basic or OAuth 2.0 3LO) | Webhook + Automation shapes per [jira-manual-e2e.md](docs/e2e/jira-manual-e2e.md). **Data Center** not separately certified—treat as best-effort if APIs align. |
+| **Linear** | **Linear** webhooks + GraphQL comments (OAuth or PAT) | [linear-manual-e2e.md](docs/e2e/linear-manual-e2e.md), [linear-adapter.md](docs/plugins/linear-adapter.md). |
+| **Kubernetes / Helm** | **Not shipped** in-repo | Bring your own container or VM; see [installation.md](docs/operator/installation.md#kubernetes). |
 
 ## Documentation
 

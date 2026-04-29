@@ -9,6 +9,10 @@ import * as z from 'zod';
 import { jiraAdapterOptionsSchema } from './application/options-schema.js';
 import { zodToPluginSchema } from '@agent-detective/sdk';
 import { stampComment } from './domain/comment-trigger.js';
+import {
+  appendStructuredMetadataBlock,
+  buildJiraCommentMetadata,
+} from './application/structured-comment-metadata.js';
 
 export { DEFAULT_WEBHOOK_BEHAVIOR, jiraAdapterOptionsSchema } from './application/options-schema.js';
 
@@ -77,9 +81,12 @@ const jiraAdapterPlugin = definePlugin({
           typeof event.metadata?.matchedRepo === 'string' && event.metadata.matchedRepo.length > 0
             ? event.metadata.matchedRepo
             : null;
-        const body = stampComment(
-          matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result
-        );
+        const narrative = matchedRepo ? `## Analysis for \`${matchedRepo}\`\n\n${result}` : result;
+        const withMeta =
+          cfg.structuredCommentMetadata === true
+            ? appendStructuredMetadataBlock(narrative, buildJiraCommentMetadata(event, matchedRepo))
+            : narrative;
+        const body = stampComment(withMeta);
         const resultLength = typeof result === 'string' ? result.length : 0;
         const resultPreview = typeof result === 'string' ? result.slice(0, 120).replace(/\s+/g, ' ') : '';
         const jiraReplyParentId =

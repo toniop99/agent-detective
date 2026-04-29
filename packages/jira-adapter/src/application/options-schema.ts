@@ -129,6 +129,12 @@ export const jiraAdapterOptionsSchema = z
      * excluded) to pr-pipeline as additional agent context.
      */
     fetchIssueComments: z.boolean().default(false),
+    /**
+     * When true, append a fenced JSON block (`agent-detective/jira-comment-metadata/v1`)
+     * after the analysis Markdown so Jira Automation or scripts can parse task id,
+     * issue key, and matched repo without scraping narrative text.
+     */
+    structuredCommentMetadata: z.boolean().default(false),
   })
   .strict()
   .superRefine((data, ctx) => {
