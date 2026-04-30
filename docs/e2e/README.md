@@ -7,7 +7,9 @@ sidebar:
 
 # End-to-end (manual) guides
 
-Long walkthroughs for **Jira** integrations. General deploy and config docs are under [../README.md](../README.md).
+**Start here if you want the shortest path:** [Golden path — first analysis in ~15 min](../operator/golden-path.md).
+
+Long walkthroughs for **Jira** and **Linear**. General deploy and config docs are under [../README.md](../README.md).
 
 | Guide | What it covers |
 |-------|----------------|

@@ -124,7 +124,9 @@ If you maintain this repository and need to publish new binaries, see [releasing
 
 ## Maintainers: building a SEA binary locally
 
-CI pins a concrete **Node 25.x** (see `node-version` in `.github/workflows/binary.yml`) and uses `node --build-sea`. Use the same major locally, or follow the Node 24 flow in the [Single executable applications](https://nodejs.org/api/single-executable-applications.html) docs if you cannot upgrade yet.
+CI pins a concrete **Node 25.x** (see `node-version` in `.github/workflows/binary.yml`) and runs `node --build-sea sea-config.json` after `pnpm run build && pnpm run build:sea:app`, as in [releasing.md](releasing.md#local-smoke-optional). Integrated `--build-sea` was added in **Node.js v25.5.0** ([Single executable applications](https://nodejs.org/api/single-executable-applications.html)); use the same major locally so the blob matches the embedding binary.
+
+A SEA has **no `node_modules`**: the `dist-sea/index.cjs` bundle must not leave bare `require("…")` calls to npm packages. Anything not inlined by the bundler fails at startup (for example `ERR_UNKNOWN_BUILTIN_MODULE` for a leftover package name). First-party fixes live in `tsup.sea.config.ts` (`noExternal`, CJS `mainFormat`).
 
 ## systemd
 

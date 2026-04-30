@@ -254,4 +254,4 @@ Note: You cannot unpublish a version if another package depends on it.
 
 ## Application releases (operators)
 
-The **root app** is not published to npm. Operators install from **GitHub Releases** (native binaries) or **from source**; see [installation.md](../operator/installation.md) and [releasing.md](../operator/releasing.md).
+The **root app** is not published to npm. Operators install from **GitHub Releases** (native binaries) or **from source**; see [installation.mdx](../operator/installation.mdx) and [releasing.md](../operator/releasing.md).

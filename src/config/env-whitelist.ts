@@ -152,6 +152,25 @@ export function applyCoreEnvWhitelist(config: AppConfig): void {
       .map((s) => s.trim())
       .filter(Boolean);
   }
+
+  const tasksMaxConcurrentRaw = process.env.TASKS_MAX_CONCURRENT;
+  if (tasksMaxConcurrentRaw !== undefined && tasksMaxConcurrentRaw !== '') {
+    const n = parseInt(tasksMaxConcurrentRaw, 10);
+    if (!Number.isNaN(n) && n > 0 && n <= 1000) {
+      if (!config.tasks) config.tasks = {};
+      config.tasks.maxConcurrent = n;
+    }
+  }
+  const wallFromEnv = parseMs(process.env.TASKS_MAX_WALL_TIME_MS);
+  if (wallFromEnv !== undefined && wallFromEnv > 0) {
+    if (!config.tasks) config.tasks = {};
+    config.tasks.maxWallTimeMs = wallFromEnv;
+  }
+
+  const runRecordsPath = process.env.RUN_RECORDS_PATH?.trim();
+  if (runRecordsPath) {
+    config.runRecords = { path: runRecordsPath };
+  }
 }
 
 /**

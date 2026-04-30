@@ -191,6 +191,10 @@ Anchor: `jira-adapter`
     "fetchIssueComments": {
       "default": false,
       "type": "boolean"
+    },
+    "structuredCommentMetadata": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
@@ -203,7 +207,8 @@ Anchor: `jira-adapter`
     "webhookBehavior",
     "autoAnalysisCooldownMs",
     "missingLabelsReminderCooldownMs",
-    "fetchIssueComments"
+    "fetchIssueComments",
+    "structuredCommentMetadata"
   ],
   "additionalProperties": false
 }
