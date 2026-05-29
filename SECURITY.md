@@ -16,7 +16,7 @@ Please **do not open a public issue** for security vulnerabilities.
 
 If you discover a security vulnerability within Agent Detective, please follow these steps:
 
-1. Send an email to the maintainer privately or create a draft security advisory in GitHub if enabled. 
+1. Send an email to the maintainer privately at [andezdev@gmail.com](mailto:andezdev@gmail.com) or create a draft security advisory in GitHub if enabled. 
 2. Provide a detailed description of the vulnerability, including steps to reproduce it.
 3. We will acknowledge receipt of your vulnerability report as soon as possible and strive to provide a timeline for a fix.
 

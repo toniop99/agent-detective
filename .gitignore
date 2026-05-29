@@ -66,3 +66,7 @@ config/local.json
 # Generated from .agents/ for Cursor (symlinks or dirs; trailing slash alone can miss symlinks)
 .cursor/agents
 .cursor/skills
+
+# Private keys and local databases
+*.pem
+config/*.db
