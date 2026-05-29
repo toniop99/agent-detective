@@ -53,42 +53,42 @@ export default defineConfig({
         },
         {
           label: 'Run the server',
-          autogenerate: { directory: 'operator' },
+          items: [{ autogenerate: { directory: 'operator' } }],
         },
         {
           label: 'Configuration',
-          autogenerate: { directory: 'config' },
+          items: [{ autogenerate: { directory: 'config' } }],
         },
         {
           label: 'Plugins',
-          autogenerate: { directory: 'plugins' },
+          items: [{ autogenerate: { directory: 'plugins' } }],
         },
         {
           label: 'Develop the monorepo',
-          autogenerate: { directory: 'development' },
+          items: [{ autogenerate: { directory: 'development' } }],
         },
         {
           label: 'Architecture',
-          autogenerate: { directory: 'architecture' },
+          items: [{ autogenerate: { directory: 'architecture' } }],
         },
         {
           label: 'E2E walkthroughs',
           badge: { text: 'Ops', variant: 'note' },
-          autogenerate: { directory: 'e2e' },
+          items: [{ autogenerate: { directory: 'e2e' } }],
         },
         {
           label: 'Reference',
-          autogenerate: { directory: 'reference' },
+          items: [{ autogenerate: { directory: 'reference' } }],
         },
         {
           label: 'Execution plans',
           collapsed: true,
-          autogenerate: { directory: 'exec-plans' },
+          items: [{ autogenerate: { directory: 'exec-plans' } }],
         },
         {
           label: 'Tool references',
           collapsed: true,
-          autogenerate: { directory: 'references' },
+          items: [{ autogenerate: { directory: 'references' } }],
         },
       ],
     }),

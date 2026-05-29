@@ -69,6 +69,16 @@
     "node": ">=24.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }

@@ -1,6 +1,8 @@
 # Agent Detective
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![CI](https://github.com/toniop99/agent-detective/actions/workflows/ci.yml/badge.svg)](https://github.com/toniop99/agent-detective/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/release/toniop99/agent-detective)](https://github.com/toniop99/agent-detective/releases)
 
 AI-powered code analysis agent that responds to events from Jira, Telegram, Slack and more.
 

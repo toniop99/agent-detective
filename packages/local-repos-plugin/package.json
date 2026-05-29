@@ -11,7 +11,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -20,7 +22,11 @@
     "test:watch": "tsx --test --watch \"test/**/*.test.ts\"",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "repository", "local"],
+  "keywords": [
+    "agent-detective",
+    "repository",
+    "local"
+  ],
   "license": "MIT",
   "dependencies": {
     "@agent-detective/process-utils": "workspace:*",
@@ -31,5 +37,13 @@
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }

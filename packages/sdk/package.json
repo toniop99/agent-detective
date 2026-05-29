@@ -11,14 +11,22 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "sdk", "plugin", "fastify", "zod"],
+  "keywords": [
+    "agent-detective",
+    "sdk",
+    "plugin",
+    "fastify",
+    "zod"
+  ],
   "license": "MIT",
   "dependencies": {
     "@agent-detective/types": "workspace:*",
@@ -30,5 +38,13 @@
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }
