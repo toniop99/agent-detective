@@ -2,7 +2,7 @@
   "webhookEvent": "jira:issue_created",
   "timestamp": 1776193443333,
   "issue": {
-    "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/10010",
+    "self": "https://mock-workspace.atlassian.net/rest/api/2/issue/10010",
     "id": "10010",
     "key": "KAN-4",
     "changelog": {
@@ -15,10 +15,10 @@
       "statuscategorychangedate": "2026-04-14T21:04:01.458+0200",
       "issuetype": {
         "namedValue": "Task",
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/issuetype/10007",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/issuetype/10007",
         "id": "10007",
         "description": "Tasks track small, distinct pieces of work.",
-        "iconUrl": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+        "iconUrl": "https://mock-workspace.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
         "name": "Task",
         "untranslatedName": null,
         "subtask": false,
@@ -30,16 +30,16 @@
       "timespent": null,
       "timeoriginalestimate": null,
       "project": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/project/10001",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/project/10001",
         "id": "10001",
         "key": "KAN",
         "name": "Bug Tracking",
         "description": null,
         "avatarUrls": {
-          "48x48": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410",
-          "24x24": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=small",
-          "16x16": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=xsmall",
-          "32x32": "https://hernandeztech.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=medium"
+          "48x48": "https://mock-workspace.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410",
+          "24x24": "https://mock-workspace.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=small",
+          "16x16": "https://mock-workspace.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=xsmall",
+          "32x32": "https://mock-workspace.atlassian.net/rest/api/2/universal_avatar/view/type/project/avatar/10410?size=medium"
         },
         "issuetypes": null,
         "projectCategory": null,
@@ -53,7 +53,7 @@
       "description": "Probando como funciona el webhook",
       "fixVersions": [],
       "statusCategory": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/statuscategory/2",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/statuscategory/2",
         "id": 2,
         "key": "new",
         "colorName": "blue-gray",
@@ -78,7 +78,7 @@
       "workratio": -1,
       "summary": "Error critico en la aplicacion",
       "watches": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/KAN-4/watchers",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/issue/KAN-4/watchers",
         "watchCount": 0,
         "isWatching": false
       },
@@ -88,7 +88,7 @@
       },
       "lastViewed": null,
       "creator": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
         "name": null,
         "key": null,
         "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
@@ -99,7 +99,7 @@
           "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
           "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
         },
-        "displayName": "Antonio Hernández",
+        "displayName": "Alex Developer",
         "active": true,
         "timeZone": "Europe/Madrid",
         "groups": null,
@@ -110,7 +110,7 @@
       "created": 1776193440941,
       "customfield_10021": null,
       "reporter": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
         "name": null,
         "key": null,
         "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
@@ -121,7 +121,7 @@
           "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
           "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
         },
-        "displayName": "Antonio Hernández",
+        "displayName": "Alex Developer",
         "active": true,
         "timeZone": "Europe/Madrid",
         "groups": null,
@@ -133,10 +133,10 @@
         "total": 0
       },
       "priority": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/priority/3",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/priority/3",
         "id": "3",
         "name": "Medium",
-        "iconUrl": "https://hernandeztech.atlassian.net/images/icons/priorities/medium_new.svg",
+        "iconUrl": "https://mock-workspace.atlassian.net/images/icons/priorities/medium_new.svg",
         "namedValue": "Medium"
       },
       "customfield_10001": null,
@@ -153,7 +153,7 @@
       },
       "issuelinks": [],
       "votes": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/issue/KAN-4/votes",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/issue/KAN-4/votes",
         "votes": 0,
         "hasVoted": false
       },
@@ -165,7 +165,7 @@
         "last": false
       },
       "assignee": {
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/user?accountId=712020%3A7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
         "name": null,
         "key": null,
         "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
@@ -176,7 +176,7 @@
           "16x16": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
           "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
         },
-        "displayName": "Antonio Hernández",
+        "displayName": "Alex Developer",
         "active": true,
         "timeZone": "Europe/Madrid",
         "groups": null,
@@ -193,14 +193,14 @@
       "updated": 1776193440941,
       "status": {
         "untranslatedNameValue": null,
-        "self": "https://hernandeztech.atlassian.net/rest/api/2/status/10003",
+        "self": "https://mock-workspace.atlassian.net/rest/api/2/status/10003",
         "description": "",
-        "iconUrl": "https://hernandeztech.atlassian.net/images/icons/statuses/generic.png",
+        "iconUrl": "https://mock-workspace.atlassian.net/images/icons/statuses/generic.png",
         "name": "To Do",
         "untranslatedName": null,
         "id": "10003",
         "statusCategory": {
-          "self": "https://hernandeztech.atlassian.net/rest/api/2/statuscategory/2",
+          "self": "https://mock-workspace.atlassian.net/rest/api/2/statuscategory/2",
           "id": 2,
           "key": "new",
           "colorName": "blue-gray",
@@ -215,14 +215,14 @@
     "name": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
     "key": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
     "accountId": "712020:7089135c-b53d-4e94-ba87-b9a1b9ce0a3f",
-    "emailAddress": "andezdev@gmail.com",
+    "emailAddress": "developer@example.com",
     "avatarUrls": {
       "48x48": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
       "24x24": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
       "16x16": "https://secure.gravatar.com/adapter/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png",
       "32x32": "https://secure.gravatar.com/avatar/1dfb1e8349c9cfa6fb15caee73991900?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FAH-4.png"
     },
-    "displayName": "Antonio Hernández",
+    "displayName": "Alex Developer",
     "active": true,
     "timeZone": null,
     "groups": null,

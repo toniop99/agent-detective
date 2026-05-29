@@ -103,8 +103,8 @@ describe('Jira normalizer', () => {
     assert.equal(event.replyTo.type, 'issue');
     assert.equal(event.replyTo.id, 'KAN-4');
     assert.equal(event.metadata.issueType, 'Task');
-    assert.equal(event.metadata.reporter, 'Antonio Hernández');
-    assert.equal(event.metadata.assignee, 'Antonio Hernández');
+    assert.equal(event.metadata.reporter, 'Alex Developer');
+    assert.equal(event.metadata.assignee, 'Alex Developer');
     assert.deepEqual(event.metadata.labels, ['probando', 'symfony']);
     assert.equal(event.metadata.projectKey, 'KAN');
     assert.equal(event.metadata.projectName, 'Bug Tracking');
