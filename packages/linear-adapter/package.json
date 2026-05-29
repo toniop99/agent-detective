@@ -37,5 +37,13 @@
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }

@@ -16,5 +16,13 @@
     "astro-mermaid": "^2.0.1",
     "mermaid": "^11.14.0",
     "sharp": "^0.34.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }

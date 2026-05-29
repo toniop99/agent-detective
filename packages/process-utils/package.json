@@ -11,18 +11,31 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
-  "keywords": ["agent-detective", "process"],
+  "keywords": [
+    "agent-detective",
+    "process"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toniop99/agent-detective.git"
+  },
+  "author": "Antonio Hernandez",
+  "bugs": {
+    "url": "https://github.com/toniop99/agent-detective/issues"
   }
 }
