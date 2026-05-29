@@ -36,7 +36,7 @@ jobs:
         run: pnpm --filter agent-detective-landing build
       - name: Merge landing into Pages root
         run: node scripts/merge-landing-into-docs-dist.mjs
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with: { path: apps/docs/dist }
 
   deploy:
